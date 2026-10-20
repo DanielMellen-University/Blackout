@@ -1,0 +1,3157 @@
+{
+  "course": "mach-run",
+  "reverseApproach": false,
+  "wallSeconds": 81.387,
+  "virtualTime": false,
+  "renderIntervalMs": 0,
+  "method": "DOM launch from runway, controls only, production Vite build. No pose, velocity, gate, clock or completion writes. Every accepted run uses normal browser wall time.",
+  "build": {
+    "sourceCommit": "6680e7446fde09756f26e93c446220b477a27fcc",
+    "production": true,
+    "mode": "production",
+    "minified": true,
+    "sourceHashes": {
+      "src/aircraft/Aircraft.ts": "8d108f19115d183277c81c272c4c4c64da92553e5c909d1c38ec905f36d76437",
+      "src/aircraft/EngineHeatSystem.ts": "e43e0b076fb3ec4bdfb3b206e8b4ae8ecb1319198a6a16b6c98f5064b47914f5",
+      "src/aircraft/EngineState.ts": "b06adc13359bc90c59bb1629a60ccf57468ab84ce2e17f9d62fb16f499cbbfd0",
+      "src/aircraft/FlightModel.ts": "ad8b6d60abcefbbea1f433a42e811349bec09819ea9710eab45bdde4118cb4ff",
+      "src/aircraft/FuelSystem.ts": "08e79cd45881ca7b212d02bc5301b16c5ed2144fad8a6dcef71e94a178a59bff",
+      "src/aircraft/createF35Model.ts": "8de5d50b2eb7672d159c27e74207adf59af2b9bc38b02f308c8e5201d981e401",
+      "src/aircraft/flightConfig.ts": "aa5374a8017eea4427b70190b12287c96cf2112d9628da26bf883d64a505cbf2",
+      "src/audio/AudioPreferences.ts": "12177f3e26ce5f0a1b8889bfb00118eaf08ca9bd206fbd3df6969b8ecbcd6a5b",
+      "src/audio/FlightAudio.ts": "ba6c2c77cec44346d9ed98ba992a403ca33c887476553c36912987174ad72f91",
+      "src/boot.ts": "bffe55897bbe847ced2f416269e7040f2ec0b246517791ab17ac40ee35a30cfe",
+      "src/camera/CameraSystem.ts": "24a4648a0b9a873561d954d22357238904b862ea932eaefebb0e0c688d7c186c",
+      "src/camera/CockpitMode.ts": "bb65ae9519721dd2f6cd3801725947008af90d0b1f457474634d2664cac7cced",
+      "src/camera/FlightPathMarker.ts": "05bc9c7355f44b0873ef87d8dfb041cae508587dd82d8d4768545048301b35c3",
+      "src/core/AdaptiveResolution.ts": "ab217b089d6fe000aee3cc38a3cc9a5a047ca4607398dffde0b5e82dbc110fa6",
+      "src/core/BannerClock.ts": "0322abf524618bb5b8eec032087d561ef0e14bf9ab8200c46606cc66fe3e67b6",
+      "src/core/CourseFavorites.ts": "84f6686f1042b3000f594a4cac449707bfddee1ee7540038fe6bb002f7942285",
+      "src/core/CourseRecents.ts": "cfd993148623b7dcc5ff092803c43cdd0e1e2ce9b3bd37049d2b23aebc76f0da",
+      "src/core/CourseRecordRetention.ts": "f883a23bea544fd167661b683bc320b93b61eb44dcbbbd592a26faa3a3246a12",
+      "src/core/CourseSession.ts": "715834d70dbe4a158446351ec01d4b08664a2cd1e829f07415ae708511e27493",
+      "src/core/FlightBriefing.ts": "6620222af5420892cd30b64169afb5094d6201389470d6deb31a67a9c45cfbd0",
+      "src/core/FlightPreferences.ts": "a9cd79b3a945965401616a00c29620010c07bdfac18f85c14dd39ef14fbbdd61",
+      "src/core/FlightRevision.ts": "99fdcd90518dc32921be6d64b6c513c79346689a88064c831026bced3f9ff22b",
+      "src/core/InputManager.ts": "7c79c31be12c2d1b47dccb9273de3709ce08fb2c799d5fc9f85d3e9aa00124fe",
+      "src/core/ListenerBag.ts": "76626bc92ba6420de4991ee6abe769e41ad4d9349fce47e025a3871c360cf321",
+      "src/core/OpsStreak.ts": "1c0edb74073fd93b5e5547a0d5d508d9a86abb0f0e3bf03c86daaedcd992e87a",
+      "src/core/PreferenceReset.ts": "8a7b6a9e194ddfb698e2f1cc62395484951506642fc37f72936a448699310208",
+      "src/core/RenderQuality.ts": "066ddc35fd7b41db4477d3398326e4befc5a56d0716b62a438cf590de1019ec9",
+      "src/core/RendererWarmup.ts": "0070677762329b5663ac71d176c114f9b23d96b9d4386e603567e6a3637ab845",
+      "src/core/RunwayGuidance.ts": "5b1f921972a7b2edf79fb28d71358e1382f13f3a2b02667c6f685f3f05cb2728",
+      "src/core/SceneExposure.ts": "348886c7f0ab79dd52f9f6bb3b35f173f3c86662ee7974e47b7fb5adf09addb0",
+      "src/core/ShaderSourceCache.ts": "f5ee02f9f545cd99a06367c8c8c052a5100eab5e97ba0574668ec611107fae1b",
+      "src/core/Time.ts": "63afb29b99f8993f5aa7ebab05e3d6c9d2eb4ad5a58faaef46e4a5116a31f55b",
+      "src/core/Version.ts": "a5a7826156bcee31da76ddcfc5f91b0421d641659c6efd90736c6b60cfcf705e",
+      "src/core/WorkerWatchdog.ts": "c261753c96ad158e15a4622f8a458b21c2f3a06477c2e49c24de5a2375400b0d",
+      "src/core/WorldSeed.ts": "ec292023569499a972d0b98da0c85d6acbc3f77b6a285dee75d49fe368cdc9fb",
+      "src/core/airspeed.ts": "cbcb6b5d43d8183f64281aefa456e71b14880963f1b89eab8624bc7c8828b01a",
+      "src/core/attitude.ts": "8e7fe9333ed105b7b794f8b9a29b06a34baf1b823a6a091a3f9778f7d26104fe",
+      "src/core/dispose.ts": "2dd57e6126a2861c5f7b589a49b40a069fe8d85c2d2238b93570f5439c2ccbff",
+      "src/core/startupFailure.ts": "26af5759a29f648fde5d20076b6970a03abab1c0e1daefa085b6253a06f5a33f",
+      "src/core/suppressBrowserUi.ts": "33c64ffbbd61ef0e2af3325b0b760613bc40927bd7d69b54dd15aa1f7b3a5af6",
+      "src/core/types.ts": "066bcac2932b352c0e95abe12a7a48be9267044ce1e9b8c00cd5b4d06f011a70",
+      "src/debug/DebugOverlay.ts": "7e12cd37f86ca0ce80b3472a0e84ff9fe59301d21abfd95aede76afc7cf3d263",
+      "src/debug/FlightReview.ts": "d02df3696685c31a0681c92a3d1ca2cc67d11841fe86d0ef5bd95e94389f044e",
+      "src/debug/RoadReview.ts": "d516b8e72c24dd2a3b871692f1f5be4f71f9628bdae80f52032cf4e4038d3e1d",
+      "src/debug/WeatherReviewRoutes.ts": "e395d78ae03fc2c8961d15a0674f31ad3b5363e424c27d839a208d0891f3df9a",
+      "src/debug/debugFlags.ts": "a4f8890657d1dd1dd4d7b9a7db1b88dfee38bb89ab296f1f0a5dfe52f5fb9b8f",
+      "src/main.ts": "75995fd00e8f2cf788eff36b8e557c508fb35f4bba86894014f45d75358d57fa",
+      "src/style.css": "1f98e5c9e417860790c5e17d61b7689be882efadf6adb43a9e027218c0cd4314",
+      "src/systems/AltitudeMilestones.ts": "41656810b94177a5e5526cfd27ac11b86478322a7227d4e8929dc13b8de3d1da",
+      "src/systems/CareerProgression.ts": "632ce8ef7583b361534ec389c5238f3747a338ce38a267e35ba020a3d0a9c90b",
+      "src/systems/ChallengeRun.ts": "119350e1e8550c987086f5a3af385fb8d296577ef94cfdb5d8e10365219f5a81",
+      "src/systems/Collision.ts": "a4a328a815b7654e8c773ac7c3205bed244a504bc943fcbe469bd17cc17ffb08",
+      "src/systems/CourseLibrary.ts": "ee2068f45f94925a70c7e5c77d3f88376776804877e492aff64428a7beda6871",
+      "src/systems/CrashCinematic.ts": "b9ad6fe70b9a8d88c51e4bed7d9a1b359ec8259d924f01bc76da9a3ef8537a5c",
+      "src/systems/CrashFx.ts": "9f30b62aa37201fb40e0390a7a86b568172f813fd9ea2c767521b2c1a3e0adcb",
+      "src/systems/FlightCombo.ts": "40b93d68bf4cbe832603c0996ced5a59da8491a39677179c929952ef05e06248",
+      "src/systems/FlightStyle.ts": "5bf6a7c0ea2a3915e812642c7923eff2599aeb364d6e763bdd6f8d280c72a88a",
+      "src/systems/GhostReplay.ts": "55e31d77823f3a2afd8c37ef727fb89d874b1cb2e2cc4b10156c2d9635f80c6b",
+      "src/systems/GroundWakeFx.ts": "df48d14be372134120403ca0c1407f2677201ef224a4dcc50fe2de9c0975b4ed",
+      "src/systems/LandingAssessment.ts": "395295bd8ff775f6e789a076f21e9aeae60656071064841a0b73f2d9ec46c1e9",
+      "src/systems/LandingFx.ts": "5751cf1fd097dbf110f8f2efd2e958794a0f9183614991be04957aa98e860134",
+      "src/systems/Mission.ts": "1f5c8dc2075d125cabbe7d9dbe845eea3e321cf5164e6fe195c320b406ec6d35",
+      "src/systems/RadarSystem.ts": "57d1ca831459d4e9db1b547d8dfc0f49dc532b6b017a82f9e604ac8cbeb35979",
+      "src/systems/SortieContract.ts": "af6b4aa9af60f80dd60d7e33cb14becce3ec2c2be3af039f46a638bf9f8b0329",
+      "src/systems/StormBuffet.ts": "d738c1ce8c608a6abb51a1e2cbbe22caf3a560497f4b3dbc26ddb59a1f4e5878",
+      "src/systems/StuntTracker.ts": "b27696d9e51f8870cf247b48a0584a23768c090a81f13cdfb6e6dd9692b5689b",
+      "src/systems/Supersonic.ts": "01b4b3604311e93a8803674236f9b995620905dd90b6c035a36679e649f34e9f",
+      "src/systems/ThermalLift.ts": "d4bdfbafef69451c32cbb763c8fffd6a0e07aadf0b6ddf4b7c848938b4c9c608",
+      "src/systems/WaterImpactFx.ts": "aa8c20141f600787c91757135e5e3d036d1217a92c919aa90f72b4103003dabf",
+      "src/systems/WaterWakeFx.ts": "6b7225a69c0e4c1e6606a963b617e3b7c8d5ebf11bda8be5039bd6e9541d5295",
+      "src/ui/CourseBriefing.ts": "cb80ca9832a735bf243ec1542a4386bb33de0dc39bf76d5e30d270b1684bc6fd",
+      "src/ui/CoursePicker.ts": "8aa36eafd1c6a7bf95bc153082ac26d6cb38bd5490d14312de3e7d936dce84c4",
+      "src/ui/GameMenu.ts": "efd3638bc53da21ce2cd82687a9a501a77f7c1ec4c98489bbc1e4fddd2f3a0ee",
+      "src/ui/HUD.ts": "d9a967006a901bfd0966f54d66fd37ca1a5e3c637864ead3f965d51b507138fd",
+      "src/ui/MissionPickerLayout.ts": "1439354794846a73a7ece9465a7fc157ad9d3d5fdd2b2e60fc7cb30b70fb6290",
+      "src/ui/ModalFocus.ts": "f3e705afbfb09caf7379e13be277099b3bd68b38264888b0c218bda96e5c9f6d",
+      "src/ui/NativeSelect.ts": "2dff095d5e77d933b87af35d4dd6f52117818ec5dc485c80ad07ff8f6cf661f9",
+      "src/ui/RunResults.ts": "85dce592e9e18a6885070b40c54ebe62de7cb45dbfeded01e4602fba55bf6efc",
+      "src/ui/StartupScreen.ts": "0201eea600ab1e217039b7e61629602f82955831a09ba555b8a7145286c26c8f",
+      "src/ui/liveHudBudget.ts": "8058da4add8a20bd181bfa04f9e9f56ce868c2bd8ea30b0e914d60511a82a76e",
+      "src/ui/pilotGuide.css": "54d0d3b6dcb082ae026c56d403ea74d9f9b7f597887278234b8bc189028e892f",
+      "src/ui/settingsDeck.css": "44deb80f08fd50800e1b9d3208f5eb18b4c0fe65bb6f56979a289c140d64ce32",
+      "src/world/AirTrafficSystem.ts": "31edf2b1485be032810e537b1ee692e57708ed3beb86a16c47a938b9afdd5fad",
+      "src/world/Airfield.ts": "05519dc3353b2d4dfc32301ec492d3070aaf36d9255a707b99e69d011826ca2c",
+      "src/world/Atmosphere.ts": "e7e60000519dd4e6450e304c5f549e9ec17e2b60e60e4312d9d3ff992fc9406d",
+      "src/world/BasinSurface.ts": "6c6006772986efcfe188e9383d169b14181d0be2097ca822bf045800360fdbad",
+      "src/world/CloudFormations.ts": "b4601d722345dd7a9302f5f5c5eba51380e360ace912c415e7f7208318fecece",
+      "src/world/CloudMaterial.ts": "fa578604e624e76924fb79e9579a71f4de08eee79dc1d53887c4022e914265f7",
+      "src/world/Coastline.ts": "58d966bbbe12c6a19f15d21797aa41d5bade66fc36d4d0bb42386fb4ed8e8be1",
+      "src/world/DrainageRouting.ts": "f179e3a6cb918a5e0b4254277de7dee6f0e2a20e6444dadd50e621b146dae1b8",
+      "src/world/Geography.ts": "957841b86577057cd975ee3a6342cff6204e7eb74686e0fa36bd1877d0b31b0e",
+      "src/world/Hydrology.ts": "2e178089f082194557677fa1c969caf73cf010c79734cfa22392678688886e40",
+      "src/world/LakeShore.ts": "7c25d603cf20cd99fe9dc6a73db46e3b97a6c17ad1a2fb3d186f2ad46fc9b124",
+      "src/world/Landforms.ts": "36a3d72a462e734ed934092f2e2ab0dd3daa63948a678b0fc48c44cfff4a78ea",
+      "src/world/RainField.ts": "f80ec6105af22714e116de468b4348d80068c84de189396efc9fe704e217dab9",
+      "src/world/RainShafts.ts": "156b09dfc7c836e35fb81721eda907b1ac86700545736c8ba6ff50a768163fa9",
+      "src/world/RegionalDrainage.ts": "3f2672cae61cc3dd31e2deb9d7d313ca0375f5a153ac99437e262c6fbb6bb781",
+      "src/world/RegionalRoads.ts": "d9f53d3eac40eaac6039e398a74392f4790a34272ed2a1c2ebf57e33560b66cb",
+      "src/world/RegionalWeather.ts": "4c0b7922f64acba8aba9f65a3af2cb4d2f48f40532150bcd718e4b06fb1adb8a",
+      "src/world/RiverSurface.ts": "63271c986252e1cf0cf1b8057e030ad8ac57d54597a809404d58e6ae150dc365",
+      "src/world/RiverUnion.ts": "857b458b2a66f56b8e59cbb70d619dd89ade91cc46d8f3f075a63631e31c42bb",
+      "src/world/RoadClearance.ts": "59be9141893743b373de3288651b9ce37bea0ce57bc72e3fc972a881a805820c",
+      "src/world/RoadProfileCache.ts": "5fcd6cb58759f13eaa0c156bb46bc92df3e7fde8963f4119a50d64fa26bc92ba",
+      "src/world/RoadRouting.ts": "d9b0a95cb5b5bb956a6dd339082d31b6cb56a894b5cb553d24259e9be1bd3a09",
+      "src/world/RoadSurface.ts": "7b6d938411c8bcf9cdd956f4daf1f5a29bc0bb3c668de76b2b0e9135d9f996ef",
+      "src/world/RoadTerrainFit.ts": "621833233605a85f947c94a7282353333290af8e07941d1465d49a8a1958e765",
+      "src/world/Runway.ts": "ffeae0de50d68ea94aa7bd093ec7f9db93ac37962f8e05b6507621c7b0f75ef2",
+      "src/world/SettlementGround.ts": "57f68fbc7e972f363329deec757faa32815c329a64a9ab22dd74cd01d3cb2f76",
+      "src/world/SettlementLayout.ts": "c0398033832bfd2cce976422898a85a2c78d60a5bd4973e940b391cdb357a82b",
+      "src/world/SettlementPlan.ts": "2b487a8c745a5c45ef0ae4d4a1cbb4eaf132c5d603d923e8ddd1bc46a70ccc5e",
+      "src/world/SettlementSystem.ts": "cea04bf7b3c6ecacf1e4fe9e9446aa62b928ac3d21257aab7b626c0f078049ef",
+      "src/world/SkyDome.ts": "9f2e7cd5a0d6527a5a54231a16505f1577ecc991c9b6281b52b1b9b260effcc8",
+      "src/world/SnowField.ts": "2e8a6562387d3c00776a0db2283f7b6776362ae5950357f7a556e70622908bcc",
+      "src/world/StormEvents.ts": "f78b35dbfa1dfb5be4cc103a07c19dcea346dacd679e39eac71f28c436674f16",
+      "src/world/SurfaceDraper.ts": "22e3fcc3ddf8134b1db310340f764884a5aa572dc5448d7da1bcead1930e09ab",
+      "src/world/SurfaceNormals.ts": "7bd5400dbed878562612e019c2916d6998ce8e4468b625cb5088adef17464bb7",
+      "src/world/TerrainGeometry.ts": "ae2ba25a313c1a4fa643626979bac3f68bc8dfa79e5b95dff9590f0cf8d44d7e",
+      "src/world/TerrainLayout.ts": "9921804558fb05f6def8f7d48d12571e08996b7f6828a4992810c6d3596c9738",
+      "src/world/TerrainSeams.ts": "87281d9c8b97a176164ce9f05d4dccc8938aff458bbcf7b3d485b5bd2c1c1845",
+      "src/world/TerrainSystem.ts": "e9f61d28dcaf92cf4497e256a270faae2b76e6376519657d99b6e74151c4d7ba",
+      "src/world/TerrainWaterBed.ts": "c9aefb6a4ca1c3476177925c94d58c8cd383b0298bff1a85c9cb5a94d0739b95",
+      "src/world/TerrainWorkerPool.ts": "43a58cb2df502310abd0ae85fa36a6cddcdd08ad4e93d5b6a067295e434e6cce",
+      "src/world/WaterAppearance.ts": "bbe78d0d916806011c5fa722ffff0335579999dd92d4c82f7f7cb7d1c8a6e37f",
+      "src/world/WaterNormals.ts": "db10c3260dcc8a63c61a516f77b6e8393313e207abd10c1dcf48b76fd99a9c19",
+      "src/world/WaterSystem.ts": "4ce1a615373539fc6679acda8f9bfd78f223996f6044cb53b1b7d88c7cf2bffb",
+      "src/world/WeatherDirector.ts": "406b1b474c1f5c23130c8e347327c4bd9a949a60af480f0f00707c8105e8a008",
+      "src/world/WeatherTransport.ts": "c32ee8794c6fa0ff3c7f059754179fe407bd6b1c5c02a8ad9570ed0af6beb0ab",
+      "src/world/World.ts": "8479f8c16897471aaa2867c25939e9be2e7d7155700d7d9904c7bcdce1020e11",
+      "src/world/ground.ts": "4f836f6794dfc30f0147f64b514da4add3711aac2b1419eab7e16b95a5654b29",
+      "src/world/noise.ts": "a4594edc9385dced3b1059a6b5585e980ec42772d94aa42fbc9d9ef092f967ed",
+      "src/world/settlement.worker.ts": "4e4e1e32343571faa62ae8f4296aa653665d0266fc2adc54c1c5ebc5635d7b8a",
+      "src/world/terrain.worker.ts": "bf7251c92ecb72e63219c17ce7ea06b953b4003a3477193cb51bd47e610abc38",
+      "src/world/terrainSample.ts": "fd078d457ed4cfbb983b24a22a89acd4076e4454c300e9801e51f91fd5a04aca"
+    },
+    "hookSha256": "26a3774860a81a22434b7cf1a8812d89806d15e2bfbde41867bc04ef8788ed88",
+    "method": "Production Vite build with external controls-only pilot and read-only observer injected before bundling. Normal dist is untouched. No physics, pose, velocity, gates, clock or results overrides."
+  },
+  "errors": [],
+  "knownFallback": [
+    {
+      "text": "Failed to load resource: the server responded with a status of 404 (File not found)",
+      "url": "http://127.0.0.1:5175/models/f35.glb"
+    }
+  ],
+  "pictures": [
+    "launch.jpg",
+    "gates.jpg",
+    "approach-cockpit.jpg",
+    "complete.jpg"
+  ],
+  "samples": [
+    {
+      "seconds": 1.016666666666668,
+      "stage": "takeoff",
+      "next": 0,
+      "phase": "running",
+      "position": [
+        -12567.003681593083,
+        323.4255926354071,
+        -613.455172970802
+      ],
+      "velocity": [
+        -44.344015413752025,
+        3.8907461785767,
+        18.469405489838906
+      ],
+      "speed": 48.19386421515998,
+      "agl": 1.535632918610304,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.0964180403560674,
+      "controls": {
+        "pitch": 0.34549744193000687,
+        "roll": 0.003612864876879114,
+        "yaw": 0.00002320995043610606,
+        "throttle": 1,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.027263600479970878,
+        "roll": -0.0009543162505631514,
+        "heading": -1.1781084616343163
+      }
+    },
+    {
+      "seconds": 2.0166666666666644,
+      "stage": "takeoff",
+      "next": 0,
+      "phase": "running",
+      "position": [
+        -12632.038294281596,
+        329.5215173497796,
+        -586.4117830918108
+      ],
+      "velocity": [
+        -84.25869547315835,
+        11.018503153264385,
+        34.979610102431465
+      ],
+      "speed": 91.89400577564925,
+      "agl": 7.6315576329827195,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.452840431282151,
+      "controls": {
+        "pitch": 0.07553664387117873,
+        "roll": 0.0015794153588910348,
+        "yaw": 0.00020770847399842859,
+        "throttle": 1,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.1249453386025562,
+        "roll": -0.0010311513937907547,
+        "heading": -1.1781915875679452
+      }
+    },
+    {
+      "seconds": 3.0333333333333274,
+      "stage": "gates",
+      "next": 0,
+      "phase": "running",
+      "position": [
+        -12737.124353533824,
+        346.06785515861856,
+        -542.8197664393122
+      ],
+      "velocity": [
+        -119.7721619057829,
+        20.48249720641668,
+        49.65618298397458
+      ],
+      "speed": 131.26553229212118,
+      "agl": 24.923179799006732,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.1456140753643351,
+      "controls": {
+        "pitch": 0.07919520731730725,
+        "roll": -0.0008231394578980677,
+        "yaw": -0.000009723458956052987,
+        "throttle": 0.7231149210246598,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.15794427414329287,
+        "roll": 0.00019298835827451385,
+        "heading": -1.1783713763749235
+      }
+    },
+    {
+      "seconds": 4.033333333333324,
+      "stage": "gates",
+      "next": 0,
+      "phase": "running",
+      "position": [
+        -12864.539134529869,
+        368.4166703758162,
+        -490.01436987793693
+      ],
+      "velocity": [
+        -131.9426825505356,
+        23.705394717933537,
+        54.66595193457752
+      ],
+      "speed": 144.7728687229689,
+      "agl": 55.99910428784898,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.1099700658606082,
+      "controls": {
+        "pitch": 0.07685150176036921,
+        "roll": -0.0026140033266959014,
+        "yaw": 0.000002910073953087182,
+        "throttle": 0.3408768923821077,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.16588360219193696,
+        "roll": 0.0011698022933315406,
+        "heading": -1.1785382154964785
+      }
+    },
+    {
+      "seconds": 5.049999999999987,
+      "stage": "gates",
+      "next": 0,
+      "phase": "running",
+      "position": [
+        -13000.38174491951,
+        393.6212489002696,
+        -433.74864170854164
+      ],
+      "velocity": [
+        -134.52829357554882,
+        25.843384322365125,
+        55.7052953429137
+      ],
+      "speed": 147.88110837704647,
+      "agl": 98.03507550628024,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.1792509895446626,
+      "controls": {
+        "pitch": 0.07882448668827437,
+        "roll": -0.002859084398261484,
+        "yaw": -0.00010176492343007965,
+        "throttle": 0.2533348460876417,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.17769710697243554,
+        "roll": 0.0014496701693143264,
+        "heading": -1.1787367456634399
+      }
+    },
+    {
+      "seconds": 6.083333333333317,
+      "stage": "gates",
+      "next": 0,
+      "phase": "running",
+      "position": [
+        -13139.542438140625,
+        421.7674766135627,
+        -376.14853670978954
+      ],
+      "velocity": [
+        -134.55469728303237,
+        28.95400741633417,
+        55.66566201085013
+      ],
+      "speed": 148.46537318007796,
+      "agl": 147.03286133784053,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.391745496038536,
+      "controls": {
+        "pitch": 0.08398549042245451,
+        "roll": -0.001331350231789488,
+        "yaw": -0.0005973127701584746,
+        "throttle": 0.23674565384620283,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.20092845286892982,
+        "roll": 0.0008218434271049568,
+        "heading": -1.1790879072216158
+      }
+    },
+    {
+      "seconds": 7.0833333333333135,
+      "stage": "gates",
+      "next": 1,
+      "phase": "running",
+      "position": [
+        -13273.848123480302,
+        448.45249340263865,
+        -319.9560541715113
+      ],
+      "velocity": [
+        -128.74040669121135,
+        18.502216584977425,
+        62.11269445406194
+      ],
+      "speed": 144.13331032734789,
+      "agl": 194.17062748042053,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": -1.1071866838094206,
+      "controls": {
+        "pitch": -0.06588011998134241,
+        "roll": -0.012934180347073557,
+        "yaw": 1,
+        "throttle": 0.3338769869329175,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.10822441865035035,
+        "roll": 0.013620427736634773,
+        "heading": -1.0376995665727173
+      }
+    },
+    {
+      "seconds": 8.299999999999992,
+      "stage": "gates",
+      "next": 1,
+      "phase": "running",
+      "position": [
+        -13342.114373866809,
+        458.3028685714559,
+        -234.68979937046296
+      ],
+      "velocity": [
+        -4.314527595240588,
+        3.3869604859823066,
+        61.0043725873324
+      ],
+      "speed": 61.25047040209382,
+      "agl": 213.30515086794304,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9038937775148945,
+      "controls": {
+        "pitch": 0.020325294230245157,
+        "roll": -0.015603602855152464,
+        "yaw": 0.9328642020392943,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.053826238467488845,
+        "roll": 0.01703130502708782,
+        "heading": 0.0427096980866141
+      }
+    },
+    {
+      "seconds": 9.316666666666709,
+      "stage": "gates",
+      "next": 1,
+      "phase": "running",
+      "position": [
+        -13327.427887868911,
+        461.982351870976,
+        -168.45597393233194
+      ],
+      "velocity": [
+        31.235675315201206,
+        4.561395295584831,
+        73.62207957157156
+      ],
+      "speed": 80.1042092519617,
+      "agl": 215.00187818927458,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0776809276598276,
+      "controls": {
+        "pitch": 0.00634359976565452,
+        "roll": -0.0033509584372920925,
+        "yaw": 0.23377351725543943,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.058209725839978146,
+        "roll": 0.005578789337456326,
+        "heading": 0.43781687410130027
+      }
+    },
+    {
+      "seconds": 10.333333333333426,
+      "stage": "gates",
+      "next": 1,
+      "phase": "running",
+      "position": [
+        -13278.887319791,
+        468.19437388818704,
+        -78.90641733941511
+      ],
+      "velocity": [
+        62.71295542428339,
+        7.604848333267482,
+        103.2033453337694
+      ],
+      "speed": 121.00280568772536,
+      "agl": 215.014028454911,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0305916607056054,
+      "controls": {
+        "pitch": -0.004908454148236893,
+        "roll": -0.0011060288907723862,
+        "yaw": 0.06147190298980566,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.06318781425191607,
+        "roll": 0.001481511053455572,
+        "heading": 0.5549690560176394
+      }
+    },
+    {
+      "seconds": 11.350000000000144,
+      "stage": "gates",
+      "next": 1,
+      "phase": "running",
+      "position": [
+        -13205.12742922049,
+        476.8647996561725,
+        36.39342299470267
+      ],
+      "velocity": [
+        78.90293633679502,
+        9.005663912153873,
+        119.1816960772391
+      ],
+      "speed": 143.21680077740317,
+      "agl": 213.5122248533723,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9766852610397752,
+      "controls": {
+        "pitch": -0.005899674942552881,
+        "roll": -0.002339028857373103,
+        "yaw": 0.0288729956205802,
+        "throttle": 0.3853917489166503,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.06265231878847907,
+        "roll": 0.0013532319661230079,
+        "heading": 0.5886477739709953
+      }
+    },
+    {
+      "seconds": 12.350000000000193,
+      "stage": "gates",
+      "next": 1,
+      "phase": "running",
+      "position": [
+        -13125.541892368592,
+        485.2718947186543,
+        158.5699880441466
+      ],
+      "velocity": [
+        72.38056666085323,
+        6.1511569978221745,
+        127.01788884358567
+      ],
+      "speed": 146.32268193564371,
+      "agl": 208.55054593000068,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.2677945703269188,
+      "controls": {
+        "pitch": -0.056269361730815044,
+        "roll": -0.0006039727650217551,
+        "yaw": -0.32541954549478835,
+        "throttle": 0.29254153770339386,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.033378972414299775,
+        "roll": -0.0014114260660522458,
+        "heading": 0.4789203760820272
+      }
+    },
+    {
+      "seconds": 13.350000000000243,
+      "stage": "gates",
+      "next": 2,
+      "phase": "running",
+      "position": [
+        -13044.244834957733,
+        492.5819250634691,
+        247.8084685608837
+      ],
+      "velocity": [
+        86.97069233431566,
+        8.170979300676272,
+        38.847526043531616
+      ],
+      "speed": 95.60228296199385,
+      "agl": 202.1486472927586,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.4633867756615024,
+      "controls": {
+        "pitch": 0.0324464594437003,
+        "roll": -0.019105985079793195,
+        "yaw": 0.45547050140824197,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.08909765361040142,
+        "roll": 0.020182497457900905,
+        "heading": 1.2402449480927045
+      }
+    },
+    {
+      "seconds": 14.36666666666696,
+      "stage": "gates",
+      "next": 2,
+      "phase": "running",
+      "position": [
+        -12941.018922782725,
+        502.7124774783828,
+        270.017600531712
+      ],
+      "velocity": [
+        119.83050222228304,
+        12.23829820392442,
+        12.292705098445602
+      ],
+      "speed": 121.07946070415953,
+      "agl": 197.19382538407342,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.1172273724541573,
+      "controls": {
+        "pitch": 0.008063518956566257,
+        "roll": -0.006354728051088245,
+        "yaw": 0.09769194953383249,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.10253966845941248,
+        "roll": 0.007133837711058424,
+        "heading": 1.488142012237831
+      }
+    },
+    {
+      "seconds": 15.36666666666701,
+      "stage": "gates",
+      "next": 2,
+      "phase": "running",
+      "position": [
+        -12807.702001829022,
+        516.7276543733568,
+        277.9482146736219
+      ],
+      "velocity": [
+        141.5687956689949,
+        15.196313707206048,
+        4.745012243133989
+      ],
+      "speed": 142.46110696834046,
+      "agl": 196.4702683620286,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.055922491506596,
+      "controls": {
+        "pitch": -0.0013192775160298634,
+        "roll": -0.0005466167340304217,
+        "yaw": 0.04407642286067272,
+        "throttle": 0.4063002143294142,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.10750176140908613,
+        "roll": 0.0016180334987761882,
+        "heading": 1.543675477004497
+      }
+    },
+    {
+      "seconds": 16.416666666667016,
+      "stage": "gates",
+      "next": 2,
+      "phase": "running",
+      "position": [
+        -12655.504035613394,
+        532.902268916902,
+        281.04006636119453
+      ],
+      "velocity": [
+        146.8111052036117,
+        13.552664606667856,
+        4.770563659909664
+      ],
+      "speed": 147.51248627380673,
+      "agl": 206.7172919893427,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.14792727085485194,
+      "controls": {
+        "pitch": -0.10954798951669015,
+        "roll": 0.005537859614580562,
+        "yaw": -0.19141870166225972,
+        "throttle": 0.26267762875862066,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.08017661498798291,
+        "roll": -0.003878315823945073,
+        "heading": 1.520367089663693
+      }
+    },
+    {
+      "seconds": 17.433333333333625,
+      "stage": "gates",
+      "next": 3,
+      "phase": "running",
+      "position": [
+        -12525.506679031201,
+        541.3153598957433,
+        268.2112939431371
+      ],
+      "velocity": [
+        82.11893527396144,
+        4.840674852736955,
+        -46.06919419742389
+      ],
+      "speed": 94.2832027328248,
+      "agl": 218.3245062520508,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.936524090816391,
+      "controls": {
+        "pitch": 0.00650239396363473,
+        "roll": -0.010083054807194566,
+        "yaw": 0.6800305357956877,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.04975113463562334,
+        "roll": 0.013294779667751852,
+        "heading": 2.207122417635084
+      }
+    },
+    {
+      "seconds": 18.450000000000234,
+      "stage": "gates",
+      "next": 3,
+      "phase": "running",
+      "position": [
+        -12461.896695690677,
+        545.920220514978,
+        202.5893078077352
+      ],
+      "velocity": [
+        59.738698132725496,
+        5.172846251412793,
+        -84.33946152327199
+      ],
+      "speed": 103.48243891100138,
+      "agl": 224.90726424550184,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0133186375468188,
+      "controls": {
+        "pitch": 0.007481864765697012,
+        "roll": -0.0030525805026334948,
+        "yaw": 0.11697839798222473,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.05009741252616297,
+        "roll": 0.0038991721184659677,
+        "heading": 2.549978923497359
+      }
+    },
+    {
+      "seconds": 19.466666666666843,
+      "stage": "gates",
+      "next": 3,
+      "phase": "running",
+      "position": [
+        -12395.295696876854,
+        552.1976255312825,
+        97.420965283472
+      ],
+      "velocity": [
+        70.26892972478598,
+        6.9539249034666994,
+        -117.45277862052596
+      ],
+      "speed": 137.044645141327,
+      "agl": 234.11970071779427,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0133031976863434,
+      "controls": {
+        "pitch": 0.006319993469269155,
+        "roll": -0.0027767200399144917,
+        "yaw": 0.03039727931514454,
+        "throttle": 0.5594847945473134,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.05093063480755219,
+        "roll": 0.0017008044881061746,
+        "heading": 2.60752290852053
+      }
+    },
+    {
+      "seconds": 20.466666666666786,
+      "stage": "gates",
+      "next": 3,
+      "phase": "running",
+      "position": [
+        -12323.311628147243,
+        559.5849804354924,
+        -25.89199531993764
+      ],
+      "velocity": [
+        72.92127706516733,
+        7.734085217186777,
+        -126.87740468039141
+      ],
+      "speed": 146.544206782095,
+      "agl": 245.84774327775784,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.036069869293938,
+      "controls": {
+        "pitch": 0.0004990935744276117,
+        "roll": -0.003542373017389549,
+        "yaw": 0.009018085079305627,
+        "throttle": 0.2914044235999621,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.05318260060029475,
+        "roll": 0.0018255464359247088,
+        "heading": 2.621703136658087
+      }
+    },
+    {
+      "seconds": 21.50000000000006,
+      "stage": "gates",
+      "next": 3,
+      "phase": "running",
+      "position": [
+        -12247.6584220138,
+        567.5189661028867,
+        -158.52936118749486
+      ],
+      "velocity": [
+        73.36048076736928,
+        7.377548441304133,
+        -129.27170666519888
+      ],
+      "speed": 148.8198995549875,
+      "agl": 259.53491458184686,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9396358512179321,
+      "controls": {
+        "pitch": 0.016283737149291797,
+        "roll": -0.002514454996476141,
+        "yaw": 0.003081459066606747,
+        "throttle": 0.22743694803219605,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.049160323774229596,
+        "roll": 0.0014009924501156377,
+        "heading": 2.626242564684978
+      }
+    },
+    {
+      "seconds": 22.51666666666667,
+      "stage": "gates",
+      "next": 3,
+      "phase": "running",
+      "position": [
+        -12173.06587427398,
+        574.9935305472776,
+        -290.3290738115152
+      ],
+      "velocity": [
+        73.3477801047781,
+        7.424402842778424,
+        -129.866525284026
+      ],
+      "speed": 149.33296017027624,
+      "agl": 275.0188837584267,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0215913247330475,
+      "controls": {
+        "pitch": 0.02483694025075042,
+        "roll": -0.0004939240212205747,
+        "yaw": 0.0015819836416985612,
+        "throttle": 0.2130198565992077,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.0500033302435241,
+        "roll": 0.00046565575494772157,
+        "heading": 2.6280592524282893
+      }
+    },
+    {
+      "seconds": 23.533333333333278,
+      "stage": "gates",
+      "next": 3,
+      "phase": "running",
+      "position": [
+        -12098.37045190613,
+        582.7273720698466,
+        -422.34964713404383
+      ],
+      "velocity": [
+        74.706683805765,
+        7.408617133273595,
+        -129.13375376148662
+      ],
+      "speed": 149.3703537306324,
+      "agl": 286.9493146558291,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.8393451956816962,
+      "controls": {
+        "pitch": -0.032347163876243236,
+        "roll": 0.002724732688230717,
+        "yaw": -0.11251777512370315,
+        "throttle": 0.21162783941092367,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.046861257527952054,
+        "roll": -0.0015309009198526409,
+        "heading": 2.6072963853788496
+      }
+    },
+    {
+      "seconds": 24.58333333333322,
+      "stage": "gates",
+      "next": 4,
+      "phase": "running",
+      "position": [
+        -12022.877627685817,
+        586.4028111414389,
+        -558.3217411431335
+      ],
+      "velocity": [
+        61.87973209789018,
+        -0.654317714405825,
+        -133.51158246025187
+      ],
+      "speed": 147.15594458675014,
+      "agl": 289.5320160136583,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.3565705926637597,
+      "controls": {
+        "pitch": -0.010788287044931686,
+        "roll": 0.003356653465262727,
+        "yaw": 0.09531729853961662,
+        "throttle": 0.2729673278615411,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.00954872018745903,
+        "roll": -0.001574263183715892,
+        "heading": 2.727832029254141
+      }
+    },
+    {
+      "seconds": 25.599999999999827,
+      "stage": "gates",
+      "next": 4,
+      "phase": "running",
+      "position": [
+        -11965.2290939609,
+        584.45152209695,
+        -697.3468822055203
+      ],
+      "velocity": [
+        53.67246925594138,
+        -2.4689063592122493,
+        -138.88858305692264
+      ],
+      "speed": 148.91899797608173,
+      "agl": 280.04392717597995,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9431512623183608,
+      "controls": {
+        "pitch": -0.00021558959595915906,
+        "roll": 0.002872286667886675,
+        "yaw": 0.03133265540026304,
+        "throttle": 0.22484281865432362,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.016940095335254274,
+        "roll": -0.0016578606535914671,
+        "heading": 2.7779521336088626
+      }
+    },
+    {
+      "seconds": 26.59999999999977,
+      "stage": "gates",
+      "next": 4,
+      "phase": "running",
+      "position": [
+        -11912.990368298817,
+        581.9473451703552,
+        -837.2435828440293
+      ],
+      "velocity": [
+        51.2230525962067,
+        -2.4490257873775807,
+        -140.56990184862812
+      ],
+      "speed": 149.63186876569424,
+      "agl": 260.70497393791294,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.018740821235465,
+      "controls": {
+        "pitch": -0.0041884098593022515,
+        "roll": 0.0005364291557281671,
+        "yaw": 0.01263329631530619,
+        "throttle": 0.20488595286818537,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.016158095867524033,
+        "roll": -0.0005456886510010314,
+        "heading": 2.7942909018896516
+      }
+    },
+    {
+      "seconds": 27.61666666666638,
+      "stage": "gates",
+      "next": 4,
+      "phase": "running",
+      "position": [
+        -11861.572944586824,
+        579.6397109223117,
+        -980.5207792712861
+      ],
+      "velocity": [
+        50.04078171556542,
+        -2.143931504669908,
+        -141.192568970715
+      ],
+      "speed": 149.8132764795954,
+      "agl": 232.6927563344346,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0063677243823703,
+      "controls": {
+        "pitch": -0.009671456599174576,
+        "roll": -0.0018929504149214494,
+        "yaw": -0.007919739304062907,
+        "throttle": 0.1997926418600297,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.014586030946605676,
+        "roll": 0.0007395708171267528,
+        "heading": 2.80208460324743
+      }
+    },
+    {
+      "seconds": 28.649999999999654,
+      "stage": "return-climb",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11809.053851107925,
+        585.348706404847,
+        -1125.5789810768517
+      ],
+      "velocity": [
+        47.09036489226891,
+        38.598056075473245,
+        -127.41796575903263
+      ],
+      "speed": 141.21844920782277,
+      "agl": 197.54525869393643,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 11.276938776886723,
+      "controls": {
+        "pitch": 1,
+        "roll": -0.0030987428875630047,
+        "yaw": 0.000023253819289221835,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.4184272417205585,
+        "roll": 0.00156559145736628,
+        "heading": 2.7878157815820073
+      }
+    },
+    {
+      "seconds": 29.666666666666263,
+      "stage": "return-climb",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11775.273400447071,
+        658.7378004110913,
+        -1217.0281733943891
+      ],
+      "velocity": [
+        28.773499893805134,
+        93.71202322756294,
+        -77.94436920948188
+      ],
+      "speed": 125.24049778328943,
+      "agl": 230.91465325630475,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 3.110939513572131,
+      "controls": {
+        "pitch": 0.08191674275940419,
+        "roll": -0.0022725106640305794,
+        "yaw": 0.00004187006164502332,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.8637513668955312,
+        "roll": 0.0012879668216765005,
+        "heading": 2.7886037508722508
+      }
+    },
+    {
+      "seconds": 30.68333333333287,
+      "stage": "return-climb",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11742.80928616556,
+        769.3818705060703,
+        -1304.977777348251
+      ],
+      "velocity": [
+        35.42585782045675,
+        121.78855004347756,
+        -95.96908261506474
+      ],
+      "speed": 159.0519007807985,
+      "agl": 293.47137376760014,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.6660692347837138,
+      "controls": {
+        "pitch": 0.07530087101055088,
+        "roll": -0.00007037059343091134,
+        "yaw": 0.000055817899221464737,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.870674854835348,
+        "roll": 0.00021290809346974016,
+        "heading": 2.7884160235959436
+      }
+    },
+    {
+      "seconds": 31.683333333332815,
+      "stage": "return-climb",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11704.0683975204,
+        902.467963418286,
+        -1409.9082458198438
+      ],
+      "velocity": [
+        41.328134918137906,
+        141.92356414850178,
+        -111.91383617594506
+      ],
+      "speed": 185.40501482980977,
+      "agl": 363.10963106807446,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.6573661453480664,
+      "controls": {
+        "pitch": 0.07743580812788041,
+        "roll": 0.002091305015165424,
+        "yaw": 0.00005757915033705051,
+        "throttle": 0.7420571687429638,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.8705079160756486,
+        "roll": -0.0009042342292254345,
+        "heading": 2.788189340655487
+      }
+    },
+    {
+      "seconds": 32.68333333333276,
+      "stage": "return",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11661.042804198845,
+        1045.943412929174,
+        -1523.6708322881802
+      ],
+      "velocity": [
+        53.12409046863253,
+        127.5559377858319,
+        -109.87659165385848
+      ],
+      "speed": 176.5376776951913,
+      "agl": 442.24370161995216,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": -2.753112687874985,
+      "controls": {
+        "pitch": -1,
+        "roll": 0.12140727682914192,
+        "yaw": -1,
+        "throttle": 0.34626254313934124,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": 0.7090529078436186,
+        "roll": -0.12153003258295467,
+        "heading": 2.5804455203626793
+      }
+    },
+    {
+      "seconds": 33.716666666666036,
+      "stage": "return",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11553.037839715083,
+        1094.422430791002,
+        -1606.5806985344216
+      ],
+      "velocity": [
+        118.812143936701,
+        -12.41727907363888,
+        -28.719749883312776
+      ],
+      "speed": 122.86308802804865,
+      "agl": 452.6152922748363,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": -3.9996796243585933,
+      "controls": {
+        "pitch": -0.16896309678807536,
+        "roll": 0.006002311934573842,
+        "yaw": -0.48925378904856365,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.1582414272939053,
+        "roll": -0.008973762678751284,
+        "heading": 1.7111640760747189
+      }
+    },
+    {
+      "seconds": 34.733333333332645,
+      "stage": "return",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11426.922065603047,
+        1068.9605526605537,
+        -1608.9740812372515
+      ],
+      "velocity": [
+        138.5662995258296,
+        -33.55494454192397,
+        13.116357577997041
+      ],
+      "speed": 143.17329535778453,
+      "agl": 426.01261939948597,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.39088795130959525,
+      "controls": {
+        "pitch": -0.012891543000828183,
+        "roll": -0.009903640233189666,
+        "yaw": -0.07876817578978657,
+        "throttle": 1,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.24112927572705756,
+        "roll": 0.011431846213012672,
+        "heading": 1.4591578006978727
+      }
+    },
+    {
+      "seconds": 35.749999999999254,
+      "stage": "return",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11269.729924715748,
+        1029.3369623507672,
+        -1588.5064858195283
+      ],
+      "velocity": [
+        165.24240313639456,
+        -42.45687263148066,
+        24.584003558095922
+      ],
+      "speed": 172.37172348990705,
+      "agl": 401.70803116914794,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.8770519411070046,
+      "controls": {
+        "pitch": 0.00322300101077246,
+        "roll": -0.0054883141472687295,
+        "yaw": -0.020509914563412043,
+        "throttle": 0.49213045016595314,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.24955394535320377,
+        "roll": 0.004251299683153855,
+        "heading": 1.420052258628497
+      }
+    },
+    {
+      "seconds": 36.76666666666586,
+      "stage": "return",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11097.51008331117,
+        984.8546351043135,
+        -1561.560285692705
+      ],
+      "velocity": [
+        171.8994674555621,
+        -44.357083921317866,
+        27.70633797883554
+      ],
+      "speed": 179.6792112897487,
+      "agl": 374.7161121487925,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0435065513907043,
+      "controls": {
+        "pitch": -0.019798710577571026,
+        "roll": -0.003844195125101872,
+        "yaw": -0.0056185562055751275,
+        "throttle": 0.29030169722606364,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.24727886744920852,
+        "roll": 0.0024577091965341824,
+        "heading": 1.4103942397966198
+      }
+    },
+    {
+      "seconds": 37.78333333333247,
+      "stage": "return",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10921.202042374405,
+        942.436588026417,
+        -1532.7854809224884
+      ],
+      "velocity": [
+        174.2174859992071,
+        -40.67593600980102,
+        28.662161535445886
+      ],
+      "speed": 181.1843914415404,
+      "agl": 337.8389721820661,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9640180537982421,
+      "controls": {
+        "pitch": -0.08117560593689,
+        "roll": -0.0022215349528259013,
+        "yaw": -0.0018637890631928696,
+        "throttle": 0.2487768823414588,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.2274010341567683,
+        "roll": 0.001352144858375087,
+        "heading": 1.4077562443593605
+      }
+    },
+    {
+      "seconds": 38.79999999999908,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10760.5208902831,
+        901.9651976937308,
+        -1503.9252221730028
+      ],
+      "velocity": [
+        78.4505589017006,
+        -31.2004060073676,
+        27.058468965575095
+      ],
+      "speed": 88.65729676554979,
+      "agl": 292.2955321532211,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": -3.5587228120940977,
+      "controls": {
+        "pitch": -0.42592557397139774,
+        "roll": -0.07536763647690703,
+        "yaw": -1,
+        "throttle": 0,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": true,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.4399748727862731,
+        "roll": 0.07915923261681784,
+        "heading": 1.0956574232478724
+      }
+    },
+    {
+      "seconds": 39.833333333332355,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10723.373921337648,
+        874.8395239648071,
+        -1472.6188114151475
+      ],
+      "velocity": [
+        20.651872295949747,
+        -28.026391473258965,
+        37.9824584953625
+      ],
+      "speed": 51.52325301931658,
+      "agl": 265.8231909135584,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.22829593155595912,
+      "controls": {
+        "pitch": -0.1902247385362813,
+        "roll": -0.18413409834202923,
+        "yaw": -1,
+        "throttle": 0.4833210661824199,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.5707751930809619,
+        "roll": 0.1611245948629107,
+        "heading": 0.3207880052945538
+      }
+    },
+    {
+      "seconds": 40.849999999998964,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10717.074896033098,
+        845.5133967022127,
+        -1430.4325605830427
+      ],
+      "velocity": [
+        -7.941225495430902,
+        -29.482446873872917,
+        42.085116466690785
+      ],
+      "speed": 51.994564754933265,
+      "agl": 240.02383148944602,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.5539128514552432,
+      "controls": {
+        "pitch": -0.14649843663237339,
+        "roll": -0.18329127185463015,
+        "yaw": -0.7656937542755333,
+        "throttle": 0.47336708374637093,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.5882315608450271,
+        "roll": 0.16223351098595795,
+        "heading": -0.3493783756314783
+      }
+    },
+    {
+      "seconds": 41.86666666666557,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10737.546211392613,
+        813.5768528306465,
+        -1390.3230162201376
+      ],
+      "velocity": [
+        -30.391310730616944,
+        -33.71677265882614,
+        36.00261438335002
+      ],
+      "speed": 57.936523617559935,
+      "agl": 213.53918648956085,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.5870233005376942,
+      "controls": {
+        "pitch": -0.06887752717810221,
+        "roll": -0.11341703404677561,
+        "yaw": -0.4212329228582054,
+        "throttle": 0.33821052206025126,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.6199429443850203,
+        "roll": 0.10541679890138182,
+        "heading": -0.7862622330167511
+      }
+    },
+    {
+      "seconds": 42.88333333333218,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10776.277864236376,
+        776.6637677281037,
+        -1358.0530852815473
+      ],
+      "velocity": [
+        -44.08944648295479,
+        -38.52888485388585,
+        27.71023640057968
+      ],
+      "speed": 64.7781711738865,
+      "agl": 183.12154393913738,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.6780047382806833,
+      "controls": {
+        "pitch": -0.02700782544102017,
+        "roll": -0.0629136304495014,
+        "yaw": -0.19683945483935283,
+        "throttle": 0.17750745039777635,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.6384603279989467,
+        "roll": 0.06094473323397178,
+        "heading": -1.0498603700960587
+      }
+    },
+    {
+      "seconds": 43.89999999999879,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10823.176945746338,
+        737.1703879456797,
+        -1333.7152585479905
+      ],
+      "velocity": [
+        -47.34179802735863,
+        -38.98830820933346,
+        21.212283610051184
+      ],
+      "speed": 64.89449124110953,
+      "agl": 150.46822881440323,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.7604327085077007,
+      "controls": {
+        "pitch": -0.01424840138717498,
+        "roll": -0.029154000109081882,
+        "yaw": -0.062723528529767,
+        "throttle": 0.17662895650991606,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.644708601736616,
+        "roll": 0.026791481292031714,
+        "heading": -1.1657605800327335
+      }
+    },
+    {
+      "seconds": 44.933333333332065,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10872.66881748686,
+        696.8093670392108,
+        -1313.0214454172237
+      ],
+      "velocity": [
+        -48.36427971601561,
+        -38.90881578037293,
+        19.404866973508447
+      ],
+      "speed": 65.03497797446813,
+      "agl": 117.82997362553544,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9004159348705275,
+      "controls": {
+        "pitch": 0.07285153714443175,
+        "roll": -0.01291605787328475,
+        "yaw": -0.011921161587096833,
+        "throttle": 0.1826952775541701,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.6376940470506293,
+        "roll": 0.009622632850539426,
+        "heading": -1.1940558381317554
+      }
+    },
+    {
+      "seconds": 45.949999999998674,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10923.181433664338,
+        659.3955390512361,
+        -1292.9762413683532
+      ],
+      "velocity": [
+        -51.45373853635247,
+        -34.04151768193032,
+        20.387214043677435
+      ],
+      "speed": 64.97653908849882,
+      "agl": 89.91562187501893,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.5803673406194332,
+      "controls": {
+        "pitch": 0.21174369327019676,
+        "roll": -0.0024858864907777813,
+        "yaw": 0.006645336157964287,
+        "throttle": 0.18284300997277475,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.5300848356374439,
+        "roll": 0.0016504886680034489,
+        "heading": -1.1947881734858972
+      }
+    },
+    {
+      "seconds": 46.94999999999862,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -10976.781923140486,
+        629.9650464668595,
+        -1271.5823614411038
+      ],
+      "velocity": [
+        -55.602214071869774,
+        -24.47979239781698,
+        22.367468130345593
+      ],
+      "speed": 64.7392467989571,
+      "agl": 72.78403404656228,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 2.0279799991313396,
+      "controls": {
+        "pitch": -0.1496624019903841,
+        "roll": 0.0012758661912564797,
+        "yaw": 0.010416946235647982,
+        "throttle": 0.1783762238765712,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.3634444922892061,
+        "roll": -0.0008191421393730296,
+        "heading": -1.1888613915564752
+      }
+    },
+    {
+      "seconds": 48.316666666665206,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11054.096678567801,
+        600.0469144886903,
+        -1240.1029834099713
+      ],
+      "velocity": [
+        -56.98823270694379,
+        -20.36091720785202,
+        23.441874815080116
+      ],
+      "speed": 64.89797463289337,
+      "agl": 64.96959938157181,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.1906765156996344,
+      "controls": {
+        "pitch": -0.2122156233136829,
+        "roll": 0.004198211436017743,
+        "yaw": 0.0057511255961721925,
+        "throttle": 0.1847573938365057,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.3178933197705031,
+        "roll": -0.0022747190291755614,
+        "heading": -1.1813179170802348
+      }
+    },
+    {
+      "seconds": 49.333333333331815,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11111.792231756617,
+        578.7021871523956,
+        -1216.2468961270638
+      ],
+      "velocity": [
+        -56.61003587624238,
+        -21.735067455647343,
+        23.492181726701364
+      ],
+      "speed": 65.03069983854819,
+      "agl": 63.72611217743224,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.7166302238464579,
+      "controls": {
+        "pitch": -0.07365138280953731,
+        "roll": 0.003878089818859868,
+        "yaw": 0.0014729184264590368,
+        "throttle": 0.18189730648227165,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.34100791747593806,
+        "roll": -0.0021407718127134257,
+        "heading": -1.1787206422003134
+      }
+    },
+    {
+      "seconds": 50.349999999998424,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11169.188976918105,
+        556.5640361348413,
+        -1192.3959620542505
+      ],
+      "velocity": [
+        -56.38204723195378,
+        -21.852180516802534,
+        23.442060121728886
+      ],
+      "speed": 64.85355214755737,
+      "agl": 64.09999033864358,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9556515784719256,
+      "controls": {
+        "pitch": -0.15923069556103642,
+        "roll": 0.0013521622488967882,
+        "yaw": -0.000752179884266021,
+        "throttle": 0.1768406788709349,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.3501402891085626,
+        "roll": -0.0009506553059633126,
+        "heading": -1.1783703307265092
+      }
+    },
+    {
+      "seconds": 51.36666666666503,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11226.362121907223,
+        533.69424333142,
+        -1168.634678352891
+      ],
+      "velocity": [
+        -56.04747941205902,
+        -22.676605696643726,
+        23.278621955894764
+      ],
+      "speed": 64.7876734767633,
+      "agl": 64.86511651544271,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9581039805446124,
+      "controls": {
+        "pitch": -0.05395737332131741,
+        "roll": -0.0017105793632732633,
+        "yaw": -0.0013060980872770275,
+        "throttle": 0.17829147946211102,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.3504544560816458,
+        "roll": 0.0006296228080734168,
+        "heading": -1.1788765899510214
+      }
+    },
+    {
+      "seconds": 52.39999999999831,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11284.58522068436,
+        510.7747876140931,
+        -1144.4723654089414
+      ],
+      "velocity": [
+        -56.40222845449103,
+        -21.68452066252785,
+        23.389283726600766
+      ],
+      "speed": 64.79574372009033,
+      "agl": 66.07034512660562,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9432186067070225,
+      "controls": {
+        "pitch": -0.07313381880671463,
+        "roll": -0.0038156230250394677,
+        "yaw": -0.000993180534672085,
+        "throttle": 0.17816449319124897,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.34485629651203936,
+        "roll": 0.0018184207918051382,
+        "heading": -1.1794613558691087
+      }
+    },
+    {
+      "seconds": 53.416666666664916,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11342.31009318139,
+        489.5932497634102,
+        -1120.5483475621838
+      ],
+      "velocity": [
+        -57.03225928917202,
+        -19.632561387886227,
+        23.62655148280467
+      ],
+      "speed": 64.77908614086871,
+      "agl": 67.01967695516714,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.3175266712335703,
+      "controls": {
+        "pitch": -0.021566543710968465,
+        "roll": -0.003563313324438272,
+        "yaw": -0.0006915192680566771,
+        "throttle": 0.17804758856164543,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.2945917909521959,
+        "roll": 0.001879122169176397,
+        "heading": -1.1797361189415823
+      }
+    },
+    {
+      "seconds": 54.433333333331525,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11400.770737100931,
+        470.8771863835192,
+        -1096.3383274405924
+      ],
+      "velocity": [
+        -57.68428033109948,
+        -17.106626044640873,
+        23.88256560505475
+      ],
+      "speed": 64.73399255281417,
+      "agl": 67.30621611694238,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.192191493249921,
+      "controls": {
+        "pitch": -0.05533199817322767,
+        "roll": -0.0012213603707032553,
+        "yaw": -0.00024092704254557014,
+        "throttle": 0.17916887488229372,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.2600654929181181,
+        "roll": 0.0008616107792972241,
+        "heading": -1.179894611229695
+      }
+    },
+    {
+      "seconds": 55.449999999998134,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11459.956251643353,
+        455.08133648793734,
+        -1071.838737140357
+      ],
+      "velocity": [
+        -58.60558014350974,
+        -14.000716098962673,
+        24.256129928213234
+      ],
+      "speed": 64.95378291012355,
+      "agl": 67.15357139841348,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.3217889564744623,
+      "controls": {
+        "pitch": -0.08351731306788272,
+        "roll": 0.0018831133805582811,
+        "yaw": 0.00016476030535886958,
+        "throttle": 0.18305039513340782,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.21023672737195226,
+        "roll": -0.0006621476617328273,
+        "heading": -1.1799270916466098
+      }
+    },
+    {
+      "seconds": 56.46666666666474,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11519.703874735567,
+        442.071167092353,
+        -1047.1105067327514
+      ],
+      "velocity": [
+        -59.084035128076486,
+        -11.745919611117559,
+        24.453908839430394
+      ],
+      "speed": 65.01448678605242,
+      "agl": 66.18768069770385,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.1913349015544958,
+      "controls": {
+        "pitch": -0.02778045941495037,
+        "roll": 0.003787611238895957,
+        "yaw": 0.0004834401098809841,
+        "throttle": 0.18158087006539977,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.17470762934172934,
+        "roll": -0.0017748131760578498,
+        "heading": -1.1798777947773997
+      }
+    },
+    {
+      "seconds": 57.48333333333135,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11579.79443271564,
+        431.0560992512103,
+        -1022.236924655192
+      ],
+      "velocity": [
+        -59.22359254782945,
+        -10.171935099045612,
+        24.51857980561801
+      ],
+      "speed": 64.90040780777093,
+      "agl": 64.63754600651129,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0832179207172585,
+      "controls": {
+        "pitch": -0.05687957413943408,
+        "roll": 0.0034564235972058136,
+        "yaw": 0.0005761230202968235,
+        "throttle": 0.1841236705206257,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.15531427928349054,
+        "roll": -0.0018265254192586656,
+        "heading": -1.1797539070997942
+      }
+    },
+    {
+      "seconds": 58.49999999999796,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11640.09992353458,
+        421.2802752344118,
+        -997.2656305127707
+      ],
+      "velocity": [
+        -59.49960795928938,
+        -9.075523073413528,
+        24.6420779920423
+      ],
+      "speed": 65.03691624094033,
+      "agl": 63.58332133957316,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.1309532765274537,
+      "controls": {
+        "pitch": -0.13202418395216964,
+        "roll": 0.0010496194116579728,
+        "yaw": 0.0005164161111410057,
+        "throttle": 0.18099536312033335,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.13538569141307882,
+        "roll": -0.000779605706508881,
+        "heading": -1.1796445770072943
+      }
+    },
+    {
+      "seconds": 59.533333333331235,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11701.451479124638,
+        411.86023742353603,
+        -971.8514230010093
+      ],
+      "velocity": [
+        -59.353316789326215,
+        -9.369047747844613,
+        24.590204642088388
+      ],
+      "speed": 64.92513714991513,
+      "agl": 62.58508070561743,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.919809405437404,
+      "controls": {
+        "pitch": -0.06992850338469164,
+        "roll": -0.002036827938713733,
+        "yaw": 0.0003244350465088197,
+        "throttle": 0.18354588806934727,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.14488327123670836,
+        "roll": 0.0007622056199674073,
+        "heading": -1.1795708613260947
+      }
+    },
+    {
+      "seconds": 60.549999999997844,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11761.766489430438,
+        402.2866849146041,
+        -946.8605683111941
+      ],
+      "velocity": [
+        -59.160461547353584,
+        -9.401584889013932,
+        24.514243766097824
+      ],
+      "speed": 64.72478780455678,
+      "agl": 60.24779917355818,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9789708349084598,
+      "controls": {
+        "pitch": -0.07707491184601747,
+        "roll": -0.003847207901100919,
+        "yaw": 0.00013959984386777938,
+        "throttle": 0.17907441922659467,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.14690250726929685,
+        "roll": 0.0018185759907162636,
+        "heading": -1.1795632748735836
+      }
+    },
+    {
+      "seconds": 61.58333333333112,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11823.084380433836,
+        392.7031061317836,
+        -921.4525845653367
+      ],
+      "velocity": [
+        -59.50377051164875,
+        -9.027412802543827,
+        24.65563342947204
+      ],
+      "speed": 65.03916625248966,
+      "agl": 56.63292467066202,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.071899468585525,
+      "controls": {
+        "pitch": -0.05788094707497344,
+        "roll": -0.0033054688125057742,
+        "yaw": -0.00006705335391336054,
+        "throttle": 0.18096673486671036,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.13593162291248798,
+        "roll": 0.0017653304350008993,
+        "heading": -1.1795655463123116
+      }
+    },
+    {
+      "seconds": 62.58333333333106,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11882.485429962022,
+        383.9642802946287,
+        -896.8406494457593
+      ],
+      "velocity": [
+        -59.53941420365064,
+        -8.49348188282524,
+        24.667461640826737
+      ],
+      "speed": 65.00434402414514,
+      "agl": 52.43361251163003,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.039005707395306,
+      "controls": {
+        "pitch": -0.059378115078645786,
+        "roll": -0.0008226746818047946,
+        "yaw": -0.00019297036421173948,
+        "throttle": 0.18172829472884977,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.1291833109169366,
+        "roll": 0.0006720530443180753,
+        "heading": -1.1795869857476438
+      }
+    },
+    {
+      "seconds": 63.59999999999767,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -11942.909522393791,
+        375.6467958633557,
+        -871.8083388051974
+      ],
+      "velocity": [
+        -59.66650518499332,
+        -7.927942356975868,
+        24.716254484561276
+      ],
+      "speed": 65.06794407964618,
+      "agl": 47.638767093864146,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.055241620279631,
+      "controls": {
+        "pitch": -0.06628891330842554,
+        "roll": 0.002184036563776472,
+        "yaw": -0.0002665950409600794,
+        "throttle": 0.1802880942015811,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.12028175506144076,
+        "roll": -0.0008370732790437981,
+        "heading": -1.17959866899855
+      }
+    },
+    {
+      "seconds": 64.61666666666429,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12003.424887156996,
+        367.8675743371652,
+        -846.7415117018269
+      ],
+      "velocity": [
+        -59.67554604672183,
+        -7.3970975639093535,
+        24.7177968330578
+      ],
+      "speed": 65.01428557343942,
+      "agl": 42.61864904530751,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.052294907707946,
+      "controls": {
+        "pitch": -0.0464341793610587,
+        "roll": 0.0038760672912251473,
+        "yaw": -0.0002899446914564616,
+        "throttle": 0.18144257244661585,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.11175203028606714,
+        "roll": -0.0018418243759276622,
+        "heading": -1.1795980742064414
+      }
+    },
+    {
+      "seconds": 65.61666666666423,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12063.006772312883,
+        360.85035104454533,
+        -822.0625487134148
+      ],
+      "velocity": [
+        -59.48036601995425,
+        -6.614128663450646,
+        24.637154526363638
+      ],
+      "speed": 64.71978077064483,
+      "agl": 38.04431851530859,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0807738827640032,
+      "controls": {
+        "pitch": -0.04837896503185025,
+        "roll": 0.003263784276473839,
+        "yaw": -0.0002765051108537275,
+        "throttle": 0.17900439154869613,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.09958449130735808,
+        "roll": -0.001749076522427109,
+        "heading": -1.1795972609989787
+      }
+    },
+    {
+      "seconds": 66.6499999999975,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12124.66042057821,
+        354.48298591793264,
+        -796.5248370637469
+      ],
+      "velocity": [
+        -59.7681895217376,
+        -5.721376381185546,
+        24.75739045517117
+      ],
+      "speed": 64.94535401821544,
+      "agl": 33.44350365534632,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.082318101048354,
+      "controls": {
+        "pitch": -0.04233722992659935,
+        "roll": 0.0006459387634292421,
+        "yaw": -0.00024562372125027233,
+        "throttle": 0.1828703447242488,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.08547670160822192,
+        "roll": -0.00058746143680726,
+        "heading": -1.1796044878941458
+      }
+    },
+    {
+      "seconds": 67.66666666666411,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12185.388565774161,
+        349.0535995319104,
+        -771.3690958537228
+      ],
+      "velocity": [
+        -59.80945476126116,
+        -5.045131226887606,
+        24.775444153451417
+      ],
+      "speed": 64.93417329062295,
+      "agl": 28.579255063364656,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.050142370163574,
+      "controls": {
+        "pitch": -0.041523027789979634,
+        "roll": -0.0023336163154970948,
+        "yaw": -0.00018779021186634206,
+        "throttle": 0.18309204230024723,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.07602141652126794,
+        "roll": 0.0009172892146516528,
+        "heading": -1.1796336902361428
+      }
+    },
+    {
+      "seconds": 68.68333333333072,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12246.151276602686,
+        344.1000120918635,
+        -746.1994055854768
+      ],
+      "velocity": [
+        -59.779851080290584,
+        -4.7713696562748105,
+        24.761335200349855
+      ],
+      "speed": 64.8808159973549,
+      "agl": 23.37413778282695,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0101299870248694,
+      "controls": {
+        "pitch": -0.03831502261861934,
+        "roll": -0.0039046249606472087,
+        "yaw": -0.000057119419121851394,
+        "throttle": 0.1842677643331063,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.07289093839849782,
+        "roll": 0.0018703828658489807,
+        "heading": -1.1796930168494186
+      }
+    },
+    {
+      "seconds": 69.68333333333067,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12305.92525625141,
+        339.3439491567289,
+        -721.4424918395251
+      ],
+      "velocity": [
+        -59.6138569147797,
+        -4.746441115272299,
+        24.688770221920393
+      ],
+      "speed": 64.69834630488911,
+      "agl": 18.2770801723359,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9970550381220588,
+      "controls": {
+        "pitch": -0.03793023064588482,
+        "roll": -0.003161690747086159,
+        "yaw": 0.00012999880360150753,
+        "throttle": 0.1793993002074558,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.0728974788645585,
+        "roll": 0.0017101247944964234,
+        "heading": -1.1797499963312195
+      }
+    },
+    {
+      "seconds": 70.69999999999727,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12366.703370992012,
+        334.6223355063571,
+        -696.2737932525595
+      ],
+      "velocity": [
+        -59.93242127823713,
+        -4.439898697410233,
+        24.816634317840784
+      ],
+      "speed": 65.01902152125014,
+      "agl": 13.605818383350197,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0523409949139693,
+      "controls": {
+        "pitch": -0.028313495718085238,
+        "roll": -0.0005201433553093781,
+        "yaw": 0.00030506374523883506,
+        "throttle": 0.1811754227744095,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.06630182261117373,
+        "roll": 0.0005278099808789521,
+        "heading": -1.1797648744510525
+      }
+    },
+    {
+      "seconds": 71.71666666666388,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12427.512237857696,
+        330.4304603128483,
+        -671.0949695796596
+      ],
+      "velocity": [
+        -59.79719866132876,
+        -3.8393156557019306,
+        24.759518290191103
+      ],
+      "speed": 64.83424294621511,
+      "agl": 9.762704409075525,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.0520311500873432,
+      "controls": {
+        "pitch": -0.03471717241821826,
+        "roll": 0.0024327070814718433,
+        "yaw": 0.0004347298410266205,
+        "throttle": 0.1852393204938828,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.057417631994364324,
+        "roll": -0.0009718706168438428,
+        "heading": -1.1797380177040797
+      }
+    },
+    {
+      "seconds": 72.73333333333049,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12488.35354278947,
+        326.72541083582047,
+        -645.902272058918
+      ],
+      "velocity": [
+        -59.96448916159658,
+        -3.519512946935401,
+        24.831083888948385
+      ],
+      "speed": 64.99776656851273,
+      "agl": 5.754093768592668,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 1.017699906601079,
+      "controls": {
+        "pitch": -0.038037905252990035,
+        "roll": 0.003923453837572004,
+        "yaw": 0.0004517007869627606,
+        "throttle": 0.18160598389320468,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.05328851048976173,
+        "roll": -0.0018870118624314922,
+        "heading": -1.179666630384443
+      }
+    },
+    {
+      "seconds": 73.73333333333044,
+      "stage": "approach",
+      "next": 5,
+      "phase": "returning",
+      "position": [
+        -12548.205196841005,
+        323.2383778151859,
+        -621.1147896413141
+      ],
+      "velocity": [
+        -59.99160340855241,
+        -3.499092669282724,
+        24.848399104327672
+      ],
+      "speed": 65.0282943578041,
+      "agl": 1.348418098389061,
+      "status": "ok",
+      "onGround": false,
+      "loadFactor": 0.9978350327250212,
+      "controls": {
+        "pitch": -0.008601318804887625,
+        "roll": 0.0030831016645505426,
+        "yaw": 0.0003307318571143176,
+        "throttle": 0.1809294679061425,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "attitude": {
+        "pitch": -0.05305857996709773,
+        "roll": -0.0016793371329438692,
+        "heading": -1.1795789235698886
+      }
+    },
+    {
+      "seconds": 74.08333333333042,
+      "stage": "approach",
+      "next": 5,
+      "phase": "complete",
+      "position": [
+        -12569.144760223588,
+        322.03832015221036,
+        -612.4411398102673
+      ],
+      "velocity": [
+        -59.743513329778025,
+        -3.353221614227203,
+        24.748350199983175
+      ],
+      "speed": 64.7534734033665,
+      "agl": 0.14836043541350818,
+      "status": "landed",
+      "onGround": true,
+      "loadFactor": 1.039363495849242,
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0.17808524364188433,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": false
+      },
+      "attitude": {
+        "pitch": -0.05012903955150546,
+        "roll": -0.0013491614740532743,
+        "heading": -1.179556094578031
+      }
+    }
+  ],
+  "final": {
+    "seconds": 74.08333333333042,
+    "stage": "approach",
+    "waypoint": 1,
+    "target": {
+      "x": -12679.076069219034,
+      "y": 314.3296567268436,
+      "z": -567.0800511852458
+    },
+    "events": [
+      {
+        "seconds": 0.016666666666666666,
+        "next": 0,
+        "position": [
+          -12543.852015308115,
+          321.88996852254604,
+          -623.056904098538
+        ],
+        "phase": "ready"
+      },
+      {
+        "seconds": 6.899999999999981,
+        "next": 1,
+        "position": [
+          -13247.241501562507,
+          444.3086665981079,
+          -331.61637173402266
+        ],
+        "phase": "running"
+      },
+      {
+        "seconds": 12.383333333333528,
+        "next": 2,
+        "position": [
+          -13124.345687539268,
+          485.3719959492053,
+          160.6906313645115
+        ],
+        "phase": "running"
+      },
+      {
+        "seconds": 16.616666666667005,
+        "next": 3,
+        "position": [
+          -12628.61172200149,
+          535.1481476130259,
+          282.298157878902
+        ],
+        "phase": "running"
+      },
+      {
+        "seconds": 23.783333333333264,
+        "next": 4,
+        "position": [
+          -12080.636595696853,
+          584.3431922610175,
+          -452.2772236710638
+        ],
+        "phase": "running"
+      },
+      {
+        "seconds": 28.183333333333014,
+        "next": 5,
+        "position": [
+          -11833.874176689,
+          578.5426505053185,
+          -1058.1221095382057
+        ],
+        "phase": "returning"
+      }
+    ],
+    "position": [
+      -12569.144760223588,
+      322.03832015221036,
+      -612.4411398102673
+    ],
+    "velocity": [
+      -59.743513329778025,
+      -3.353221614227203,
+      24.748350199983175
+    ],
+    "speed": 64.7534734033665,
+    "agl": 0.14836043541350818,
+    "status": "landed",
+    "onGround": true,
+    "attitude": {
+      "pitch": -0.05012903955150546,
+      "roll": -0.0013491614740532743,
+      "heading": -1.179556094578031
+    },
+    "controls": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0,
+      "throttle": 0.17808524364188433,
+      "gearDown": true,
+      "boost": false,
+      "airbrake": false,
+      "stabilityAssist": false
+    },
+    "spawn": {
+      "x": -12543.852015308115,
+      "y": 321.88996852254604,
+      "z": -623.056904098538,
+      "yaw": 5.105088062083414,
+      "biome": "plains"
+    },
+    "runway": [
+      -12585.426594271123,
+      320.5399685225461,
+      -605.8361496421089
+    ],
+    "gates": [
+      {
+        "position": [
+          -13246.000460016694,
+          449.08996852254654,
+          -332.2174955010696
+        ],
+        "fwd": [
+          -0.9238795325112867,
+          0,
+          0.3826834323650896
+        ],
+        "passed": true
+      },
+      {
+        "position": [
+          -13120.32439243239,
+          485.88996852254604,
+          159.33643826886623
+        ],
+        "fwd": [
+          0.24770322233109462,
+          0,
+          0.9688359580686468
+        ],
+        "passed": true
+      },
+      {
+        "position": [
+          -12630.148778196204,
+          535.889968522546,
+          278.6601755071134
+        ],
+        "fwd": [
+          0.971625784408356,
+          0,
+          0.23652343451093194
+        ],
+        "passed": true
+      },
+      {
+        "position": [
+          -12082.04849811395,
+          585.889968522546,
+          -452.0256755634823
+        ],
+        "fwd": [
+          0.6000601802664007,
+          0,
+          -0.7999548612632184
+        ],
+        "passed": true
+      },
+      {
+        "position": [
+          -11835.127467857368,
+          577.889968522546,
+          -1056.8982527972667
+        ],
+        "fwd": [
+          0.3779419526667464,
+          0,
+          -0.9258292933443223
+        ],
+        "passed": true
+      }
+    ],
+    "next": 5,
+    "seed": 57,
+    "freeStages": [],
+    "contact": {
+      "touch": "roll",
+      "seconds": 74.08333333333042,
+      "position": [
+        -12569.144760223588,
+        322.03832015221036,
+        -612.4411398102673
+      ],
+      "surface": "land",
+      "localX": 0.12857290970974322,
+      "localZ": -17.57007353655157,
+      "speed": 64.7534734033665,
+      "verticalVelocity": 0
+    },
+    "loadFactor": 1.039363495849242,
+    "engine": {
+      "lever": 0.17808524364188433,
+      "afterburnerRequested": false,
+      "afterburnerActive": false,
+      "afterburnerHeatLocked": false,
+      "targetSpeed": 143.4805009923015,
+      "maxSpeed": 680,
+      "maxAcceleration": 8.548091694810449,
+      "effectivePower": 0.13890649004066977,
+      "fuelAvailable": true
+    },
+    "fuel": 0.9726796922657255,
+    "weather": {
+      "fogNearMul": 1.15,
+      "fogFarMul": 1.12,
+      "sunMul": 1,
+      "hemiMul": 1,
+      "ambientMul": 1,
+      "rain": 0,
+      "snow": 0,
+      "haze": 0.02,
+      "lowClouds": 0.03,
+      "midClouds": 0.04,
+      "highClouds": 0.22,
+      "windMps": 4,
+      "gust": 0.08,
+      "lightning": 0,
+      "windX": 1.5640566187391856,
+      "windZ": 3.2302066768107984,
+      "id": "clear",
+      "cloudBase": 1129.4967498701103,
+      "cloudTop": 1813.4967498701103,
+      "precipitationBase": 1129.4967498701103,
+      "visibilityM": 33868.8,
+      "convection": 0
+    },
+    "result": {
+      "elapsedSec": 73.96666666666376,
+      "gatesCleared": 5,
+      "gatesTotal": 5,
+      "courseId": "seed:57:sweep:r31",
+      "gateScore": 16400,
+      "timeScore": 75742,
+      "landingScore": 3287,
+      "landingQuality": 0.5478864497071982,
+      "landingLabel": "HARD",
+      "landingDebrief": {
+        "focus": "speed",
+        "correction": "Slow earlier: ease the throttle and use the speed brake before the flare.",
+        "telemetry": "Sink 3.4 m/s · 126 kt · Bank 0° · Pitch 3°"
+      },
+      "totalScore": 98464,
+      "scoreCapped": false,
+      "medal": "gold",
+      "courseBestMedal": "gold",
+      "newMedalRecord": true,
+      "bestScore": 98464,
+      "previousBestScore": 0,
+      "isNewBest": true,
+      "gateSplits": [
+        6.766666666666648,
+        12.250000000000188,
+        16.48333333333368,
+        23.649999999999938,
+        28.049999999999688
+      ],
+      "bestGateSplits": [],
+      "paceDeltaSec": null,
+      "paceLabel": "FIRST RUN",
+      "completionCount": 1,
+      "bestTimeSec": 73.96666666666376,
+      "isNewBestTime": true,
+      "timeAllowanceSec": 73.15930330440119,
+      "scoringFocus": "pace",
+      "masteryBadges": [
+        "first-flight",
+        "gate-master",
+        "streak-hunter",
+        "gold-run"
+      ],
+      "newMasteryBadges": [
+        "first-flight",
+        "gate-master",
+        "streak-hunter",
+        "gold-run"
+      ],
+      "fuelRemainingPercent": 97,
+      "fuelUsedPercent": 3,
+      "bestPrecisionStreak": 5,
+      "courseBestPrecisionStreak": 5,
+      "peakSpeedKts": 374,
+      "peakAltitudeM": 774,
+      "flightDistanceM": 7461,
+      "peakPositiveG": 11.93,
+      "peakNegativeG": -4,
+      "courseBestFlightDistanceM": 7461,
+      "courseBestPositiveG": 11.93,
+      "courseBestNegativeG": -4,
+      "newFlightDistanceRecord": true,
+      "newPositiveGRecord": true,
+      "newNegativeGRecord": true,
+      "courseBestPeakSpeedKts": 374,
+      "courseBestPeakAltitudeM": 774,
+      "newPeakSpeedRecord": true,
+      "newPeakAltitudeRecord": true,
+      "stuntRolls": 0,
+      "stuntScore": 0,
+      "courseBestStuntRolls": 0,
+      "newStuntRecord": false,
+      "freeFlight": false,
+      "altitudeMilestoneM": 500,
+      "bestCombo": 5,
+      "comboScore": 1200,
+      "fuelScore": 973,
+      "approachScore": 422,
+      "newDestinationRecord": false,
+      "biomeCount": 2,
+      "newWaterBodyRecord": false,
+      "biomeScore": 240,
+      "courseBestBiomeCount": 2,
+      "newBiomeRecord": true,
+      "runStreak": 1,
+      "courseBestRunStreak": 1,
+      "newRunStreakRecord": false,
+      "contractKind": "mach",
+      "contractLabel": "MACH RUN",
+      "contractDetail": "BREAK MACH 1 FOR 10S",
+      "contractComplete": false,
+      "contractFailed": false,
+      "contractProgress": 0,
+      "altitudeScore": 200,
+      "newContractRecord": false,
+      "newContractStreakRecord": false,
+      "courseMasteryTier": "pilot",
+      "courseMasteryTierLabel": "PILOT",
+      "masteryTierPromoted": true,
+      "sortieStyle": "speed",
+      "sortieStyleDetail": "TOP 374KT",
+      "courseBestSortieStyle": "speed",
+      "newSortieStyleRecord": true,
+      "courseBestApproachScore": 422,
+      "newApproachRecord": true,
+      "courseBestLandingQuality": 0.5478864497071982,
+      "newLandingQualityRecord": true,
+      "courseBestFuelRemainingPercent": 97,
+      "newFuelRecord": true,
+      "courseBestCombo": 5,
+      "newComboRecord": true
+    },
+    "recordId": "seed:57:sweep:r31",
+    "impact": null,
+    "course": "mach-run",
+    "phase": "complete",
+    "briefing": {
+      "visible": false,
+      "stage": "approach",
+      "hint": null
+    },
+    "navTarget": "gate",
+    "navGlide": null,
+    "resultsOpen": true,
+    "paused": false,
+    "playing": true,
+    "camera": "chase"
+  },
+  "pass": true
+}

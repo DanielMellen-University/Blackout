@@ -44,17 +44,53 @@ Decisions recorded without requesting clarification:
 
 Focused checks cover rates and settling, turn loss and G, cruise/climb/dive energy, stall/recovery, pure-roll retention, fixed-step agreement, unchanged afterburner constants, record/ghost isolation, legacy retention and historical evidence rejection cases. The production build passes. The full suite passes: 168 files, 1,644 tests, using `npm test -- --testTimeout=30000`. The corrected powered-dive check pins the measured 7 to 10 m/s gain in 1.5 seconds at half dry thrust, with gravity applied once. Ops streak storage also has its own revision 31 key; pre-b20 streak bytes are retained.
 
-## Part B: production browser flights
+## Part B: production browser flights, 10.962 and 10.963
 
-Browser review reproduced two compatibility defects, fixed in 10.962:
+All 77 existing library entries load and are flyable through the exercised completion path. The accepted corpus contains 78 flights: every one of the 76 non-Free entries, including Random world and the hidden Weekly/Monthly replays, plus two full Free flights on seeds 42 and 73. Every mission clears all five production gates and ends `landed` / `complete`. Every touchdown centre is inside the 18 by 120 m runway footprint. See [all mission results and still links](mission-results.md) and [machine-checked browser results](browser-summary.json).
 
-- The static takeoff brief and live hint still said 60 kt after the rotation reference moved to 40 m/s. Both now use a readable 80 kt derived from configuration.
-- `ChallengeRun.reset` recognized only the literal `free-flight` ID. The revisioned ID accidentally enabled scoring, contracts and a terminal landing report. Both legacy and current IDs now preserve the existing unscored, open-ended Free flight contract, with no record writes. The complete existing contract test runs for both IDs.
+The two Free flights take off normally, make an approximately 80-degree-bank hard turn, climb and dive, deliberately enter a stall, recover with forward stick and dry power, return, contact the runway and stop with wheel brakes. They remain `running`, unscored and open, with no results overlay. Contact is the ordinary safe `roll` classification; the jet does not need a scored-mission terminal state to have completed its landing.
 
-The 195 affected briefing, HUD, challenge, physics and record tests pass. The production build passes. The ordinary production UI is visually checked at 80 kt in records-r31.jpg. Live runway contacts on seeds 42 and 73 remain in the running Free flight phase without results or scores after the fix; the final full-stop pilot repeat follows. Four normal-time browser missions have already cleared all five gates and landed: Training, Contour, Weather approach and Daily. The review pilot's unsafe return paths and the excluded clock diagnostic are retained separately; they do not count as successful flights. No terrain or authored mission changes are justified by those attempts.
+| Free flight | Flight seconds | Stall-entry speed / sink | Recovery speed / vertical speed | Stopped speed |
+| --- | ---: | ---: | ---: | ---: |
+| [Seed 42](free-42/free-flight/run.json) | 205.4 | 29.52 / -5.08 m/s | 199.63 / 1.27 m/s | 0.015 m/s |
+| [Seed 73](free-73/free-flight/run.json) | 205.6 | 28.80 / -5.16 m/s | 201.45 / 0.94 m/s | 0.000 m/s |
 
-Ongoing evidence will include free flights on two seeds, hard turns, stall/recovery, climbs/dives, full landings and existing mission completion checks. Current missions receive no polish; only a reproduced physics compatibility failure may justify a fix.
+These deliberate entries go below the 43.74 m/s onset measured in Part A; their entry-event speeds are not a second definition of stall speed.
+
+### Method and limits
+
+- Use a normal minified production Vite build, with an external controls-only pilot and read-only observer injected before bundling. The ordinary `dist` build remains free of review hooks. Each accepted run carries the production source hashes and the SHA-256 of its archived hook in [hooks](hooks/). `sourceCommit` is the base checkout at build time; hashes identify any then-uncommitted compatibility fixes. The validator checks every runtime source file against the final code, except release metadata in Version.
+- Launch from the real runway through the DOM. Production aircraft integration, contact/collision, weather, thermals, streaming, gates, scoring, records and fixed-step `Time` stay active. There are no aircraft resets, pose/velocity writes, gate completion writes or clock overrides after launch.
+- All accepted flights use the native browser wall clock. The two Free flights and the initial four featured mission checks use full draw cadence at 1280 by 720, ratio 1, Balanced quality. Most catalog checks limit only WebGL draws to one per 100 ms; simulation and streaming retain their native cadence. Four isolated repeats use full draw cadence. This verifies playability and compatibility, not a frame-rate or heap target.
+- Default authored seeds and weather are retained. Random world uses seed 42. Daily is the 2026-10-20 challenge; Weekly replays 2026-W43 and Monthly replays 2026-10. The actual seeds are in the results table. No universal claim about every generated seed or physical input device is made.
+- Core completion means all five gates and the game's accepted landing/completion state. Optional contract bonuses and medal optimization are outside this check; current missions remain scheduled for their later overhaul. No mission type, route, terrain generation, city/roads design or scoring threshold was changed.
+- The optional external `/models/f35.glb` is absent in the baseline. Runs retain that expected 404 under `knownFallback`, and use the bundled F-35. Accepted `errors` arrays are empty. Each browser uses fresh isolated storage; the user's browser storage is never opened.
+
+### Compatibility fixes
+
+Two real b20 regressions found in browser review were fixed and pushed as 10.962:
+
+1. The static takeoff brief and live hint still said 60 kt after the rotation reference moved to 40 m/s. Both now derive a readable 80 kt from configuration. [The ordinary production UI](records-r31.jpg) also shows the separate revision 31 and pre-b20 record families.
+2. `ChallengeRun.reset` recognized only the literal `free-flight` ID. Revision 31 accidentally enabled scoring, contracts and a terminal landing report. Both legacy and current IDs now retain the existing unscored, open-ended Free flight behavior, with no record writes. The complete existing Free flight contract test runs for both IDs. Both accepted browser Free flights remain open after full runway stops.
+
+The 195 affected briefing, HUD, challenge, physics and record tests pass, as does the production build. GitHub Actions is green for the CI repair, physics retune and 10.962 compatibility fixes. The final evidence batch passes 216 focused checks across 12 test files, the production build and the independent 78-flight / 328-still source-and-result validator. Release metadata is checked again before each commit.
+
+### Visual review and excluded attempts
+
+The retained Free flight stills show the banked jet, climb/dive transitions, slow-flight recovery and both runway stops. Inspect [seed 42 stopped](free-42/free-flight/complete.jpg), [seed 73 stopped](free-73/free-flight/complete.jpg), [storm completion](catalog/storm-run/complete.jpg), [record separation and 80 kt briefing](records-r31.jpg), and the linked per-mission captures. Chase and cockpit images are retained. They agree with the contact, gate and completion records. No warning strip, stall alert, blackout/redout veil or vegetation was added; G telemetry and existing instruments remain active.
+
+Early attempts remain outside acceptance in `browser-pilot-v1`, `browser-pilot-v2`, `free-pilot-v2`, `free-pilot-v3`, `catalog-pilot-v2`, `catalog-clock-diagnostic` and [pilot-failures](pilot-failures/):
+
+- The initial maneuver pilot turned into rising terrain with insufficient clearance. Later maneuvers use a high-clearance departure.
+- An early approach aimed short of the asphalt; another leveled early or failed to brake after safe rolling contact. The pilot now follows a terrain-clearing descent and stops after accepted contact.
+- Immediate low-altitude turns after the last gate caused terrain strikes. The pilot climbs clear before the return turn, except for the already aligned Contour/Weather final gates. Its return capture was widened to avoid an artificial holding loop. Brake Check was verified from the opposite runway end. These are review controls and target changes, not game route or mission edits.
+- A clock-accelerated diagnostic froze `performance.now()` inside terrain work budgets. It was excluded; no accepted record uses that clock. A local server outage produced no launched flights; its batch diagnostic is retained separately.
+- Four concurrent runs landed but reported a WebAudio device/renderer error. They were excluded and repeated in isolation without any game/audio code change. The accepted repeats have empty error arrays.
+
+### Reproduction
+
+Run `node scripts/build-physics-review.mjs`, serve `/tmp/blackout-b20-production` on port 5175, then use `scripts/review-physics-b20.mjs` with the same `PLAYWRIGHT_MODULE` and `CHROMIUM_PATH` environment variables as the existing review scripts. `B20_COURSES` selects comma-separated entries; `B20_SEED` selects a Free flight seed; `B20_RENDER_INTERVAL=100` selects catalog draw cadence, and zero keeps full cadence. Brake Check uses `B20_REVERSE_APPROACH=1`. `B20_RESUME=1` retains completed records. Run `node scripts/summarize-physics-b20.mjs` to require all 78 accepted flights and regenerate the results table.
 
 ## Part C: roadmap close-out
 
-Pending browser verification. Nitro and boost remain open for b21.
+Physics verification is complete. Roadmap/release close-out follows in 10.964. Nitro and boost remain open for b21. All paused-system exclusions and the closed terrain and city/roads decisions remain in force. No heap work is included.
