@@ -68,3 +68,9 @@ Final result: **78 accepted flights and 334 accepted stills**. Every one of the 
 No production boost defect was reproduced, so no gameplay, mission, physics, terrain, city/roads or paused-system fix is included in Part D. The only runtime-source edit is release identity. Roadmap step 2 closure follows in Part E; step 3 has not started.
 
 The ordinary production build and the synchronized 10.968 version checks pass. The built shipping JavaScript contains no `__training` review hook.
+
+## Part E: roadmap closure, 10.969
+
+Roadmap step 2 is DONE: the verified b20 physics overhaul and b21 nitro/boost delivery are complete. Step 3, missions, is next and pending explicit approval; no mission overhaul or current-mission polish starts here. Version, README, ROADMAP and CHANGELOG advance together to 10.969 with 10.968 as previous ship. Public release stays v0.12.0. Revision 32 remains current; old records and ghosts remain retained. The paused warning strip, vegetation and blackout/redout veils remain excluded, and the closed terrain and city/roads work stays closed. There are no open b21 production defects from this review; the coverage limits above still apply.
+
+Closure verification: the 10.969 production build, synchronized release check and three version identity checks pass. The strict 78-flight / 334-still validator still passes after the metadata-only update.
