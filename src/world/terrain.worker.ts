@@ -1,3 +1,4 @@
+import { setTerrainProfile } from './TerrainProfile'
 import { generateTerrainGeometry, terrainTransferables, CHUNK_SIZE } from './TerrainGeometry'
 import { setWorldSeed } from './noise'
 import { clearOpsPad, setOpsPad } from './terrainSample'
@@ -5,6 +6,7 @@ import type { TerrainBuildRequest, TerrainBuildReply } from './TerrainWorkerPool
 
 self.onmessage = (event: MessageEvent<TerrainBuildRequest>) => {
   const job = event.data
+  setTerrainProfile(job.terrainProfile ?? null)
   setWorldSeed(job.seed)
   if (job.pad) setOpsPad(job.pad.x, job.pad.z, job.pad.y, job.pad.yaw)
   else clearOpsPad()

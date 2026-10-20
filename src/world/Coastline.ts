@@ -1,7 +1,9 @@
+import { getTerrainProfile } from './TerrainProfile'
 import { fbm, smoothstep, valueNoise } from './noise'
 
 /** Global signed coast field. Shared by relief, water clipping and drainage. */
 export function coastField(x: number, z: number): number {
+  if (getTerrainProfile()?.dry) return 1
   const wx = x + (valueNoise(x / 19000 + 711, z / 19000 - 93) - .5) * 9000
   const wz = z + (valueNoise(x / 19000 - 207, z / 19000 + 431) - .5) * 9000
   // Regional embayments plus smaller headlands/islands, never basin ellipses.

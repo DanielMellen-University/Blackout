@@ -1,3 +1,4 @@
+import { getTerrainProfile } from './TerrainProfile'
 import { joinTerrainEdges, terrainEdgeJoin, type TerrainEdgeTile, type TerrainEdgeJoin } from './TerrainSeams'
 import { ShaderSourceCache } from '../core/ShaderSourceCache'
 import {
@@ -1004,7 +1005,7 @@ export class TerrainSystem {
     if (existing && lod === existing.lod) return null
     // Worker postMessage clones this record synchronously. Reusing the staging
     // object removes one short-lived pad allocation per terrain dispatch.
-    return { id: ++this.nextRequest, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot),
+    return { id: ++this.nextRequest, generation: this.generation, seed: getWorldSeed(), terrainProfile: getTerrainProfile(), pad: getOpsPadInto(this.streamPadSnapshot),
       cx: job.cx, cz: job.cz, size: job.size, lod,
       skirtEdges: this.skirtEdgesForTile(job.cx, job.cz, job.size, lod) }
   }

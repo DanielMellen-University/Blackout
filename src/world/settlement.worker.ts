@@ -1,3 +1,4 @@
+import { setTerrainProfile, type TerrainProfile } from './TerrainProfile'
 import { setWorldSeed } from './noise'
 import { clearOpsPad, setOpsPad } from './terrainSample'
 import { settlementForCell } from './SettlementPlan'
@@ -7,6 +8,7 @@ import type { RegionalRoadLink, RegionalRoadEndpoint } from './RegionalRoads'
 import type { SettlementPlan, SettlementRoad } from './SettlementPlan'
 
 interface BaseRequest {
+  terrainProfile?: Readonly<TerrainProfile> | null
   generation: number; seed: number
   pad: { x: number; y: number; z: number; yaw?: number } | null
 }
@@ -34,10 +36,11 @@ let roadWorldContext = ''
 
 self.onmessage = (event: MessageEvent<SettlementWorkerRequest>) => {
   const request = event.data
+  setTerrainProfile(request.terrainProfile ?? null)
   setWorldSeed(request.seed)
   if (request.pad) setOpsPad(request.pad.x, request.pad.z, request.pad.y, request.pad.yaw ?? 0)
   else clearOpsPad()
-  const worldContext = JSON.stringify([request.generation, request.seed,
+  const worldContext = JSON.stringify([request.generation, request.seed, request.terrainProfile,
     request.pad && [request.pad.x, request.pad.y, request.pad.z, request.pad.yaw ?? 0]])
   if (worldContext !== roadWorldContext) {
     roadWorldContext = worldContext

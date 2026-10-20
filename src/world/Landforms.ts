@@ -1,3 +1,4 @@
+import { getTerrainProfile } from './TerrainProfile'
 import { clamp01, fbm, hash2, smoothstep, valueNoise } from './noise'
 import { coastField, coastalRelief } from './Coastline'
 
@@ -91,6 +92,22 @@ export function sampleLandforms(x: number, z: number): LandformSample {
 
 /** Write one landform sample into caller-owned storage to avoid terrain churn. */
 export function sampleLandformsInto(out: LandformSample, x: number, z: number): LandformSample {
+  const profile = getTerrainProfile()
+  if (profile) {
+    const dx = x - profile.originX, dz = z - profile.originZ
+    const right = dx * Math.cos(profile.yaw) - dz * Math.sin(profile.yaw)
+    const forward = dx * Math.sin(profile.yaw) + dz * Math.cos(profile.yaw)
+    const runwayBlend = smoothstep(180, 650, Math.abs(right)) * .5 + smoothstep(1000, 2000, Math.abs(forward)) * .5
+    out.height = profile.baseHeight + runwayBlend * profile.relief * fbm(right / 4000, forward / 4000, 2)
+    out.coast = 1
+    out.moisture = profile.theme === 'desert-run' ? .04 : .32
+    out.temperature = profile.theme === 'desert-run' ? .9 : .38
+    out.highlands = 0; out.foothills = 0; out.ridge = 0; out.alpineValley = 0
+    out.plateau = 0; out.badlands = 0; out.dunes = 0; out.alluvial = 0
+    out.karst = 0; out.glacial = 0; out.cold = 0; out.hot = 0; out.dry = 1
+    out.ravine = 0; out.volcanic = 0; out.caldera = 0; out.salt = 0
+    return out
+  }
   const wx = x + (fbm(x / 11000, z / 11000, 2) - .5) * 2200
   const wz = z + (fbm(x / 11000 + 51, z / 11000 - 39, 2) - .5) * 2200
 

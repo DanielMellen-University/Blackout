@@ -2,23 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.970**. Previous roadmap chunk: **10.969**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.971**. Previous roadmap chunk: **10.970**.
 
-Recent changes from **10.970**. Repair final b21 CI: fold nitro timings into the existing README controls list to preserve its length limit, and allow the unchanged three-seed hydrology regression 30 seconds on parallel workers. Preserve every assertion, production terrain and flight behavior. Step 2 remains done and step 3 remains pending approval.
-
-Recent changes from **10.969**. Close approved roadmap step 2 after the verified b20 physics overhaul and b21 nitro and boost delivery. Mark missions as the next step pending explicit approval, preserve the current-mission polish freeze and all paused exclusions, and synchronize release metadata. See docs/reviews/nitro-b21/README.md.
-
-Recent changes from **10.968**. Verify b21 in 78 production browser flights with 334 accepted stills: all 76 non-Free mission entries complete five gates with nitro refills and land, and Free flights on seeds 42 and 73 drain, refill, restart boost and stop on the runway. Retain source/hook hashes and excluded early-pilot attempts. Preserve gameplay and paused exclusions. See docs/reviews/nitro-b21/README.md.
-
-Recent changes from **10.967**. Match the stronger nitro surge with a bass ignition rush, fuller sustained engine roar, smooth release and larger resolved afterburner plume. Reveal the exhaust with boost-only chase framing; retain clean first person and reduced-motion controls. See docs/reviews/nitro-b21/README.md.
-
-Recent changes from **10.966**. Show nitro reserve and active boost beside the engine instruments, with a brief accepted-gate refill pulse and accessible meter values. Preserve the blue and pale-orange HUD palette and paused exclusions. See docs/reviews/nitro-b21/README.md.
-
-Recent changes from **10.965**. Add the approved b21 nitro reserve, a stronger 650 m/s boost, gate refills and empty-edge hysteresis. Separate revision 32 records and ghosts while retaining older families. Preserve dry b20 physics and paused exclusions. See docs/reviews/nitro-b21/README.md.
-
-Recent changes from **10.964**. Close the approved b20 physics half of roadmap step 2 after the lift/drag/stall and control-rate retune, revision 31 record isolation, compatibility fixes and 78 verified browser flights. Keep nitro and boost OPEN for b21, preserve all paused exclusions and leave the closed terrain and city/roads work unchanged. Synchronize release metadata. See docs/reviews/physics-b20/README.md.
-
-Recent changes from **10.963**. Verify b20 in 78 production browser flights with 328 accepted stills: every one of the 76 non-Free mission entries completes five gates and lands, and Free flights on seeds 42 and 73 perform hard turns, stall/recovery, climbs/dives and full runway stops. Retain source/hook hashes, all excluded attempts and clean isolated audio repeats. Preserve missions, terrain, boost and paused exclusions. See docs/reviews/physics-b20/README.md.
+Recent changes from **10.971**. Start approved step 3 with a pure seeded mission spec and terrain profile carried through existing terrain and settlement workers. Exactly two theme recipes are reserved. Preserve b20 physics, b21 nitro, existing missions and paused exclusions; theme delivery follows in 10.972 and 10.973.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

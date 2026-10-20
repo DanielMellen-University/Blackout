@@ -1,3 +1,4 @@
+import { getTerrainProfile } from './TerrainProfile'
 import { fbm, getWorldSeed, smoothstep, valueNoise } from './noise'
 import { regionalDrainageSteps } from './RegionalDrainage'
 import { coastField } from './Coastline'
@@ -59,6 +60,7 @@ type Reach = RiverReach & { queryToken?: number }
 interface Catchment { basins: Basin[]; landmarks: Basin[]; bins: Reach[][]; reaches: Reach[] }
 export type HydrologyBuildPhase = 'samples' | 'routing' | 'basins' | 'grade' | 'channels'
 
+const dryCatchment: Catchment = { basins: [], landmarks: [], reaches: [], bins: Array.from({ length: BINS * BINS }, () => []) }
 let seed = Number.NaN
 const cache = new Map<string, Catchment>()
 let riverBoundsQueryToken = 0
@@ -135,6 +137,7 @@ export function basinDistance(b: Basin, x: number, z: number): number {
 }
 
 function catchment(cx: number, cz: number): Catchment {
+  if (getTerrainProfile()?.dry) return dryCatchment
   cx = Number.isFinite(cx) ? Math.trunc(cx) : 0
   cz = Number.isFinite(cz) ? Math.trunc(cz) : 0
   if (seed !== getWorldSeed()) { cache.clear(); seed = getWorldSeed() }
@@ -151,6 +154,7 @@ function catchment(cx: number, cz: number): Catchment {
 }
 
 function* buildCatchmentSteps(cx: number, cz: number): Generator<HydrologyBuildPhase, Catchment, void> {
+  if (getTerrainProfile()?.dry) return dryCatchment
   const buildSeed = getWorldSeed()
   const data = yield* regionalDrainageSteps(cx, cz)
   ensureCatchmentSeed(buildSeed)
@@ -175,6 +179,7 @@ function* buildCatchmentSteps(cx: number, cz: number): Generator<HydrologyBuildP
 
 /** Read the existing cache without allocating a preparation iterator. */
 export function hydrologyPreparedAt(x: number, z: number): boolean {
+  if (getTerrainProfile()?.dry) return true
   return seed === getWorldSeed() && cache.has(`${Math.floor(x / CATCHMENT_SIZE)},${Math.floor(z / CATCHMENT_SIZE)}`)
 }
 
@@ -238,6 +243,11 @@ export function hydrologyWaterLevelAt(x: number, z: number): number {
 
 /** Write one hydrology sample into caller-owned storage to avoid hot-path churn. */
 export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, ground: number, coast?: number): HydrologySample {
+  if (getTerrainProfile()?.dry) {
+    out.height = ground; out.waterLevel = 0; out.river = 0; out.lake = 0
+    out.pond = 0; out.stream = 0; out.coastal = 0
+    return out
+  }
   const safeX = Number.isFinite(x) ? x : 0
   const safeZ = Number.isFinite(z) ? z : 0
   const safeGround = Number.isFinite(ground) ? ground : 0

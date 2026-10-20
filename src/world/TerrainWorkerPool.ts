@@ -1,3 +1,4 @@
+import type { TerrainProfile } from './TerrainProfile'
 import type { TerrainGeometryBuffers, TerrainGeometryData } from './TerrainGeometry'
 import type { TerrainLod } from './TerrainGeometry'
 import type { getOpsPad } from './terrainSample'
@@ -6,6 +7,7 @@ import { WorkerWatchdog } from '../core/WorkerWatchdog'
 export interface TerrainBuildRequest {
   id: number
   generation: number
+  terrainProfile?: Readonly<TerrainProfile> | null
   seed: number
   pad: ReturnType<typeof getOpsPad>
   cx: number

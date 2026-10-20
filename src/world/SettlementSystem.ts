@@ -1,3 +1,4 @@
+import { getTerrainProfile } from './TerrainProfile'
 import {
   BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DynamicDrawUsage, Float32BufferAttribute, Group,
   InstancedMesh, MathUtils, Matrix4, Mesh, MeshStandardMaterial, Object3D, Scene, SphereGeometry,
@@ -1792,7 +1793,7 @@ export class SettlementSystem {
         this.dispatchTurn = 1
         this.checked.add(job.key)
         if (this.worker) this.postWorker({ type: 'settlement', ...job, generation: this.generation,
-          seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) })
+          seed: getWorldSeed(), terrainProfile: getTerrainProfile(), pad: getOpsPadInto(this.streamPadSnapshot) })
         else {
           const plan = this.protectedPlans.get(job.key) ?? settlementForCell(job.cx, job.cz)
           if (plan) {
@@ -1813,7 +1814,7 @@ export class SettlementSystem {
         if (!job) continue
         this.graphQueue.delete(job.key); this.dispatchTurn = 2
         if (this.worker) this.postWorker({ type: 'links', ...job, generation: this.generation,
-          seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot), protected: this.protectedSpecs })
+          seed: getWorldSeed(), terrainProfile: getTerrainProfile(), pad: getOpsPadInto(this.streamPadSnapshot), protected: this.protectedSpecs })
         else {
           const plan = this.protectedPlans.get(job.key) ?? settlementForCell(job.cx, job.cz)
           if (plan) this.queueRoadLinks(buildableRegionalLinksForSettlement(plan, this.resolveRoadNeighbour,
@@ -1825,7 +1826,7 @@ export class SettlementSystem {
         const link = this.takeNearestRoadJob(x, z)!
         this.dispatchTurn = 0
         if (this.worker) this.postWorker({ type: 'road', ...link, generation: this.generation,
-          seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot), protected: this.protectedSpecs })
+          seed: getWorldSeed(), terrainProfile: getTerrainProfile(), pad: getOpsPadInto(this.streamPadSnapshot), protected: this.protectedSpecs })
         else {
           const road = roadBetweenSettlements(link.from, link.to, this.resolveRoadNeighbour, [...this.protectedPlans.values()])
           if (road && this.checkedLinks.has(link.key)) this.readyRoads.push({ ...link, road })
