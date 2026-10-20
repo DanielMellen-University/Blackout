@@ -15,6 +15,13 @@ export const flightConfig = {
   nitroGateRefill: 0.25,
   /** Hysteresis prevents empty-edge flicker even with boost held. */
   nitroRestartFraction: 0.15,
+  /** Feedback dimensions, scaled by the resolved burner and throttle. */
+  boostPlumeLength: 3.4,
+  boostPlumeWidth: 1.5,
+  boostNozzleGlow: 10,
+  boostChasePullback: 10,
+  boostChaseLookLeadScale: 0.15,
+  boostChaseLookOffsetZ: -2,
 
   /** Low-speed lift reference, m/s (~93 kt); not an artificial speed floor. */
   minSpeed: 48,

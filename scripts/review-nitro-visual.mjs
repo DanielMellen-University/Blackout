@@ -25,6 +25,7 @@ try {
  await page.evaluate(() => window.__training.start())
  await capture('full')
  await page.waitForFunction(() => window.__training.state().agl > 50)
+ if (process.env.B21_CAPTURE_AUDIO === '1') await page.evaluate(() => window.__training.startAudio())
  await page.evaluate(() => window.__training.boost(true))
  await page.waitForTimeout(1500)
  await capture('boost-chase')
@@ -36,6 +37,10 @@ try {
  await capture('gate-refill')
  await page.waitForTimeout(750)
  await capture('refill-settled')
+ if (process.env.B21_CAPTURE_AUDIO === '1') {
+  const encoded = await page.evaluate(() => window.__training.endAudio())
+  await writeFile(`${dir}/boost-sound.webm`, Buffer.from(encoded, 'base64'))
+ }
  const buildId = await page.evaluate(() => window.__training.buildId)
  const build = JSON.parse(await readFile(`docs/reviews/nitro-b21/hooks/${buildId}.json`, 'utf8'))
  await writeFile(`${dir}/review.json`, JSON.stringify({ build, errors, shots }, null, 2) + '\n')

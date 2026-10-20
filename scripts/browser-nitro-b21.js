@@ -147,3 +147,31 @@ window.__training.before = dt => {
 }
 const b21Observe = window.__training.state
 window.__training.state = () => ({ ...b21Observe(), nitro: { ...aircraft.nitro } })
+// Observe the production audio graph and capture its post-limiter output.
+const b21Cue = audio.playCue.bind(audio)
+training.audioCues = []
+audio.playCue = (...args) => { training.audioCues.push({ seconds: training.seconds, kind: args[0] }); return b21Cue(...args) }
+window.__training.startAudio = () => {
+ const ctx = audio['ctx'], limiter = audio['limiter']
+ if (!ctx || !limiter) throw Error('Production audio unavailable')
+ const tap = ctx.createMediaStreamDestination(), chunks = []
+ limiter.connect(tap)
+ const recorder = new MediaRecorder(tap.stream)
+ recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data) }
+ training.audioCapture = { tap, chunks, recorder }
+ recorder.start()
+}
+window.__training.endAudio = () => new Promise(resolve => {
+ const { tap, chunks, recorder } = training.audioCapture
+ recorder.onstop = async () => {
+  const bytes = new Uint8Array(await new Blob(chunks).arrayBuffer())
+  let binary = ''; for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192))
+  audio['limiter'].disconnect(tap)
+  resolve(btoa(binary))
+ }
+ recorder.stop()
+})
+const b21SoundState = window.__training.state
+window.__training.state = () => ({ ...b21SoundState(), audio: { state: audio['ctx']?.state, cues: training.audioCues,
+ engineGain: audio['engineGain']?.gain.value, filterHz: audio['engineFilter']?.frequency.value,
+ masterGain: audio['master']?.gain.value } })

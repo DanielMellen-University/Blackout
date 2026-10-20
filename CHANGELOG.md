@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.967** Match the stronger nitro surge with a bass ignition rush, fuller sustained engine roar, smooth release and larger resolved afterburner plume. Reveal the exhaust with boost-only chase framing; retain clean first person and reduced-motion controls. See docs/reviews/nitro-b21/README.md.
 - **10.966** Show nitro reserve and active boost beside the engine instruments, with a brief accepted-gate refill pulse and accessible meter values. Preserve the blue and pale-orange HUD palette and paused exclusions. See docs/reviews/nitro-b21/README.md.
 - **10.965** Add the approved b21 nitro reserve, a stronger 650 m/s boost, gate refills and empty-edge hysteresis. Separate revision 32 records and ghosts while retaining older families. Preserve dry b20 physics and paused exclusions. See docs/reviews/nitro-b21/README.md.
 - **10.964** Close the approved b20 physics half of roadmap step 2 after the lift/drag/stall and control-rate retune, revision 31 record isolation, compatibility fixes and 78 verified browser flights. Keep nitro and boost OPEN for b21, preserve all paused exclusions and leave the closed terrain and city/roads work unchanged. Synchronize release metadata. See docs/reviews/physics-b20/README.md.

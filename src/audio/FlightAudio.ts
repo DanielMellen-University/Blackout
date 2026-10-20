@@ -4,6 +4,16 @@ import type { AudioChannel } from './AudioPreferences'
  * Engine rumble, wind hiss, and precipitation ambience via Web Audio.
  * Procedural noise only (no sample files). Levels follow flight power, airspeed, and weather.
  */
+/** Boost feedback tuning stays with the existing audio graph and limiter. */
+export const BOOST_AUDIO = Object.freeze({
+  sustainGain: 1.45,
+  whineGain: 1.18,
+  filterLiftHz: 420,
+  whineLiftHz: 240,
+  attackSeconds: 0.32,
+  releaseSeconds: 0.24,
+})
+
 export const EVENT_NOISE_BUFFER_SECONDS = 0.75
 
 /** Advance the fixed noise stream used by event and ambience buffers. */
@@ -223,11 +233,11 @@ export class FlightAudio {
     this.muted = opts.mute
     const bedsMuted = opts.mute || opts.impactOnly === true
     const masterTarget = opts.mute ? 0 : this.volume
-    const engTarget = bedsMuted ? 0 : eng * 0.42 * view.engine * cloudEngine * this.engineVolume
+    const engTarget = bedsMuted ? 0 : eng * 0.42 * (boost ? BOOST_AUDIO.sustainGain : 1) * view.engine * cloudEngine * this.engineVolume
     const windTarget = bedsMuted ? 0 : (wind * 0.28 + weatherWind * .07) * view.wind * cloudWind * this.environmentVolume
     const precipTarget = bedsMuted ? 0 : precip * 0.18 * view.precipitation * cloudPrecip * this.environmentVolume
     const stormTarget = bedsMuted ? 0 : storm * .065 * view.precipitation * cloudPrecip * this.environmentVolume
-    const whineTarget = bedsMuted ? 0 : whine * 0.065 * view.whine * cloudWhine * this.engineVolume
+    const whineTarget = bedsMuted ? 0 : whine * 0.065 * (boost ? BOOST_AUDIO.whineGain : 1) * view.whine * cloudWhine * this.engineVolume
 
     const now = ctx.currentTime
     const dt = Number.isFinite(opts.dt) && opts.dt > 0 ? Math.min(opts.dt, 0.25) : 1 / 60
@@ -250,13 +260,13 @@ export class FlightAudio {
       )
     }
     if (this.engineWhine) {
-      const whineHz = 420 + eng * 980 + (boost ? 380 : 0)
+      const whineHz = 420 + eng * 980 + (boost ? BOOST_AUDIO.whineLiftHz : 0)
       this.scheduleTarget(this.engineWhine.frequency, whineHz, now, tau, 2)
     }
 
     if (this.engineFilter) {
       // Idle growl stays low; spool opens the filter a bit.
-      const cut = (90 + eng * 160 + (boost ? 70 : 0)) * view.engineFilter * cloudEngine
+      const cut = (90 + eng * 160 + (boost ? BOOST_AUDIO.filterLiftHz : 0)) * view.engineFilter * cloudEngine
       this.scheduleTarget(this.engineFilter.frequency, cut, now, tau, 0.5)
     }
     if (this.windFilter) {
@@ -381,15 +391,16 @@ export class FlightAudio {
       this.tone(720, now + 0.08, 0.1, 'sine', 0.075, 920)
       this.tone(1_040, now + 0.18, 0.18, 'sine', 0.065, 1_180)
     } else if (kind === 'ab') {
-      // Rising whoosh on engage (not every AB frame).
-      this.noiseBurst(now, 0.22, 'white', 0.2, 700, 2800)
-      this.tone(220, now, 0.18, 'sawtooth', 0.1, 520)
-      this.tone(90, now + 0.04, 0.28, 'triangle', 0.08, 160)
+      // Broad ignition rush plus bass rise; sustain uses the existing engine bed.
+      this.noiseBurst(now, BOOST_AUDIO.attackSeconds, 'white', 0.28, 480, 3200)
+      this.noiseBurst(now + 0.02, 0.4, 'brown', 0.2, 110, 440)
+      this.tone(160, now, 0.24, 'sawtooth', 0.09, 460)
+      this.tone(70, now + 0.04, 0.36, 'triangle', 0.13, 170)
     } else if (kind === 'ab-off') {
       // A short low cooldown cue confirms release without competing with the
       // engine loop or turning boost into a repetitive alarm.
-      this.noiseBurst(now, 0.14, 'brown', 0.1, 900, 260)
-      this.tone(300, now, 0.14, 'triangle', 0.055, 120)
+      this.noiseBurst(now, BOOST_AUDIO.releaseSeconds, 'brown', 0.16, 1100, 160)
+      this.tone(260, now, BOOST_AUDIO.releaseSeconds, 'triangle', 0.065, 90)
     } else if (kind === 'airbrake-open' || kind === 'airbrake-close') {
       const opening = kind === 'airbrake-open'
       this.noiseBurst(now, 0.1, opening ? 'white' : 'brown', opening ? 0.075 : 0.055, opening ? 800 : 620, opening ? 2100 : 260)

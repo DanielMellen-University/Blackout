@@ -172,6 +172,7 @@ export class CameraSystem {
   private shakePhase = 0
   private readonly shakeOffset = { x: 0, y: 0, z: 0 }
   private readonly speedFraming = { distance: 0, fov: 0, lookLeadLimit: 0 }
+  private boostFraming = 0
   private boostSway = 0
   private boostPhase = 0
   private externalBank = 0
@@ -580,6 +581,12 @@ export class CameraSystem {
       this.speedFramingScale,
     )
 
+    // Reveal the long burner behind the nozzle while preserving dry framing.
+    const boostTarget = this.mode === 'chase' && aircraft.engineState.afterburnerActive ? 1 : 0
+    this.boostFraming = snap || dt <= 0 ? boostTarget : MathUtils.damp(this.boostFraming, boostTarget, 4, dt)
+    framing.distance += flightConfig.boostChasePullback * this.boostFraming
+    framing.lookLeadLimit *= MathUtils.lerp(1, flightConfig.boostChaseLookLeadScale, this.boostFraming)
+
     _pivot.copy(aircraft.displayPosition)
     _pivot.y += 1.2
 
@@ -623,7 +630,9 @@ export class CameraSystem {
 
     // Look slightly ahead of the jet (yaw-only offset + velocity lead)
     if (cfg.yawOnly) {
-      _look.copy(cfg.lookOffset).applyQuaternion(_headingQuat)
+      _look.copy(cfg.lookOffset)
+      _look.z = MathUtils.lerp(_look.z, flightConfig.boostChaseLookOffsetZ, this.boostFraming)
+      _look.applyQuaternion(_headingQuat)
     } else {
       _look.copy(cfg.lookOffset)
     }

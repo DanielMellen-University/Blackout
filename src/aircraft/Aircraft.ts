@@ -706,9 +706,9 @@ export class Aircraft {
     const pulse =
       pulseAnimated ? 1 + Math.sin(now * 0.028) * 0.08 : 1
     const len = (
-      0.12 + plumeResponse * (boost ? 2.8 : .35)
+      0.12 + plumeResponse * (boost ? flightConfig.boostPlumeLength : .35)
     ) * pulse
-    const fat = boost ? .68 + plumeResponse * .62 : .5 + plumeResponse * .16
+    const fat = boost ? .68 + plumeResponse * (flightConfig.boostPlumeWidth - .68) : .5 + plumeResponse * .16
     if (pulseAnimated || pulseModeChanged || responseChanged ||
       Math.abs(fat - this.plumeFatValue) > 0.001 ||
       Math.abs(len - this.plumeLengthValue) > 0.001) {
@@ -733,7 +733,7 @@ export class Aircraft {
         diamond.node.scale.set(diamond.x * scale, diamond.y * scale, diamond.z * scale)
       }
     }
-    const nozzleIntensity = MathUtils.lerp(0, boost ? 8 : 2.1, plumeResponse)
+    const nozzleIntensity = MathUtils.lerp(0, boost ? flightConfig.boostNozzleGlow : 2.1, plumeResponse)
     if (responseChanged || !Number.isFinite(this.nozzleIntensityValue) ||
       Math.abs(nozzleIntensity - this.nozzleIntensityValue) > 0.002) {
       this.nozzleIntensityValue = nozzleIntensity

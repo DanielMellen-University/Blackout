@@ -34,6 +34,26 @@ describe('external camera framing', () => {
     setGroundHeightSampler(null)
   })
 
+  it('reveals the burner only during boost and restores dry chase framing', () => {
+    const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() }
+    vi.stubGlobal('window', target)
+    const cameras = new CameraSystem({ ...target, style: {} } as unknown as HTMLCanvasElement)
+    const aircraft = new Aircraft()
+    try {
+      aircraft.position.set(0, 15000, 0); aircraft.snapDisplay()
+      cameras.setMode('chase', aircraft)
+      const dry = cameras.camera.position.distanceTo(aircraft.displayPosition)
+      aircraft.engineState.afterburnerActive = true; for (let i = 0; i < 240; i++) cameras.update(aircraft, 1 / 60)
+      expect(cameras.camera.position.distanceTo(aircraft.displayPosition)).toBeGreaterThan(dry + 9)
+      aircraft.engineState.afterburnerActive = false; for (let i = 0; i < 240; i++) cameras.update(aircraft, 1 / 60)
+      expect(cameras.camera.position.distanceTo(aircraft.displayPosition)).toBeCloseTo(dry, 1)
+      cameras.setMode('orbit', aircraft)
+      const orbit = cameras.camera.position.clone()
+      aircraft.engineState.afterburnerActive = true; for (let i = 0; i < 240; i++) cameras.update(aircraft, 1 / 60)
+      expect(cameras.camera.position.distanceTo(orbit)).toBeLessThan(.2)
+    } finally { cameras.dispose(); aircraft.dispose() }
+  })
+
   it('toggles between chase, wide orbit, and cockpit views', () => {
     expect(CAMERA_MODES).toEqual(['chase', 'orbit', 'cockpit'])
     expect(cameraModeCue('chase')).toBe('EXTERNAL VIEW')

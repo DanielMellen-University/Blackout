@@ -1,5 +1,6 @@
 # Roadmap
 
+Chunk 10.967. Match the stronger nitro surge with a bass ignition rush, fuller sustained engine roar, smooth release and larger resolved afterburner plume. Reveal the exhaust with boost-only chase framing; retain clean first person and reduced-motion controls. See docs/reviews/nitro-b21/README.md.
 Chunk 10.966. Show nitro reserve and active boost beside the engine instruments, with a brief accepted-gate refill pulse and accessible meter values. Preserve the blue and pale-orange HUD palette and paused exclusions. See docs/reviews/nitro-b21/README.md.
 Chunk 10.965. Add the approved b21 nitro reserve, a stronger 650 m/s boost, gate refills and empty-edge hysteresis. Separate revision 32 records and ghosts while retaining older families. Preserve dry b20 physics and paused exclusions. See docs/reviews/nitro-b21/README.md.
 Chunk 10.964. Close the approved b20 physics half of roadmap step 2 after the lift/drag/stall and control-rate retune, revision 31 record isolation, compatibility fixes and 78 verified browser flights. Keep nitro and boost OPEN for b21, preserve all paused exclusions and leave the closed terrain and city/roads work unchanged. Synchronize release metadata. See docs/reviews/physics-b20/README.md.
@@ -50,7 +51,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **10.966** is current. Previous ship: **10.965**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.967** is current. Previous ship: **10.966**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 

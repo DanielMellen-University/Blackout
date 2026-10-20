@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  BOOST_AUDIO,
   EVENT_NOISE_BUFFER_SECONDS,
   FLIGHT_AUDIO_LIMITER,
   FlightAudio,
@@ -20,6 +21,42 @@ import {
 } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
+  it('gives resolved boost a fuller sustain and drops back on release', () => {
+    const audio = new FlightAudio(), param = () => ({ setTargetAtTime: vi.fn() })
+    const engine = { gain: param() }, filter = { frequency: param() }
+    Object.assign(audio, { ctx: { state: 'running', currentTime: 0 }, built: true, muted: false,
+      master: { gain: param() }, engineGain: engine, engineFilter: filter,
+      windGain: { gain: param() }, precipGain: { gain: param() },
+      engineWhineGain: { gain: param() }, engineWhine: { frequency: param() } })
+    const frame = { throttle: 1, effectivePower: 1, boost: false, speed: 340, rain: 0, snow: 0, mute: false, dt: 1 / 60 }
+    try {
+      audio.update(frame)
+      const dry = engine.gain.setTargetAtTime.mock.calls.at(-1)![0]
+      audio.update({ ...frame, boost: true })
+      expect(engine.gain.setTargetAtTime.mock.calls.at(-1)![0]).toBeCloseTo(dry * BOOST_AUDIO.sustainGain)
+      expect(filter.frequency.setTargetAtTime.mock.calls.at(-1)![0]).toBe(90 + 160 + BOOST_AUDIO.filterLiftHz)
+      audio.update(frame)
+      expect(engine.gain.setTargetAtTime.mock.calls.at(-1)![0]).toBe(dry)
+      audio.update({ ...frame, boost: true, mute: true })
+      expect(engine.gain.setTargetAtTime.mock.calls.at(-1)![0]).toBe(0)
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+  it('plays a single ignition and descending release through the effects channel', () => {
+    const audio = new FlightAudio(), noiseBurst = vi.fn(), tone = vi.fn()
+    Object.assign(audio, { ctx: { state: 'running', currentTime: 0 }, effectsGain: {}, volume: 1, muted: false, noiseBurst, tone })
+    try {
+      audio.playCue('ab')
+      expect(noiseBurst).toHaveBeenCalledTimes(2)
+      expect(noiseBurst.mock.calls[0]![1]).toBe(BOOST_AUDIO.attackSeconds)
+      expect(tone.mock.calls[0]![5]).toBeGreaterThan(tone.mock.calls[0]![0])
+      noiseBurst.mockClear(); tone.mockClear()
+      audio.playCue('ab-off')
+      expect(noiseBurst).toHaveBeenCalledTimes(1)
+      expect(noiseBurst.mock.calls[0]![1]).toBe(BOOST_AUDIO.releaseSeconds)
+      expect(tone.mock.calls[0]![5]).toBeLessThan(tone.mock.calls[0]![0])
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+
   it('prepares one silent graph before Play and resumes it only on the gesture', async () => {
     const resume = vi.fn(async () => {}), context = { state: 'suspended', resume }
     const construct = vi.fn(function () { return context })

@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.966**. Previous roadmap chunk: **10.965**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.967**. Previous roadmap chunk: **10.966**.
+
+Recent changes from **10.967**. Match the stronger nitro surge with a bass ignition rush, fuller sustained engine roar, smooth release and larger resolved afterburner plume. Reveal the exhaust with boost-only chase framing; retain clean first person and reduced-motion controls. See docs/reviews/nitro-b21/README.md.
 
 Recent changes from **10.966**. Show nitro reserve and active boost beside the engine instruments, with a brief accepted-gate refill pulse and accessible meter values. Preserve the blue and pale-orange HUD palette and paused exclusions. See docs/reviews/nitro-b21/README.md.
 
@@ -17,8 +19,6 @@ Recent changes from **10.962**. Fix two b20 compatibility regressions found in p
 Recent changes from **10.961**. Retune jet lift, drag, stall progression and roll/pitch response for b20. Charge turn drag from the flight-path bend, preserve dry cruise and existing afterburner behavior, and recover low-speed stalls with power and forward stick. Store revision 31 records and ghosts separately, label retained pre-b20 records and exempt them from pruning. Pin numerical probes and historical terrain evidence to their proper runtimes. Browser flight verification follows. See docs/reviews/physics-b20/README.md.
 
 Recent changes from **10.960**. Remove the ripgrep dependency from terrain close-out evidence validation. Enumerate source files with Git, preserving the frozen-runtime hashes and every evidence acceptance rule. Verify focused evidence checks, the full suite and the production build before the b20 physics retune.
-
-Recent changes from **10.959**. Mark roadmap step 1 DONE for the scoped b19 terrain good-enough bar. Retain the six-seed appearance and normal-altitude LOD decisions, and three clean ten-minute flights on seeds 42, 73 and 1. Preserve the seed-1337 review-harness issue, excluded alternate-seed stalls and high-altitude image limitation in the final report. Synchronize release metadata without changing production physics or terrain. No b20 work starts. See docs/reviews/terrain-closeout-b19/final-report.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
