@@ -156,7 +156,7 @@ function anchorCell(kind: 'city' | 'village', pad: AnchorPad | null): [number, n
   // the mutable global pad again: that allocates and can key the cache to a
   // different reseed when a replacement starts before the reply is handled.
   const padHeight = pad && Number.isFinite(pad.y) ? pad.y : undefined
-  const context = `${getWorldSeed()}:${pad?.x}:${pad?.z}:${padHeight}`
+  const context = `${getWorldSeed()}:${getTerrainProfile()?.theme ?? 'ordinary'}:${pad?.x}:${pad?.z}:${padHeight}`
   if (context !== anchorCacheContext) {
     anchorCache.clear()
     anchorCacheContext = context
@@ -306,7 +306,7 @@ function palette(biome: Biome): { walls: number[]; roofs: number[]; roof: 'flat'
 /** One stable candidate per large cell; no world flattening or water filling. */
 export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' | 'village'): SettlementPlan | null {
   const pad = getOpsPad()
-  const context = `${getWorldSeed()}:${pad?.x}:${pad?.z}:${pad?.y}`
+  const context = `${getWorldSeed()}:${getTerrainProfile()?.theme ?? 'ordinary'}:${pad?.x}:${pad?.z}:${pad?.y}`
   if (context !== cacheContext) { cache.clear(); cacheContext = context }
   const id = `${cx},${cz}`
   const cacheKey = `${id}:${forcedAnchor ?? 'normal'}`

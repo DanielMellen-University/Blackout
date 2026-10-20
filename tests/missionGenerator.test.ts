@@ -93,3 +93,47 @@ it('keeps fractional generated seeds replayable and separate in existing record 
   expect(courseRunId(first)).not.toBe(courseRunId(second))
   expect(courseRunId(first)).not.toBe(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('contour-circuit'), 42)))
 })
+
+it.each([42, 73, 808, 1337, 2026, 9001])('keeps a wide low valley corridor between huge mountain walls on seed %s', seed => {
+  const spec = generateMission(seed, 'mountain-valley-run'), t = spec.terrain
+  setWorldSeed(seed); setTerrainProfile(t)
+  setOpsPad(spec.landingRunway.x, spec.landingRunway.z, spec.landingRunway.y, spec.landingRunway.yaw)
+  const sample = (right: number, forward: number) => sampleGeographyHeight(t.originX + Math.cos(t.yaw) * right + Math.sin(t.yaw) * forward, t.originZ - Math.sin(t.yaw) * right + Math.cos(t.yaw) * forward)
+  const mission = new MissionSystem(new Scene())
+  try {
+    for (let forward = -4000; forward <= 4000; forward += 800) {
+      // More than four kilometres of low floor covers all course gates, their
+      // wing corridor, and room to establish turns with the b20/b21 controls.
+      for (const right of [-2000, 0, 2000]) expect(sample(right, forward) - t.baseHeight).toBeLessThan(30)
+      for (const right of [-6500, 6500]) expect(sample(right, forward) - t.baseHeight).toBeGreaterThan(6000)
+    }
+    mission.start(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, spec.profile)
+    expect(mission.routeProfile).toBe('generated-valley')
+    expect(mission.routeFallbackUsed).toBe(false)
+    expect(mission.totalGates).toBe(5)
+    const replay = resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), seed)
+    expect(courseRunId(replay)).toBe(`seed:${seed}:generated-valley:r32:l30:q33`)
+    expect(courseSessionId('mountain-valley-run', seed, spec.profile)).toBe(courseRunId(replay))
+    expect(courseRunId(replay)).not.toBe(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed)))
+  } finally { mission.dispose(); setTerrainProfile(null); clearOpsPad() }
+})
+
+import { settlementAnchorCells, settlementForCell } from '../src/world/SettlementPlan'
+import { getOpsPad } from '../src/world/terrainSample'
+
+it('invalidates settlement and anchor caches when the same seed and pad change theme', () => {
+  const desert = generateMission(42, 'desert-run'), valley = generateMission(42, 'mountain-valley-run')
+  setWorldSeed(42)
+  setOpsPad(desert.landingRunway.x, desert.landingRunway.z, desert.landingRunway.y, desert.landingRunway.yaw)
+  try {
+    setTerrainProfile(valley.terrain)
+    expect(settlementAnchorCells('city', getOpsPad()).length).toBeGreaterThan(0)
+    setTerrainProfile(desert.terrain)
+    expect(settlementAnchorCells('city', getOpsPad())).toEqual([])
+    expect(settlementForCell(0, 0, 'city')).toBeNull()
+    setTerrainProfile(valley.terrain)
+    expect(settlementAnchorCells('city', getOpsPad()).length).toBeGreaterThan(0)
+    setTerrainProfile(desert.terrain)
+    expect(settlementForCell(0, 0, 'city')).toBeNull()
+  } finally { setTerrainProfile(null); clearOpsPad() }
+})

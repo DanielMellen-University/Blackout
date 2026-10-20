@@ -109,6 +109,11 @@ export const COURSE_LIBRARY = [
     seed: null, profile: 'generated-desert', weather: 'clear', timeOfDay: .46,
   },
   {
+    id: 'mountain-valley-run', label: 'Mountain valley run',
+    detail: 'A new seeded giant valley between immense mountains. Thread five gates along the wide valley floor, then return to your generated runway and land for a medal.',
+    seed: null, profile: 'generated-valley', weather: 'clear', timeOfDay: .5,
+  },
+  {
     id: 'free-flight',
     label: 'Free flight',
     detail: 'Explore freely. Land and take off again whenever you like.',

@@ -100,6 +100,7 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
     const runwayBlend = smoothstep(180, 650, Math.abs(right)) * .5 + smoothstep(1000, 2000, Math.abs(forward)) * .5
     out.height = profile.baseHeight + runwayBlend * profile.relief * fbm(right / 4000, forward / 4000, 2)
     let desertPlateau = 0
+    let valleyWall = 0
     if (profile.theme === 'desert-run') {
       const warp = (valueNoise(right / 1400, forward / 1900) - .5) * 280
       const dune = (1 + Math.sin((right + warp) / 115 + forward / 650 + profile.phase)) * .5
@@ -111,12 +112,20 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
       const badlands = fbm(right / 440 + 12, forward / 800, 2) * mesa * 55
       out.height = profile.baseHeight + runwayBlend * (dunes + shelf * (mesa * profile.relief + badlands) - wash * 25)
     }
+    if (profile.theme === 'mountain-valley-run') {
+      const bend = Math.sin(forward / 3200 + profile.phase) * 600 * smoothstep(1200, 5000, Math.abs(forward))
+      const distance = Math.abs(right - bend)
+      valleyWall = smoothstep(profile.valleyHalfWidth, profile.valleyHalfWidth + 3000, distance)
+      const peaks = .78 + fbm(right / 2400 + 17, forward / 2200 - 65, 3) * .52
+      const floor = fbm(right / 1800, forward / 2400, 2) * 24
+      out.height = profile.baseHeight + runwayBlend * floor + valleyWall * profile.relief * peaks
+    }
     out.coast = 1
     out.moisture = profile.theme === 'desert-run' ? .04 : .32
     out.temperature = profile.theme === 'desert-run' ? .9 : .38
-    out.highlands = 0; out.foothills = 0; out.ridge = 0; out.alpineValley = 0
+    out.highlands = valleyWall; out.foothills = valleyWall * (1 - valleyWall); out.ridge = valleyWall; out.alpineValley = profile.theme === 'mountain-valley-run' ? 1 - valleyWall : 0
     out.plateau = desertPlateau; out.badlands = profile.theme === 'desert-run' ? .8 : 0; out.dunes = profile.theme === 'desert-run' ? 1 : 0; out.alluvial = 0
-    out.karst = 0; out.glacial = 0; out.cold = 0; out.hot = 0; out.dry = 1
+    out.karst = 0; out.glacial = valleyWall; out.cold = profile.theme === 'mountain-valley-run' ? .3 : 0; out.hot = profile.theme === 'desert-run' ? 1 : 0; out.dry = 1
     out.ravine = 0; out.volcanic = 0; out.caldera = 0; out.salt = 0
     return out
   }
