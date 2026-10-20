@@ -94,6 +94,10 @@ export function sampleGeographyInto(out: Climate, x: number, z: number): Climate
     biomeWeights[1]![1] = landform.foothills * 1.4
     biomeWeights[5]![1] = coastal * 1.8
   }
+  if (getTerrainProfile()?.theme === 'volcanic-run') {
+    for (const weight of biomeWeights) weight[1] = 0
+    biomeWeights[11]![1] = 1
+  }
   let biome: Biome = 'plains' , biomeB: Biome = 'plains', best = 0, second = 0
   for (const [candidate, weight] of biomeWeights) {
     if (weight > best) { second = best; biomeB = biome; best = weight; biome = candidate }

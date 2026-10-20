@@ -11,8 +11,8 @@ it.each(MISSION_THEMES)('keeps %s terrain finite and identical at shared near/fa
   const recipe = generateMission(2026, theme), t = recipe.terrain
   setWorldSeed(recipe.seed); setTerrainProfile(t); clearOpsPad()
   // Survey a shoulder, where the valley theme has many kilometres of relief.
-  const right = theme === 'coastal-island-run' ? -2300 : 6500
-  const forward = theme === 'coastal-island-run' ? -1900 : 0
+  const right = theme === 'coastal-island-run' ? -2300 : theme === 'volcanic-run' ? 3300 : 6500
+  const forward = theme === 'coastal-island-run' ? -1900 : theme === 'volcanic-run' ? 4500 : 0
   const x = Math.floor((t.originX + Math.cos(t.yaw) * right + Math.sin(t.yaw) * forward) / CHUNK_SIZE) * CHUNK_SIZE
   const z = Math.floor((t.originZ - Math.sin(t.yaw) * right + Math.cos(t.yaw) * forward) / CHUNK_SIZE) * CHUNK_SIZE
   const far = generateTerrainGeometry(x, z, 2), near = generateTerrainGeometry(x, z, 0)

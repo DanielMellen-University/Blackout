@@ -5,7 +5,7 @@ export interface GeneratedPoint { x: number; y: number; z: number }
 export interface GeneratedMissionSpec {
   seed: number
   theme: MissionTheme
-  profile: 'generated-desert' | 'generated-valley' | 'generated-coastal'
+  profile: 'generated-desert' | 'generated-valley' | 'generated-coastal' | 'generated-volcanic'
   terrain: TerrainProfile
   start: GeneratedPoint & { yaw: number }
   landingRunway: GeneratedPoint & { yaw: number; length: number; width: number }
@@ -36,6 +36,10 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
     terrain.baseHeight = 55; terrain.relief = 520
     terrain.landscapeRevision = 31; terrain.routeRevision = 34
   }
+  if (theme === 'volcanic-run') {
+    terrain.baseHeight = 240; terrain.relief = 2600
+    terrain.landscapeRevision = 32; terrain.routeRevision = 35
+  }
   const start = { x: terrain.originX, y: terrain.baseHeight, z: terrain.originZ, yaw: terrain.yaw }
   const spread = 1350 + random() * 350, length = 3000 + random() * 600
   const offsets = [[0, 1800], [spread, length], [spread, -300], [0, -2600], [0, -1400]] as const
@@ -44,7 +48,7 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
     y: start.y + 145,
     z: start.z - Math.sin(start.yaw) * right + Math.cos(start.yaw) * forward,
   }))
-  return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : theme === 'coastal-island-run' ? 'generated-coastal' : 'generated-valley', terrain, start: { ...start, x: start.x - Math.sin(start.yaw) * 45, y: start.y + flightConfig.gearHeight, z: start.z - Math.cos(start.yaw) * 45 },
+  return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : theme === 'coastal-island-run' ? 'generated-coastal' : theme === 'volcanic-run' ? 'generated-volcanic' : 'generated-valley', terrain, start: { ...start, x: start.x - Math.sin(start.yaw) * 45, y: start.y + flightConfig.gearHeight, z: start.z - Math.cos(start.yaw) * 45 },
     landingRunway: { ...start, length: 120, width: 18 }, course,
     goals: { gates: 5, landingRequired: true, scoring: 'existing-medals', referenceSpeed: 150 } }
 }

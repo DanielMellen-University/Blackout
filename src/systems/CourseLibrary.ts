@@ -119,6 +119,11 @@ export const COURSE_LIBRARY = [
     seed: null, profile: 'generated-coastal', weather: 'clear', timeOfDay: .48,
   },
   {
+    id: 'generated-volcanic-run', label: 'Volcanic run (generated)',
+    detail: 'Thread five gates between giant volcanic cones, dark lava fields and calderas, then land at your generated runway for a medal.',
+    seed: null, profile: 'generated-volcanic', weather: 'clear', timeOfDay: .44,
+  },
+  {
     id: 'free-flight',
     label: 'Free flight',
     detail: 'Explore freely. Land and take off again whenever you like.',

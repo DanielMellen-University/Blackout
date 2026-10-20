@@ -19,7 +19,7 @@ describe('approved seeded mission generator', () => {
     expect(generateMission(seed)).toEqual(generateMission(seed))
   })
   it('has exactly the delivered approved themes, varies seeds, and separates the theme route and world identities', () => {
-    expect(MISSION_THEMES).toEqual(['desert-run', 'mountain-valley-run', 'coastal-island-run'])
+    expect(MISSION_THEMES).toEqual(['desert-run', 'mountain-valley-run', 'coastal-island-run', 'volcanic-run'])
     expect(generateMission(42)).not.toEqual(generateMission(73))
     expect(generateMission(42, 'desert-run')).not.toEqual(generateMission(42, 'mountain-valley-run'))
     expect(generateMission(42).terrain.landscapeRevision).toBeGreaterThan(29)

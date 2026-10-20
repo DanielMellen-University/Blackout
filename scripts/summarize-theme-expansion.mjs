@@ -6,10 +6,10 @@ import assert from 'node:assert/strict'
 const part = process.env.REVIEW_PART || 'expansion-completion'
 const smoke = part !== 'expansion-completion'
 const matrix = smoke
- ? [[part === 'coastal' ? 'coastal-island-run' : 'volcanic-run', [42,73,808]]]
- : [['coastal-island-run',[1337,2026,9001]],['volcanic-run',[1337,2026,9001]],['desert-run',[42]],['mountain-valley-run',[42]]]
+ ? [[part === 'coastal' ? 'coastal-island-run' : 'generated-volcanic-run', [42,73,808]]]
+ : [['coastal-island-run',[1337,2026,9001]],['generated-volcanic-run',[1337,2026,9001]],['desert-run',[42]],['mountain-valley-run',[42]]]
 const identities = {
- 'coastal-island-run': ['generated-coastal',31,34], 'volcanic-run':['generated-volcanic',32,35],
+ 'coastal-island-run': ['generated-coastal',31,34], 'generated-volcanic-run':['generated-volcanic',32,35],
  'desert-run':['generated-desert',30,33], 'mountain-valley-run':['generated-valley',30,33],
 }
 const digest = value => createHash('sha256').update(value).digest('hex')

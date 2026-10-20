@@ -383,7 +383,7 @@ export class World {
         // A first-ever boot must remain recoverable even if a future terrain
         // change makes every natural-pad probe reject. Re-seeds after a world
         // is committed still use the normal rollback path below.
-        const pad: FlatSpawn | null = generated ? { ...generated.landingRunway, biome: theme === 'desert-run' ? 'desert' : 'plains' } : findPlayableSpawn() ?? (!this.committed && requestedSeed === undefined ? emergencySpawn() : null)
+        const pad: FlatSpawn | null = generated ? { ...generated.landingRunway, biome: theme === 'desert-run' ? 'desert' : theme === 'volcanic-run' ? 'volcanic' : 'plains' } : findPlayableSpawn() ?? (!this.committed && requestedSeed === undefined ? emergencySpawn() : null)
         if (!pad) continue
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed

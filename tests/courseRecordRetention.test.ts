@@ -129,10 +129,10 @@ it('bounds generated themes in the existing seeded manifest without touching aut
     setItem: (key, value) => { data.set(key, value) },
     removeItem: key => { data.delete(key) },
   }
-  const protectedIds = ['seed:42:contour:r32', 'seed:42:generated-desert:r31:l30:q33', 'seed:42:desert:r32']
+  const protectedIds = ['seed:42:contour:r32', 'seed:42:generated-desert:r31:l30:q33', 'seed:42:desert:r32', 'seed:42.25:generated-coastal:r32:l31:q34', 'seed:42.25:generated-volcanic:r32:l32:q35']
   for (const id of protectedIds) data.set(`blackout.history.${id}`, 'retained')
   for (let i = 0; i < SEEDED_RANDOM_RECORD_RETENTION + 2; i++) {
-    const id = `seed:${i}.125:generated-${i % 2 ? 'desert' : 'valley'}:r32:l30:q33`
+    const id = `seed:${i}.125:generated-${['valley','desert','coastal','volcanic'][i % 4]}:r32:l${30 + (i % 4 > 1 ? i % 4 - 1 : 0)}:q${33 + (i % 4 > 1 ? i % 4 - 1 : 0)}`
     data.set(`blackout.history.${id}`, 'history')
     data.set(`blackout.ghost.${id}`, 'ghost')
     touchSeededRandomCourseRecord(storage, id, i + 1)

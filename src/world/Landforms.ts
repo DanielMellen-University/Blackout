@@ -141,6 +141,28 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
       out.highlands = 0; out.foothills = cliffs * shelf; out.ridge = 0
       out.cold = 0; out.hot = .35; out.dry = .2
     }
+    if (profile.theme === 'volcanic-run') {
+      // Three broad cones flank the low flight corridor. Bowls subtract from
+      // each summit inside the same scalar height field used by every LOD.
+      let uplift = 0, caldera = 0
+      for (let cone = 0; cone < 3; cone++) {
+        const cx = cone === 0 ? -2200 : cone === 1 ? 3300 : -2700
+        const cz = cone === 0 ? 3200 : cone === 1 ? 4500 : -3400
+        const radius = cone === 2 ? 1600 : 1800
+        const distance = Math.hypot(right - cx, forward - cz) / radius
+        const flank = 1 - smoothstep(.08, 1, distance)
+        const bowl = 1 - smoothstep(.06, .25, distance)
+        const height = profile.relief * (.88 + .12 * Math.sin(profile.phase + cone))
+        uplift = Math.max(uplift, Math.pow(flank, 1.4) * height - bowl * height * .5)
+        caldera = Math.max(caldera, bowl)
+      }
+      const lava = fbm(right / 360 + 81, forward / 470, 3)
+      out.height = profile.baseHeight + runwayBlend * (lava * 15 + Math.pow(lava, 3) * 7) + uplift
+      out.moisture = .06; out.temperature = .88; out.cold = 0; out.hot = 1
+      out.highlands = Math.min(1, uplift / profile.relief); out.foothills = out.highlands
+      out.ridge = out.highlands; out.glacial = 0
+      out.volcanic = 1; out.caldera = caldera
+    }
     return out
   }
   const wx = x + (fbm(x / 11000, z / 11000, 2) - .5) * 2200

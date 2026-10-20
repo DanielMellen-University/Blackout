@@ -825,6 +825,11 @@ export class Atmosphere {
       _horizon.lerp(_c2, dayFactor * .58)
       _c.lerp(_c2, dayFactor * .12)
     }
+    if (getTerrainProfile()?.theme === 'volcanic-run') {
+      _c2.setHex(0x91877e)
+      _horizon.lerp(_c2, dayFactor * .72)
+      _c.lerp(_c2, dayFactor * .32)
+    }
     // Haze / snow sky pull
     _c2.setHex(w.snow > 0.3 ? 0x9aabbc : 0x6a7888)
     _c.lerp(_c2, w.haze * 0.4 + w.snow * 0.12)

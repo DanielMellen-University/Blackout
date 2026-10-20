@@ -11,7 +11,8 @@ import { clearOpsPad, getOpsPad, sampleTerrainSurfaceHeightFast, setOpsPad } fro
 import { settlementAnchorCells, settlementForCell } from '../src/world/SettlementPlan'
 import { generateTerrainGeometry, CHUNK_SIZE } from '../src/world/TerrainGeometry'
 
-const themes = ['coastal-island-run'] as const
+const themes = ['coastal-island-run', 'volcanic-run'] as const
+const courseForTheme = (theme: typeof themes[number]) => courseDefinitionForId(theme === 'volcanic-run' ? 'generated-volcanic-run' : theme)
 const seeds = [42, 73, 808, 1337, 2026, 9001]
 afterEach(() => { setTerrainProfile(null); clearOpsPad() })
 function setup(seed: number, theme: typeof themes[number]) {
@@ -37,7 +38,7 @@ for (const theme of themes) it.each(seeds)('validates the seeded %s corridor, re
     }
     previous = { ...point, yaw: start.yaw }
   }
-  const replay = resolveCourseReplaySeed(courseDefinitionForId(theme), seed + .123456)
+  const replay = resolveCourseReplaySeed(courseForTheme(theme), seed + .123456)
   const identity = courseRunId(replay)
   expect(identity).toBe(`seed:${seed}.123456:${spec.profile}:r32:l${spec.terrain.landscapeRevision}:q${spec.terrain.routeRevision}`)
   expect(courseSessionId(theme, seed + .123456, spec.profile)).toBe(identity)
@@ -85,4 +86,33 @@ it('keeps open-sea near/far shared geometry and water in the existing tile pipel
   const ratio = near.segs / far.segs
   for (let row=0; row<=far.segs; row++) for(let col=0; col<=far.segs; col++)
     expect(far.heights[row*(far.segs+1)+col]).toBe(near.heights[row*ratio*(near.segs+1)+col*ratio])
+})
+
+it.each(seeds)('has large volcanic cones, summit calderas and a low dark lava corridor on seed %s', seed => {
+  const spec = setup(seed, 'volcanic-run'), p=spec.terrain
+  const sample = (r: number, f: number) => sampleGeography(p.originX + Math.cos(p.yaw)*r + Math.sin(p.yaw)*f,
+    p.originZ - Math.sin(p.yaw)*r + Math.cos(p.yaw)*f)
+  for (const [r,f,radius] of [[-2200,3200,1800],[3300,4500,1800],[-2700,-3400,1600]]) {
+    const center=sample(r!,f!),rim=sample(r!+radius!*.28,f!)
+    expect(center.landform.caldera).toBe(1)
+    expect(center.height-p.baseHeight).toBeGreaterThan(900)
+    expect(rim.height-center.height).toBeGreaterThan(450)
+    expect(rim.height-p.baseHeight).toBeGreaterThan(1600)
+    expect(rim.biome).toBe('volcanic'); expect(rim.biomeWeights!.find(([biome])=>biome==='volcanic')![1]).toBe(1)
+  }
+  for(const point of spec.course) {
+    const s=sampleGeography(point.x,point.z)
+    expect(s.biome).toBe('volcanic'); expect(s.height-p.baseHeight).toBeLessThan(60)
+  }
+  // Populate both planner caches before returning to the original profile.
+  const cells=settlementAnchorCells('village',getOpsPad())
+  const initial=settlementForCell(cells[0]![0],cells[0]![1],'village')
+  setTerrainProfile(generateMission(seed,'coastal-island-run').terrain)
+  expect(settlementAnchorCells('city',getOpsPad())).toEqual([])
+  settlementForCell(cells[0]![0],cells[0]![1],'village')
+  setTerrainProfile(spec.terrain)
+  expect(settlementAnchorCells('city',getOpsPad()).length).toBeGreaterThan(0)
+  expect(settlementForCell(cells[0]![0],cells[0]![1],'village')).toEqual(initial)
+  expect(courseRunId(resolveCourseReplaySeed(courseForTheme('volcanic-run'),seed))).not.toBe(
+    courseRunId(resolveCourseReplaySeed(courseDefinitionForId('coastal-island-run'),seed)))
 })
