@@ -29,7 +29,7 @@ try {
     try {
       const seed = process.env.B21_SEED || (course === 'random' ? '42' : '')
       const period = course === 'weekly-ops' ? '&week=2026-W43' : course === 'monthly-ops' ? '&month=2026-10' : ''
-      await page.goto(`${process.env.REVIEW_URL || 'http://127.0.0.1:5175'}/?course=${course}${seed ? '&seed=' + seed : ''}${period}`)
+      await page.goto(`${process.env.REVIEW_URL || 'http://127.0.0.1:5176'}/?course=${course}${seed ? '&seed=' + seed : ''}${period}`)
       await page.waitForFunction(() => window.__training)
       const buildId = await page.evaluate(() => window.__training.buildId)
       build = buildId ? JSON.parse(await readFile(`docs/reviews/nitro-b21/hooks/${buildId}.json`, 'utf8')) : null
@@ -50,7 +50,7 @@ try {
         assert.equal(final.course, course)
         if (final.seconds > Number(process.env.B21_MAX_SIM || 800)) break
         samples.push({ seconds: final.seconds, stage: final.stage, next: final.next, phase: final.phase, position: final.position, velocity: final.velocity,
-          speed: final.speed, agl: final.agl, status: final.status, onGround: final.onGround, loadFactor: final.loadFactor, controls: final.controls, attitude: final.attitude })
+          nitro: final.nitro, boost: final.engine.afterburnerActive, speed: final.speed, agl: final.agl, status: final.status, onGround: final.onGround, loadFactor: final.loadFactor, controls: final.controls, attitude: final.attitude })
         if (final.seconds >= lastLog + 15) { console.log(course, final.seconds.toFixed(1), final.stage, final.next, final.status, final.agl.toFixed(1), final.speed.toFixed(1)); lastLog = final.seconds }
         if (!gateShot && final.next >= 1 && final.status === 'ok') {
           await page.evaluate(()=>window.__training.capture?.()); await page.screenshot({ path: `${runDir}/gates.jpg`, type: 'jpeg', quality: 85 }); pictures.push('gates.jpg'); gateShot = true
@@ -68,6 +68,16 @@ try {
         if (final.resultsOpen || final.status === 'crashed' || (course === 'free-flight' && final.onGround && final.speed < .1 && final.stage === 'rollout')) break
       }
       pass = errors.length === 0 && (course === 'free-flight' ? final.status !== 'crashed' && final.onGround && final.speed < .1 && !final.resultsOpen && !final.result && final.freeStages.some(s => s.stage === 'stall-recovery') : final.status === 'landed' && final.phase === 'complete' && final.next === final.gates.length && final.resultsOpen)
+      if (course === 'free-flight') {
+        pass &&= final.nitroTimeline.some(s => s.depleted && !s.boosting && s.reserve < .02)
+        pass &&= final.freeStages.some(s => s.stage === 'nitro-refill' && s.nitro.fraction >= .75)
+        pass &&= final.nitroTimeline.some(s => s.stage === 'nitro-restart' && s.boosting)
+      } else {
+        pass &&= final.nitroRefills.length === final.gates.length
+        pass &&= final.nitroRefills.every(e => Math.abs(e.after.fraction - Math.min(1, e.before.fraction + .25)) < 1e-9)
+        pass &&= final.nitroTimeline.some(s => s.boosting)
+        pass &&= final.nitroRefills.some(e => e.after.fraction > e.before.fraction)
+      }
       if (course === 'free-flight') pass &&= !!final.contact && Math.abs(final.contact.localX) < 9 && Math.abs(final.contact.localZ) < 60
       await page.evaluate(()=>window.__training.capture?.()); await page.screenshot({ path: `${runDir}/${pass ? 'complete' : 'failure'}.jpg`, type: 'jpeg', quality: 88 }); pictures.push(`${pass ? 'complete' : 'failure'}.jpg`)
       await save()

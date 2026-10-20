@@ -11,10 +11,11 @@ await build({ build: { outDir, emptyOutDir: true }, plugins: [{
   name: 'external-b21-review', enforce: 'pre',
   transform(source, id) {
     if (!id.endsWith('/src/main.ts')) return
-    for (const anchor of ['const tick = (nowMs: number): void => {', 'aircraft.step(dt, nowMs)'])
+    for (const anchor of ['const tick = (nowMs: number): void => {', 'aircraft.step(dt, nowMs)', 'refillNitroAtGate(aircraft.nitro)', 'const touch = collision.check(aircraft)'])
       if (!source.includes(anchor)) throw Error('Review anchor missing: ' + anchor)
     return ('import { sampleTerrainSurfaceHeightFast as b21Ground } from \"./world/terrainSample\";\n' + source).replace('const tick = (nowMs: number): void => {', hook + `\nwindow.__training.buildId = '${hookSha256}';\n` + 'const tick = (nowMs: number): void => {')
       .replace('aircraft.step(dt, nowMs)', 'window.__training.before(dt); aircraft.step(dt, nowMs)')
+      .replaceAll('refillNitroAtGate(aircraft.nitro)', 'window.__training.gateBefore(); refillNitroAtGate(aircraft.nitro); window.__training.gateAfter()')
       .replace('const touch = collision.check(aircraft)', 'const touch = collision.check(aircraft); window.__training.touch(touch)')
   },
 }] })

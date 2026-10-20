@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.968** Verify b21 in 78 production browser flights with 334 accepted stills: all 76 non-Free mission entries complete five gates with nitro refills and land, and Free flights on seeds 42 and 73 drain, refill, restart boost and stop on the runway. Retain source/hook hashes and excluded early-pilot attempts. Preserve gameplay and paused exclusions. See docs/reviews/nitro-b21/README.md.
 - **10.967** Match the stronger nitro surge with a bass ignition rush, fuller sustained engine roar, smooth release and larger resolved afterburner plume. Reveal the exhaust with boost-only chase framing; retain clean first person and reduced-motion controls. See docs/reviews/nitro-b21/README.md.
 - **10.966** Show nitro reserve and active boost beside the engine instruments, with a brief accepted-gate refill pulse and accessible meter values. Preserve the blue and pale-orange HUD palette and paused exclusions. See docs/reviews/nitro-b21/README.md.
 - **10.965** Add the approved b21 nitro reserve, a stronger 650 m/s boost, gate refills and empty-edge hysteresis. Separate revision 32 records and ghosts while retaining older families. Preserve dry b20 physics and paused exclusions. See docs/reviews/nitro-b21/README.md.

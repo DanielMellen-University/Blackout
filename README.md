@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.967**. Previous roadmap chunk: **10.966**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.968**. Previous roadmap chunk: **10.967**.
+
+Recent changes from **10.968**. Verify b21 in 78 production browser flights with 334 accepted stills: all 76 non-Free mission entries complete five gates with nitro refills and land, and Free flights on seeds 42 and 73 drain, refill, restart boost and stop on the runway. Retain source/hook hashes and excluded early-pilot attempts. Preserve gameplay and paused exclusions. See docs/reviews/nitro-b21/README.md.
 
 Recent changes from **10.967**. Match the stronger nitro surge with a bass ignition rush, fuller sustained engine roar, smooth release and larger resolved afterburner plume. Reveal the exhaust with boost-only chase framing; retain clean first person and reduced-motion controls. See docs/reviews/nitro-b21/README.md.
 
@@ -17,8 +19,6 @@ Recent changes from **10.963**. Verify b20 in 78 production browser flights with
 Recent changes from **10.962**. Fix two b20 compatibility regressions found in production browser review. Derive the 80 kt takeoff brief from the configured rotation speed and keep revision 31 Free flight unscored and open after landing. Preserve all physics numbers, routes, records and boost behavior. Browser completion evidence continues in docs/reviews/physics-b20/README.md.
 
 Recent changes from **10.961**. Retune jet lift, drag, stall progression and roll/pitch response for b20. Charge turn drag from the flight-path bend, preserve dry cruise and existing afterburner behavior, and recover low-speed stalls with power and forward stick. Store revision 31 records and ghosts separately, label retained pre-b20 records and exempt them from pruning. Pin numerical probes and historical terrain evidence to their proper runtimes. Browser flight verification follows. See docs/reviews/physics-b20/README.md.
-
-Recent changes from **10.960**. Remove the ripgrep dependency from terrain close-out evidence validation. Enumerate source files with Git, preserving the frozen-runtime hashes and every evidence acceptance rule. Verify focused evidence checks, the full suite and the production build before the b20 physics retune.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

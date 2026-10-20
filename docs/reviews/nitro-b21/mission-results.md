@@ -1,0 +1,84 @@
+# b21 nitro mission completion results
+
+Every row is a runway launch, boost use, five production gate refills and an accepted landing. Most catalog rendering is limited to 10 draws/s for compatibility checking; simulation and streaming keep their native cadence. Optional contract bonuses and medal optimization are outside this check.
+
+| Mission | Seed | Flight seconds | Gate refills | Medal | Stills |
+| --- | ---: | ---: | ---: | --- | ---: |
+| [random](catalog/random/run.json) | 42 | 147.6 | 5 | silver | [4](catalog/random/complete.jpg) |
+| [daily-ops](catalog/daily-ops/run.json) | 264655 | 91.9 | 5 | gold | [4](catalog/daily-ops/complete.jpg) |
+| [weekly-ops](catalog/weekly-ops/run.json) | 427519 | 98.4 | 5 | silver | [4](catalog/weekly-ops/complete.jpg) |
+| [monthly-ops](catalog/monthly-ops/run.json) | 397184 | 115.6 | 5 | gold | [4](catalog/monthly-ops/complete.jpg) |
+| [training-orbit](catalog/training-orbit/run.json) | 1 | 102.0 | 5 | gold | [4](catalog/training-orbit/complete.jpg) |
+| [contour-circuit](catalog/contour-circuit/run.json) | 42 | 59.1 | 5 | gold | [4](catalog/contour-circuit/complete.jpg) |
+| [weather-approach](catalog/weather-approach/run.json) | 619 | 80.5 | 5 | gold | [4](catalog/weather-approach/complete.jpg) |
+| [range-sweep](catalog/range-sweep/run.json) | 2 | 69.8 | 5 | gold | [4](catalog/range-sweep/complete.jpg) |
+| [precision-slalom](catalog/precision-slalom/run.json) | 3 | 85.6 | 5 | silver | [4](catalog/precision-slalom/complete.jpg) |
+| [ridge-run](catalog/ridge-run/run.json) | 4 | 94.3 | 5 | gold | [4](catalog/ridge-run/complete.jpg) |
+| [canyon-run](catalog/canyon-run/run.json) | 5 | 99.2 | 5 | gold | [4](catalog/canyon-run/complete.jpg) |
+| [coastal-run](catalog/coastal-run/run.json) | 6 | 111.6 | 5 | gold | [4](catalog/coastal-run/complete.jpg) |
+| [fjord-run](catalog/fjord-run/run.json) | 13 | 100.2 | 5 | gold | [4](catalog/fjord-run/complete.jpg) |
+| [river-run](catalog/river-run/run.json) | 7 | 104.7 | 5 | gold | [4](catalog/river-run/complete.jpg) |
+| [volcanic-run](catalog/volcanic-run/run.json) | 8 | 104.9 | 5 | gold | [4](catalog/volcanic-run/complete.jpg) |
+| [volcanic-ops](catalog/volcanic-ops/run.json) | 83 | 102.7 | 5 | gold | [4](catalog/volcanic-ops/complete.jpg) |
+| [rift-ops](catalog/rift-ops/run.json) | 611 | 100.9 | 5 | gold | [4](catalog/rift-ops/complete.jpg) |
+| [desert-dash](catalog/desert-dash/run.json) | 9 | 116.8 | 5 | gold | [4](catalog/desert-dash/complete.jpg) |
+| [alpine-pass](catalog/alpine-pass/run.json) | 12 | 105.2 | 5 | gold | [4](catalog/alpine-pass/complete.jpg) |
+| [storm-run](catalog/storm-run/run.json) | 10 | 113.8 | 5 | silver | [4](catalog/storm-run/complete.jpg) |
+| [night-ops](catalog/night-ops/run.json) | 11 | 111.6 | 5 | gold | [4](catalog/night-ops/complete.jpg) |
+| [aurora-run](catalog/aurora-run/run.json) | 512 | 114.0 | 5 | gold | [4](catalog/aurora-run/complete.jpg) |
+| [timberline-run](catalog/timberline-run/run.json) | 15 | 105.6 | 5 | gold | [4](catalog/timberline-run/complete.jpg) |
+| [glacier-run](catalog/glacier-run/run.json) | 16 | 110.7 | 5 | gold | [4](catalog/glacier-run/complete.jpg) |
+| [frostline-ops](catalog/frostline-ops/run.json) | 902 | 104.1 | 5 | silver | [4](catalog/frostline-ops/complete.jpg) |
+| [rainforest-run](catalog/rainforest-run/run.json) | 17 | 108.8 | 5 | gold | [4](catalog/rainforest-run/complete.jpg) |
+| [mesa-run](catalog/mesa-run/run.json) | 18 | 118.4 | 5 | gold | [4](catalog/mesa-run/complete.jpg) |
+| [badlands-run](catalog/badlands-run/run.json) | 26 | 110.0 | 5 | silver | [4](catalog/badlands-run/complete.jpg) |
+| [saltflat-run](catalog/saltflat-run/run.json) | 21 | 112.9 | 5 | gold | [4](catalog/saltflat-run/complete.jpg) |
+| [savanna-run](catalog/savanna-run/run.json) | 22 | 107.3 | 5 | gold | [4](catalog/savanna-run/complete.jpg) |
+| [tundra-run](catalog/tundra-run/run.json) | 23 | 105.9 | 5 | gold | [4](catalog/tundra-run/complete.jpg) |
+| [tundra-ops](catalog/tundra-ops/run.json) | 931 | 111.9 | 5 | silver | [4](catalog/tundra-ops/complete.jpg) |
+| [swamp-run](catalog/swamp-run/run.json) | 24 | 98.8 | 5 | gold | [4](catalog/swamp-run/complete.jpg) |
+| [monsoon-run](catalog/monsoon-run/run.json) | 54 | 109.2 | 5 | silver | [4](catalog/monsoon-run/complete.jpg) |
+| [archipelago-run](catalog/archipelago-run/run.json) | 25 | 124.0 | 5 | gold | [4](catalog/archipelago-run/complete.jpg) |
+| [thermal-run](catalog/thermal-run/run.json) | 27 | 126.9 | 5 | silver | [4](catalog/thermal-run/complete.jpg) |
+| [pattern-approach](catalog/pattern-approach/run.json) | 28 | 84.6 | 5 | silver | [4](catalog/pattern-approach/complete.jpg) |
+| [crosswind-approach](catalog/crosswind-approach/run.json) | 29 | 96.5 | 5 | silver | [4](catalog/crosswind-approach/complete.jpg) |
+| [traffic-run](catalog/traffic-run/run.json) | 348 | 70.5 | 5 | gold | [4](catalog/traffic-run/complete.jpg) |
+| [waterway-tour](catalog/waterway-tour/run.json) | 54 | 97.2 | 5 | gold | [4](catalog/waterway-tour/complete.jpg) |
+| [thermal-surf](catalog/thermal-surf/run.json) | 80 | 87.3 | 5 | gold | [4](catalog/thermal-surf/complete.jpg) |
+| [high-dive](catalog/high-dive/run.json) | 102 | 103.9 | 5 | gold | [4](catalog/high-dive/complete.jpg) |
+| [water-skim](catalog/water-skim/run.json) | 121 | 115.4 | 5 | gold | [4](catalog/water-skim/complete.jpg) |
+| [ridge-trial](catalog/ridge-trial/run.json) | 115 | 94.4 | 5 | gold | [4](catalog/ridge-trial/complete.jpg) |
+| [traffic-dodge](catalog/traffic-dodge/run.json) | 31 | 73.0 | 5 | gold | [4](catalog/traffic-dodge/complete.jpg) |
+| [precision-landing](catalog/precision-landing/run.json) | 127 | 102.4 | 5 | silver | [4](catalog/precision-landing/complete.jpg) |
+| [combo-run](catalog/combo-run/run.json) | 394 | 92.1 | 5 | gold | [4](catalog/combo-run/complete.jpg) |
+| [night-flight](catalog/night-flight/run.json) | 463 | 114.9 | 5 | gold | [4](catalog/night-flight/complete.jpg) |
+| [radar-run](catalog/radar-run/run.json) | 113 | 66.6 | 5 | gold | [4](catalog/radar-run/complete.jpg) |
+| [precision-chain](catalog/precision-chain/run.json) | 45 | 89.2 | 5 | gold | [4](catalog/precision-chain/complete.jpg) |
+| [butter-landing](catalog/butter-landing/run.json) | 222 | 121.9 | 5 | bronze | [4](catalog/butter-landing/complete.jpg) |
+| [dry-run](catalog/dry-run/run.json) | 63 | 69.2 | 5 | gold | [4](catalog/dry-run/complete.jpg) |
+| [gust-rider](catalog/gust-rider/run.json) | 361 | 112.9 | 5 | gold | [4](catalog/gust-rider/complete.jpg) |
+| [range-run](catalog/range-run/run.json) | 417 | 74.4 | 5 | gold | [4](catalog/range-run/complete.jpg) |
+| [settlement-tour](catalog/settlement-tour/run.json) | 76 | 79.6 | 5 | gold | [4](catalog/settlement-tour/complete.jpg) |
+| [airshow-run](catalog/airshow-run/run.json) | 19 | 89.5 | 5 | silver | [4](catalog/airshow-run/complete.jpg) |
+| [biome-tour](catalog/biome-tour/run.json) | 42 | 118.8 | 5 | silver | [4](catalog/biome-tour/complete.jpg) |
+| [scout-run](catalog/scout-run/run.json) | 32 | 74.3 | 5 | gold | [4](catalog/scout-run/complete.jpg) |
+| [skyline-run](catalog/skyline-run/run.json) | 33 | 101.6 | 5 | gold | [4](catalog/skyline-run/complete.jpg) |
+| [speed-run](catalog/speed-run/run.json) | 20 | 77.7 | 5 | gold | [4](catalog/speed-run/complete.jpg) |
+| [terrain-hugger](catalog/terrain-hugger/run.json) | 46 | 105.9 | 5 | gold | [4](catalog/terrain-hugger/complete.jpg) |
+| [fuel-saver](catalog/fuel-saver/run.json) | 38 | 71.9 | 5 | gold | [4](catalog/fuel-saver/complete.jpg) |
+| [energy-run](catalog/energy-run/run.json) | 51 | 74.5 | 5 | gold | [4](catalog/energy-run/complete.jpg) |
+| [storm-contract](catalog/storm-contract/run.json) | 69 | 112.6 | 5 | gold | [4](catalog/storm-contract/complete.jpg) |
+| [crosswind-run](catalog/crosswind-run/run.json) | 216 | 84.1 | 5 | gold | [4](catalog/crosswind-run/complete.jpg) |
+| [mach-run](catalog/mach-run/run.json) | 57 | 70.7 | 5 | gold | [4](catalog/mach-run/complete.jpg) |
+| [burn-run](catalog/burn-run/run.json) | 30 | 66.6 | 5 | gold | [4](catalog/burn-run/complete.jpg) |
+| [g-control-run](catalog/g-control-run/run.json) | 247 | 90.5 | 5 | gold | [4](catalog/g-control-run/complete.jpg) |
+| [deadstick-run](catalog/deadstick-run/run.json) | 99 | 137.0 | 5 | silver | [4](catalog/deadstick-run/complete.jpg) |
+| [clean-circuit-run](catalog/clean-circuit-run/run.json) | 9 | 116.7 | 5 | gold | [4](catalog/clean-circuit-run/complete.jpg) |
+| [level-flight-run](catalog/level-flight-run/run.json) | 320 | 70.9 | 5 | gold | [4](catalog/level-flight-run/complete.jpg) |
+| [water-run](catalog/water-run/run.json) | 4 | 103.8 | 5 | gold | [4](catalog/water-run/complete.jpg) |
+| [brake-check-run](catalog/brake-check-run/run.json) | 47 | 90.4 | 5 | gold | [4](catalog/brake-check-run/complete.jpg) |
+| [thermal-control-run](catalog/thermal-control-run/run.json) | 2 | 110.5 | 5 | gold | [4](catalog/thermal-control-run/complete.jpg) |
+| [front-chaser-run](catalog/front-chaser-run/run.json) | 259 | 110.1 | 5 | gold | [4](catalog/front-chaser-run/complete.jpg) |
+| [shoreline-run](catalog/shoreline-run/run.json) | 30 | 94.6 | 5 | gold | [4](catalog/shoreline-run/complete.jpg) |
+
+Two additional full-cadence Free flights on seeds 42 and 73 drain nitro to empty, passively refill to 75%, boost again, then include hard turns, stall/recovery, climbs/dives, runway contact and full wheel-brake stops. They remain unscored and open after landing.

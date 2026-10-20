@@ -102,9 +102,12 @@ window.__training.before=dt=>{
  if(activeSortie.course.id!=='free-flight'||b21Free.done){b21OriginalBefore(dt);return}
  const p=aircraft.position,c=aircraft.controls,pose=attitudeFromOrientation(aircraft.orientation),f=b21Free
  f.time+=dt;f.total+=dt;training.seconds+=dt;training.stage=f.stage
- const next=stage=>{(training.freeStages||=[]).push({stage:f.stage,seconds:f.total,position:p.toArray(),speed:aircraft.speed,vy:aircraft.velocity.y,loadFactor:aircraft.loadFactor});f.stage=stage;f.time=0}
+ const next=stage=>{(training.freeStages||=[]).push({stage:f.stage,seconds:f.total,position:p.toArray(),speed:aircraft.speed,vy:aircraft.velocity.y,loadFactor:aircraft.loadFactor,nitro:{...aircraft.nitro}});f.stage=stage;f.time=0}
  let pitch=0,bank=0,speed=220,throttle=1
- if(f.stage==='takeoff'){pitch=.28;if(aircraft.altitudeAgl>3000&&aircraft.speed>180)next('hard-turn')}
+ if(f.stage==='takeoff'){pitch=.28;if(aircraft.altitudeAgl>3000&&aircraft.speed>180)next('nitro-drain')}
+ if(f.stage==='nitro-drain'){pitch=.02;speed=650;if(aircraft.nitro.depleted)next('nitro-refill')}
+ if(f.stage==='nitro-refill'){pitch=0;throttle=.55;speed=340;if(aircraft.nitro.fraction>=.75)next('nitro-restart')}
+ if(f.stage==='nitro-restart'){pitch=.08;speed=650;if(f.time>3)next('hard-turn')}
  if(f.stage==='hard-turn'){bank=1.40;pitch=0;if(f.time>1.3)c.pitch=.25;if(f.time>11)next('climb')}
  if(f.stage==='climb'){pitch=.35;if(f.time>12)next('dive')}
  if(f.stage==='dive'){pitch=-.28;if(f.time>10)next('stall-entry')}
@@ -114,7 +117,7 @@ window.__training.before=dt=>{
  if(f.stage==='hard-turn'&&f.time>1.3)c.pitch=.25
  if(aircraft.onGround)c.pitch=aircraft.speed>38?.85:0
  c.roll=trainClamp((bank-pose.roll)*2+aircraft.angularVelocity.z*.4,-1,1)
- c.yaw=0;c.throttle=throttle;c.boost=false;c.gearDown=aircraft.altitudeAgl<12;c.stabilityAssist=false
+ c.yaw=0;c.throttle=throttle;c.boost=['nitro-drain','nitro-restart'].includes(f.stage);c.gearDown=aircraft.altitudeAgl<12;c.stabilityAssist=false
  c.airbrake=aircraft.speed>speed+12
 }
 window.__training.touch=touch=>{
@@ -175,3 +178,35 @@ const b21SoundState = window.__training.state
 window.__training.state = () => ({ ...b21SoundState(), audio: { state: audio['ctx']?.state, cues: training.audioCues,
  engineGain: audio['engineGain']?.gain.value, filterHz: audio['engineFilter']?.frequency.value,
  masterGain: audio['master']?.gain.value } })
+
+// Each mission uses short aligned bursts near gates. Navigation and landing
+// remain the original controls pilot; routes and evaluators remain untouched.
+const b21FlightBefore = window.__training.before
+training.nitroTimeline = []; training.refills = []
+window.__training.before = dt => {
+ b21FlightBefore(dt)
+ if (!training.active) return
+ if (activeSortie.course.id !== 'free-flight' && training.forceBoost === undefined && training.stage === 'gates') {
+  const gate = world.mission.activeGatePos(), p = aircraft.position, pose = attitudeFromOrientation(aircraft.orientation)
+  if (gate) {
+   const dx=gate.x-p.x,dz=gate.z-p.z,range=Math.hypot(dx,dz)
+   const error=Math.atan2(Math.sin(Math.atan2(dx,dz)-pose.heading),Math.cos(Math.atan2(dx,dz)-pose.heading))
+   if (training.boostedGate !== world.mission.next && range>100 && range<260 && Math.abs(error)<.12 && aircraft.speed<230 && aircraft.altitudeAgl>30) {
+    training.boostedGate=world.mission.next; training.boostUntil=training.seconds+.8
+   }
+   if (training.seconds < (training.boostUntil||0)) {
+    aircraft.controls.boost=true; aircraft.controls.throttle=1; aircraft.controls.airbrake=false
+   }
+  }
+ }
+ if (training.seconds >= (training.nitroSampleAt||0)) {
+  training.nitroSampleAt=training.seconds+.5
+  training.nitroTimeline.push({seconds:training.seconds,stage:training.stage,reserve:aircraft.nitro.fraction,
+   depleted:aircraft.nitro.depleted,boosting:aircraft.engineState.afterburnerActive,requested:aircraft.controls.boost,speed:aircraft.speed})
+ }
+}
+window.__training.gateBefore = () => { training.gateBefore={...aircraft.nitro} }
+window.__training.gateAfter = () => { training.refills.push({seconds:training.seconds,gate:world.mission.next,
+ before:training.gateBefore,after:{...aircraft.nitro}}) }
+const b21FlightState = window.__training.state
+window.__training.state = () => ({ ...b21FlightState(), nitroTimeline:training.nitroTimeline, nitroRefills:training.refills })
