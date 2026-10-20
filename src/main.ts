@@ -1,3 +1,4 @@
+import { FLIGHT_REVISION_TAG, flightRecordId, legacyFlightRecordLabel } from './core/FlightRevision'
 import { warmupShadowVariants } from './core/RendererWarmup'
 import {
   ACESFilmicToneMapping,
@@ -479,6 +480,8 @@ export async function boot(): Promise<void> {
       const resolvedCourse = catalogCourse(course, opsTimestamp)
       const runId = courseRunId(resolvedCourse, opsTimestamp)
       const record = runId ? readCourseRecord(runId) : null
+      const legacyLabel = legacyFlightRecordLabel(qualityStorage,
+        runId ?? flightRecordId(course.id === 'free-flight' ? 'free-flight' : 'random-world'))
       const recentRank = recentCourseIds.indexOf(course.id)
       const favoriteRank = favoriteCourseIds.indexOf(course.id)
       const copy = coursePickerCopy({
@@ -503,14 +506,14 @@ export async function boot(): Promise<void> {
         id: course.id,
         label: course.label,
         detail: copy.detail,
-        meta: [copy.meta, `DIFF ${coursePickerDifficultyLabel(difficulty)}`, `FOCUS ${coursePickerChallengeLabel(challenge)}`, `TIER ${coursePickerMasteryLabel(mastery)}`, opsStreakLabel(opsStreaks, course.id, course.id === 'daily-ops'
+        meta: [copy.meta, `PHYSICS ${FLIGHT_REVISION_TAG.toUpperCase()}`, `DIFF ${coursePickerDifficultyLabel(difficulty)}`, `FOCUS ${coursePickerChallengeLabel(challenge)}`, `TIER ${coursePickerMasteryLabel(mastery)}`, opsStreakLabel(opsStreaks, course.id, course.id === 'daily-ops'
           ? dailyOpsDayKey(opsTimestamp)
           : course.id === 'weekly-ops'
             ? weeklyOpsWeekKey(opsTimestamp)
             : course.id === 'monthly-ops'
               ? monthlyOpsMonthKey(opsTimestamp)
               : undefined)].filter(Boolean).join(' · '),
-        stats: [copy.stats, coursePickerFlightLogLabel(record?.history ?? null)].filter(Boolean).join(' · '),
+        stats: [copy.stats, coursePickerFlightLogLabel(record?.history ?? null), legacyLabel].filter(Boolean).join(' · '),
         category: coursePickerCategoryForCourse(course),
         recent: recentRank >= 0,
         recentRank: recentRank >= 0 ? recentRank : undefined,

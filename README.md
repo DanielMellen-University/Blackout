@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.960**. Previous roadmap chunk: **10.959**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.961**. Previous roadmap chunk: **10.960**.
+
+Recent changes from **10.961**. Retune jet lift, drag, stall progression and roll/pitch response for b20. Charge turn drag from the flight-path bend, preserve dry cruise and existing afterburner behavior, and recover low-speed stalls with power and forward stick. Store revision 31 records and ghosts separately, label retained pre-b20 records and exempt them from pruning. Pin numerical probes and historical terrain evidence to their proper runtimes. Browser flight verification follows. See docs/reviews/physics-b20/README.md.
 
 Recent changes from **10.960**. Remove the ripgrep dependency from terrain close-out evidence validation. Enumerate source files with Git, preserving the frozen-runtime hashes and every evidence acceptance rule. Verify focused evidence checks, the full suite and the production build before the b20 physics retune.
 
@@ -17,8 +19,6 @@ Recent changes from **10.956**. Publish the b19r terrain close-out report. The s
 Recent changes from **10.952**. Ship the parked Weather approach mission as is, using seeded weather, five gates, existing approach guidance, medals, records and ghosts. Keep current main fixes and omit the bulky parked review artifacts. Verify focused and full tests, the production build and a browser flight; see docs/reviews/weather-approach-10.952/README.md. Preserve flight physics and paused exclusions.
 
 Recent changes from **10.951**. Set the approved priority order to terrain, flight physics then nitro/boost, randomly generated terrain-shaped missions, and gameplay. Record the b18 through b21 plan, approval rule and current-mission polish freeze. Preserve paused exclusions, the approximate 200 MB heap target and closed city/roads redesign.
-
-Recent changes from **10.950**. Repair CI by retaining the shipped accessible AGL description in instrument tests and trimming older README history to the changelog. Preserve neutral altitude readings, flight physics and all paused exclusions.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

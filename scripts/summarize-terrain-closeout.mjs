@@ -11,9 +11,22 @@ assert.ok(selection.seeds.every(seed=>[42,73,1337,2026,9001,1].includes(seed)),'
 const fallback=selection.seeds.find(seed=>![42,73,1337].includes(seed))
 if(fallback){assert.ok(selection.reason?.trim(),'Fallback attribution required');await access(`${dir}/hitch-1337.md`)}
 const stages={audit:[42,2026,9001,1,73,1337],final:[42,2026,9001,1,73,1337],lod:[42,2026,9001,1,73,1337],endurance:selection.seeds}
+// Historical regression checks remain pinned to the accepted pre-b20 runtime.
+const runtimeRef=process.argv.includes('--archive-runtime')?'e3fe1a2':null
 const rows=[];let baseline
-const currentFiles=[...new Set(execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z','--','src'],{encoding:'utf8'}).split('\0').filter(Boolean))].sort()
-const currentHashes=Object.fromEntries(await Promise.all(currentFiles.map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])))
+const currentFiles=[...new Set(execFileSync('git',runtimeRef?['ls-tree','-r','--name-only','-z',runtimeRef,'--','src']:['ls-files','--cached','--others','--exclude-standard','-z','--','src'],{encoding:'utf8'}).split('\0').filter(Boolean))].sort()
+const frozenBlobs=runtimeRef?execFileSync('git',['cat-file','--batch'],{input:currentFiles.map(file=>`${runtimeRef}:${file}\n`).join(''),maxBuffer:16*1024*1024}):null
+let blobOffset=0
+const currentHashes={}
+for(const file of currentFiles){
+ let bytes
+ if(frozenBlobs){
+  const end=frozenBlobs.indexOf(10,blobOffset),header=frozenBlobs.subarray(blobOffset,end).toString(),size=Number(header.split(' ')[2])
+  assert.ok(Number.isFinite(size),`Missing frozen source: ${file}`)
+  bytes=frozenBlobs.subarray(end+1,end+1+size);blobOffset=end+size+2
+ }else bytes=await readFile(file)
+ currentHashes[file]=createHash('sha256').update(bytes).digest('hex')
+}
 for(const [stage,seeds] of Object.entries(stages))for(const seed of seeds){
  const path=`${dir}/${stage}/${seed}.json`
  try{await access(path)}catch{assert.ok(!complete&&stage!=='audit',`Missing ${path}`);continue}
@@ -56,7 +69,7 @@ for(const [stage,seeds] of Object.entries(stages))for(const seed of seeds){
  for(const [ms,n] of histogram){cumulative+=n;if(cumulative>=count*.95){p95Ms=ms;break}}
  rows.push({stage,seed,seconds:r.final.seconds,wallSeconds:r.wallSeconds,horizontalKm:horizontalM/1000,stills:r.pictures.length,minAgl:Math.min(...r.samples.map(s=>s.agl)),maxAgl:Math.max(...r.samples.map(s=>s.agl)),errors:r.errors.length,frames:count,meanFps:count*1000/histogram.reduce((sum,[ms,n])=>sum+ms*n,0),p95Ms,maxFrameMs:histogram.at(-1)?.[0]??0,over100:r.metrics.hitches.length,terrainMaxMs:r.metrics.terrainMaxMs,terrainOver50:r.metrics.terrainSlow.filter(s=>s.ms>50).length,coverageMissing:r.metrics.coverageMissing,coverageMisses:r.metrics.coverageMisses??null,peakMainHeapMB:Math.max(...r.samples.map(s=>s.heapBytes))/1e6,weather:[...new Set(r.samples.map(s=>s.weather.id))],sourceCommit:r.sourceCommit})
 }
-const runtimeChanges=execFileSync('git',['diff','897807f','--name-only','--','src'],{encoding:'utf8'}).trim().split('\n').filter(p=>p&&p!=='src/core/Version.ts')
+const runtimeChanges=execFileSync('git',['diff','897807f',...(runtimeRef?[runtimeRef]:[]),'--name-only','--','src'],{encoding:'utf8'}).trim().split('\n').filter(p=>p&&p!=='src/core/Version.ts')
 assert.deepEqual(runtimeChanges,[],'Physics and production runtime must remain unchanged for this evidence-only batch')
 await writeFile(`${dir}/summary.json`,JSON.stringify({base:'897807f',completeEvidence:complete,enduranceSelection:selection,knownOpenPerformanceIssues:fallback?(selection.knownOpenPerformanceIssues??['Seed-1337 review pilot cold hydrology look-ahead stall; no clean full seed-1337 flight. Historical 3.7-second event remains unattributed. See hitch-1337.md.']):[],imageFindings:selection.imageFindings??[],productionChangesExcludingReleaseMetadata:runtimeChanges,note:'The visual/temporal review is recorded in markdown. This summary validates flight records and frozen runtime, not image appearance. RAF excludes screenshot windows; terrain update timing includes them. Heap is observed, not optimized.',rows},null,2)+'\n')
 console.table(rows.map(({stage,seed,seconds,minAgl,maxAgl,over100,terrainMaxMs,peakMainHeapMB})=>({stage,seed,seconds,minAgl,maxAgl,over100,terrainMaxMs,peakMainHeapMB})))

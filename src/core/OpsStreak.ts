@@ -1,3 +1,4 @@
+import { FLIGHT_REVISION_TAG } from './FlightRevision'
 import {
   dailyOpsDayKey,
   dailyOpsTimestampForDayKey,
@@ -8,7 +9,7 @@ import {
   type CourseId,
 } from '../systems/CourseLibrary'
 
-export const OPS_STREAK_STORAGE_KEY = 'blackout.ops-streak'
+export const OPS_STREAK_STORAGE_KEY = `blackout.ops-streak.${FLIGHT_REVISION_TAG}`
 export const MAX_OPS_STREAK = 1_000
 
 export type OpsStreakKind = 'daily' | 'weekly' | 'monthly'

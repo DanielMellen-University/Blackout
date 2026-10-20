@@ -23,7 +23,7 @@ function fixture() {
 
 function check(dir: string, record: unknown) {
   writeFileSync(join(dir, 'endurance/42.json'), JSON.stringify(record))
-  return spawnSync(process.execPath, ['scripts/summarize-terrain-closeout.mjs', dir, '--final'], { encoding: 'utf8' })
+  return spawnSync(process.execPath, ['scripts/summarize-terrain-closeout.mjs', dir, '--final', '--archive-runtime'], { encoding: 'utf8' })
 }
 
 describe('terrain close-out evidence acceptance', () => {
@@ -35,7 +35,7 @@ describe('terrain close-out evidence acceptance', () => {
     const git = process.env.PATH!.split(':').map(path => join(path, 'git')).find(path => existsSync(path))!
     symlinkSync(git, join(bin, 'git'))
     writeFileSync(join(dir, 'endurance/42.json'), JSON.stringify(record))
-    const result = spawnSync(process.execPath, ['scripts/summarize-terrain-closeout.mjs', dir, '--final'], {
+    const result = spawnSync(process.execPath, ['scripts/summarize-terrain-closeout.mjs', dir, '--final', '--archive-runtime'], {
       encoding: 'utf8', env: { ...process.env, PATH: bin },
     })
     expect(result.stderr).toBe('')

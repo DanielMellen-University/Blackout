@@ -9,8 +9,8 @@ export const flightConfig = {
   maxThrust: 780_000,
   boostThrustMul: 1.65,
 
-  /** Stall-ish floor (~80 kts). */
-  minSpeed: 41,
+  /** Low-speed lift reference, m/s (~93 kt); not an artificial speed floor. */
+  minSpeed: 48,
   /** Level military cruise, m/s (~660 kt). Thrust balances drag here. */
   cruiseSpeed: 340,
   /** Level afterburner cruise, m/s (~1010 kt). */
@@ -18,8 +18,8 @@ export const flightConfig = {
   /** Dive cap, m/s (~1320 kt). Dry and afterburner share it. */
   maxSpeed: 680,
   maxSpeedBoost: 680,
-  /** Level-flight sustain (~180 kts). */
-  liftSpeed: 92,
+  /** Full low-angle lift support, m/s (~132 kt). Stall sink grows below this. */
+  liftSpeed: 68,
 
   /** Full military acceleration at low speed, m/s². */
   milAccel: 48,
@@ -49,16 +49,16 @@ export const flightConfig = {
   /** Bounded arcade updraft force from deterministic thermal pockets. */
   thermalLiftAcceleration: 2.4,
 
-  /** How hard velocity snaps onto the nose (the whole turn model). */
-  alignRate: 5.4,
+  /** Flight-path alignment at full lift. It softens continuously in a stall. */
+  alignRate: 6.2,
 
-  pitchRate: 0.95,
-  rollRate: 2.7,
+  pitchRate: 1.18,
+  rollRate: 3.45,
   yawRate: 1.05,
-  pitchResponse: 7,
-  angularResponse: 12,
+  pitchResponse: 10,
+  angularResponse: 14,
   angularDamping: 4.2,
-  airControlFullSpeed: 38,
+  airControlFullSpeed: 90,
   /** Half-strength trim, delayed after yaw/roll input so it never fights a turn. */
   stabilityAssistPitch: 0.575,
   stabilityAssistRoll: 0.9,
@@ -75,12 +75,18 @@ export const flightConfig = {
   gearHeight: 1.4,
   bellyHeight: 0.95,
 
-  rotateSpeed: 26,
-  rotateClimb: 11,
+  rotateSpeed: 40,
+  rotateClimb: 8,
   groundSteer: 1.7,
 
-  /** Stall AoA reference used by the tuned flight warning HUD. */
-  stallAoA: 0.4,
+  /** Smooth aerodynamic separation starts here, in radians. No alert system. */
+  stallAoA: 0.32,
+  stallAoAFull: 0.68,
+  /** Gentle nose drop at low lift, rad/s, with enough forward-stick recovery. */
+  stallNoseDrop: 0.36,
+  /** Induced deceleration per squared turn load at cruise, m/s². */
+  inducedDrag: 0.16,
+  maxDragLoad: 10,
 
   throttleRate: 1.8,
 

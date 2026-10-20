@@ -1,3 +1,4 @@
+import { FLIGHT_REVISION_TAG, isCurrentFlightRecord } from './FlightRevision'
 import {
   dailyOpsTimestampForDayKey,
   monthlyOpsTimestampForMonthKey,
@@ -15,8 +16,8 @@ const ROTATING_RECORD_PREFIXES = [
 ] as const
 
 const SEEDED_RANDOM_RECORD_PREFIXES = ROTATING_RECORD_PREFIXES
-const SEEDED_RANDOM_RECORD_ID = /^seed:-?\d+:[a-z-]+:custom$/
-export const SEEDED_RANDOM_RECORDS_STORAGE_KEY = 'blackout.seededRandomRecords'
+const SEEDED_RANDOM_RECORD_ID = new RegExp(`^seed:-?\\d+:[a-z-]+:${FLIGHT_REVISION_TAG}:custom$`)
+export const SEEDED_RANDOM_RECORDS_STORAGE_KEY = `blackout.seededRandomRecords.${FLIGHT_REVISION_TAG}`
 /** Keep explicit exploration history useful without allowing one key per seed forever. */
 export const SEEDED_RANDOM_RECORD_RETENTION = 12
 
@@ -76,7 +77,8 @@ export function pruneRotatingCourseRecords(
   let removed = 0
 
   for (const key of keys) {
-    if (!ROTATING_RECORD_PREFIXES.some(prefix => key.startsWith(prefix))) continue
+    const prefix = ROTATING_RECORD_PREFIXES.find(prefix => key.startsWith(prefix))
+    if (!prefix || !isCurrentFlightRecord(key.slice(prefix.length))) continue
     const period = rotatingPeriodFromKey(key)
     if (!period) continue
     const timestamp = periodTimestamp(period.kind, period.key)

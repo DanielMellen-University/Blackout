@@ -64,8 +64,9 @@ const CONTACT_POINTS: ReadonlyArray<readonly [number, number, number]> = [
  *
  * One rule: the jet goes where the nose points.
  * Roll/pitch/yaw aim the nose. Velocity is pulled onto +Z every frame.
- * Gravity is always on; lift only cancels it when you have speed and
- * aren't inverted. No weathervane, no extra bank-turn mixer.
+ * Gravity spends energy in climbs and returns it in dives. Lift and
+ * flight-path alignment fade smoothly with speed and angle of attack.
+ * Turning load adds drag; pure roll does not. No bank-turn mixer.
  *
  * Body: +X right, +Y up, +Z nose.
  */
@@ -114,6 +115,13 @@ export class FlightModel {
     const airspeed = velocity.length()
     const air = MathUtils.clamp(airspeed / C.airControlFullSpeed, 0, 1)
 
+    // Speed and angle of attack reduce lift smoothly, without random wing drops.
+    const forwardSpeed = velocity.dot(_fwd)
+    const alpha = Math.atan2(-velocity.dot(_up), Math.max(0.01, forwardSpeed))
+    const speedLift = MathUtils.smoothstep(airspeed, C.minSpeed * 0.6, C.liftSpeed)
+    const attachedFlow = 1 - 0.78 * MathUtils.smoothstep(Math.abs(alpha), C.stallAoA, C.stallAoAFull)
+    const liftSupport = speedLift * attachedFlow
+
     // --- Aim the nose ---
     let auth = air
     if (onGround) {
@@ -129,6 +137,9 @@ export class FlightModel {
     const q = 1 / (1 + (airspeed / 1260) ** 2 * 0.22)
 
     let tOx = -controls.pitch * C.pitchRate * auth * q
+    if (!onGround) {
+      tOx += (1 - liftSupport) * C.stallNoseDrop * MathUtils.clamp(_fwd.y + 0.3, 0, 1)
+    }
     const tOy = controls.yaw * C.yawRate * (onGround ? Math.max(auth, 0.45) : auth)
     let tOz = -controls.roll * C.rollRate * (onGround ? auth * 0.28 : auth)
     // Use control axes rather than keys so remapping and gamepads behave alike.
@@ -198,13 +209,11 @@ export class FlightModel {
     const boost = engine.afterburnerActive
     const vmax = engine.maxSpeed
 
-    // Slow flight still falls. Fast upright flight is held by the nose,
-    // and a climb spends speed in the thrust step instead of getting it back.
+    // Lift acts across the nose, never along it. Gravity alone accounts for
+    // climb/dive energy, so it is not charged a second time in thrust.
     if (!onGround) {
-      const liftFrac =
-        MathUtils.clamp((airspeed / C.liftSpeed) ** 2, 0, 1) *
-        MathUtils.clamp(_up.y, 0, 1)
-      velocity.y -= C.gravity * (1 - liftFrac) * dt
+      velocity.y -= C.gravity * dt
+      velocity.addScaledVector(_up, C.gravity * liftSupport * MathUtils.clamp(_up.y, 0, 1) * dt)
       const thermal = MathUtils.clamp(
         Number.isFinite(aircraft.thermalLift) ? aircraft.thermalLift : 0,
         0,
@@ -236,7 +245,7 @@ export class FlightModel {
     // --- THE turn: snap velocity onto the nose ---
     const spd = velocity.length()
     if (!onGround && spd > 3) {
-      const align = C.alignRate * MathUtils.clamp(0.35 + air * 0.75, 0.35, 1)
+      const align = C.alignRate * (0.18 + liftSupport * 0.82) * MathUtils.clamp(0.35 + air * 0.75, 0.35, 1)
       const t = 1 - Math.exp(-align * dt)
       _velDir.copy(velocity).normalize().lerp(_fwd, t).normalize()
       velocity.copy(_velDir).multiplyScalar(spd)
@@ -263,7 +272,6 @@ export class FlightModel {
       const thrust = engine.fuelAvailable ? C.milAccel * lever * thrustMul : 0
       const drag = C.milAccel * (s / cruise) ** 2
       let along = thrust - drag
-      if (!onGround) along -= C.gravity * MathUtils.clamp(_fwd.y, -1, 1)
       if (idle) along -= C.idleBleed * MathUtils.clamp(s / 70, 0.15, 1)
       if (onGround && controls.airbrake) along = Math.min(0, along)
       if (onGround && idle) {
@@ -285,7 +293,7 @@ export class FlightModel {
         velocity.set(0, 0, 0)
       }
 
-      // Light extra bleed so gear / hard stick still cost a little
+      // Gear and brakes spend speed. Induced drag follows the actual path bend.
       const s2 = velocity.length()
       if (s2 > 1e-4) {
         _velDir.copy(velocity).multiplyScalar(1 / s2)
@@ -302,7 +310,16 @@ export class FlightModel {
             extra += C.airbrakeStrength * MathUtils.clamp(s2 / 200, 0.18, 1)
           }
         }
-        extra += stick * 1.4 * MathUtils.clamp(s2 / 160, 0.2, 1.2)
+        if (!onGround) {
+          // Roll about the flight path costs no turn energy. A held deflection
+          // and a released stick producing the same path bend cost the same.
+          const pathAngle = Math.acos(MathUtils.clamp(_velDir.dot(_fwd), -1, 1))
+          const pathRate = C.alignRate * (0.18 + liftSupport * 0.82) *
+            MathUtils.clamp(0.35 + air * 0.75, 0.35, 1) * Math.sin(pathAngle)
+          const turnLoad = Math.min(C.maxDragLoad, s2 * pathRate / C.gravity)
+          extra += C.inducedDrag * turnLoad ** 2 * (C.cruiseSpeed / Math.max(s2, C.liftSpeed)) ** 2
+          extra += (1 - attachedFlow) * 0.06 * s2
+        }
         if (onGround && lever < 0.08 && !boost) {
           extra += C.rollingDecel * 0.45 * MathUtils.clamp(aircraft.weatherSurfaceGrip, 0.72, 1)
         }

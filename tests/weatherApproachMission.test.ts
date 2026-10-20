@@ -14,10 +14,10 @@ describe('Weather approach', () => {
     expect(course.seed).toBe(seed)
     expect(course.weather).toBe(seed % 3 === 0 ? 'cloudy' : seed % 3 === 1 ? 'rain' : 'fog')
     expect(course.windSide).toBe(seed % 2 === 0 ? 'left' : 'right')
-    expect(courseRunId(course)).toBe(`seed:${seed}:weather`)
+    expect(courseRunId(course)).toBe(`seed:${seed}:weather:r31`)
     const active = new CourseSession(Date.now()).capture('weather-approach', seed, 'weather')
     expect(active.course).toEqual(course)
-    expect(active.recordId).toBe(`seed:${seed}:weather`)
+    expect(active.recordId).toBe(`seed:${seed}:weather:r31`)
     setWorldSeed(seed); clearOpsPad()
     const pad = findPlayableSpawn()!
     setOpsPad(pad.x, pad.z, pad.y, pad.yaw)

@@ -1,8 +1,9 @@
+import { flightRecordId } from '../core/FlightRevision'
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
-export const RANDOM_COURSE_RUN_ID = 'random-world'
+export const RANDOM_COURSE_RUN_ID = flightRecordId('random-world')
 
 interface CourseDefinitionShape {
   id: string
@@ -981,7 +982,7 @@ export function courseSessionId(
     const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
     return `${courseSessionBaseId(safeSeed, profile)}:custom`
   }
-  if (profile === 'free') return 'free-flight'
+  if (profile === 'free') return flightRecordId('free-flight')
   const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
   const period = selectedCourseId === DAILY_OPS_COURSE_ID
     ? 'daily'
@@ -998,7 +999,7 @@ export function courseSessionId(
 
 /** Keep authored records stable while separating the one legacy key collision. */
 function courseSessionBaseId(seed: number, profile: MissionRouteProfile): string {
-  return `seed:${seed}:${profile}`
+  return flightRecordId(`seed:${seed}:${profile}`)
 }
 
 function courseIdentitySuffix(id: CourseId): string {

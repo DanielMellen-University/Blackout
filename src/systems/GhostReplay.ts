@@ -1,3 +1,4 @@
+import { FLIGHT_REVISION } from '../core/FlightRevision'
 import {
   AdditiveBlending,
   BufferAttribute,
@@ -15,8 +16,8 @@ import {
 export const MAX_GHOST_SAMPLES = 720
 export const GHOST_SAMPLE_INTERVAL = 0.1
 export const GHOST_STORAGE_PREFIX = 'blackout.ghost.'
-/** Landscape or route changes invalidate paths, never the player's saved records. */
-export const WORLD_GENERATION_REVISION = 30
+/** Route/physics compatibility. Old paths stay stored under their original keys. */
+export const WORLD_GENERATION_REVISION = FLIGHT_REVISION
 
 interface GhostStorage {
   getItem(key: string): string | null

@@ -146,7 +146,9 @@ it('does not slam the brakes after a powered dive', () => {
   plane.velocity.set(0, -held, 0)
   plane.angularVelocity.set(0, 0, 0)
   for (let i = 0; i < 90; i++) plane.step(1 / 60)
-  expect(plane.speed).toBeGreaterThan(held + 15)
+  // Half dry thrust plus one gravity term, minus quadratic drag: about 8 m/s in 1.5 s.
+  expect(plane.speed).toBeGreaterThan(held + 7)
+  expect(plane.speed).toBeLessThan(held + 10)
   expect(plane.speed).toBeLessThan(flightConfig.maxSpeed + 1)
 })
 
