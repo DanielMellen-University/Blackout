@@ -35,7 +35,8 @@ describe('terrain close-out evidence acceptance', () => {
     const summary = JSON.parse(readFileSync(join(dir, 'summary.json'), 'utf8'))
     expect(summary.completeEvidence).toBe(true)
     expect(summary.rows).toHaveLength(21)
-    expect(summary.knownOpenPerformanceIssues).toHaveLength(1)
+    expect(summary.knownOpenPerformanceIssues.some((issue: string) => issue.startsWith('Seed-1337'))).toBe(true)
+    expect(summary.imageFindings).toHaveLength(1)
   })
 
   it('rejects a changed alternative-seed route', () => {
