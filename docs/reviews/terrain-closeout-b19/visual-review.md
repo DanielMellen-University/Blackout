@@ -10,4 +10,4 @@ The appearance remains visibly different across the five requested groups: snow-
 
 `mission-loads.json` records successful DOM selection and launch of the five featured missions and Random world, with no application/console errors. This is a loading smoke check only, with no mission polish or completion claim.
 
-Seeds 42 and 73 complete clean 650-second flights, with all 44 chase/cockpit minute stills rechecked during b19r. The third accepted ten-minute flight remains pending. The interrupted seed-1337 repeat is archived in `endurance-partial/1337-usage-limit/` and is excluded from acceptance. See `part-a.md` and the final report for the eventual decision.
+Seeds 42 and 73 complete clean 650-second flights, with all 44 chase/cockpit minute stills rechecked during b19r. The third accepted ten-minute flight remains open after both full b19r seed-1337 attempts record unexplained timing gaps. The interrupted seed-1337 repeat is archived in `endurance-partial/1337-usage-limit/` and is excluded from acceptance. See `part-a.md`, `part-b.md` and `final-report.md` for the final decision: terrain step 1 remains open.

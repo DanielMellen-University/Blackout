@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.955**. Previous roadmap chunk: **10.954**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.956**. Previous roadmap chunk: **10.955**.
+
+Recent changes from **10.956**. Publish the b19r terrain close-out report. The six-seed chase/cockpit appearance, five biome groups and normal-altitude LOD checks pass within the retained routes. Keep roadmap step 1 OPEN: only two of three required clean ten-minute flights pass, and both full seed-1337 retries contain unexplained timing gaps. Preserve production terrain, physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/final-report.md.
 
 Recent changes from **10.955**. Retain two full seed-1337 endurance attempts on the frozen 10.954 runtime. Both exceed 650 seconds without crashes, errors or coverage misses, but unexplained frame intervals exclude both from clean-flight acceptance. Archive all 44 stills and timing evidence. Keep terrain step 1 open for the third clean ten-minute flight. Preserve flight physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/part-b.md.
 
@@ -17,8 +19,6 @@ Recent changes from **10.951**. Set the approved priority order to terrain, flig
 Recent changes from **10.950**. Repair CI by retaining the shipped accessible AGL description in instrument tests and trimming older README history to the changelog. Preserve neutral altitude readings, flight physics and all paused exclusions.
 
 Recent changes from **10.949**. Polish existing flight reports so crash and ditch outcomes are clear and each failure reason appears once, while preserving score, coaching, retry and record behavior. Correct the featured-mission documentation to include the already-shipped Contour circuit. Add no features or mission types. See docs/reviews/debrief-10.949/README.md for focused tests and browser evidence.
-
-Recent changes from **10.948**. Record six isolated, unprofiled 120-second city and northeast flights on the shipped 10.947 runtime. Pooled means are 39.01 and 38.33 FPS, p95 is 33.4 ms on both routes, and no flight interval exceeds 100 ms. Main-thread JS heap peaks range from 187.3 to 208.9 MB; one run exceeds the approximate 200 MB reference. Make no performance changes or improvement claim. See docs/reviews/performance-10.948/README.md for all runs and limits.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
