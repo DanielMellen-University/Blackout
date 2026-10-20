@@ -1,3 +1,4 @@
+import { getTerrainProfile } from './TerrainProfile'
 import { writeWeatherTransport } from './WeatherTransport'
 import {
   AmbientLight,
@@ -819,6 +820,11 @@ export class Atmosphere {
     if (t > 0.18 && t < 0.38) _horizon.lerp(COL_DAWN_HORIZ, dusk * 0.9)
     if (t > 0.62 && t < 0.88) _horizon.lerp(COL_DUSK_HORIZ, dusk * 0.95)
 
+    if (getTerrainProfile()?.theme === 'desert-run') {
+      _c2.setHex(0xc7a979)
+      _horizon.lerp(_c2, dayFactor * .58)
+      _c.lerp(_c2, dayFactor * .12)
+    }
     // Haze / snow sky pull
     _c2.setHex(w.snow > 0.3 ? 0x9aabbc : 0x6a7888)
     _c.lerp(_c2, w.haze * 0.4 + w.snow * 0.12)

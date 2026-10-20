@@ -121,3 +121,24 @@ describe('rotating course record retention', () => {
     ])
   })
 })
+
+it('bounds generated themes in the existing seeded manifest without touching authored or old records', () => {
+  const data = new Map<string, string>()
+  const storage: IndexedRecordStorage = {
+    getItem: key => data.get(key) ?? null,
+    setItem: (key, value) => { data.set(key, value) },
+    removeItem: key => { data.delete(key) },
+  }
+  const protectedIds = ['seed:42:contour:r32', 'seed:42:generated-desert:r31:l30:q33', 'seed:42:desert:r32']
+  for (const id of protectedIds) data.set(`blackout.history.${id}`, 'retained')
+  for (let i = 0; i < SEEDED_RANDOM_RECORD_RETENTION + 2; i++) {
+    const id = `seed:${i}.125:generated-${i % 2 ? 'desert' : 'valley'}:r32:l30:q33`
+    data.set(`blackout.history.${id}`, 'history')
+    data.set(`blackout.ghost.${id}`, 'ghost')
+    touchSeededRandomCourseRecord(storage, id, i + 1)
+  }
+  expect(data.has('blackout.history.seed:0.125:generated-valley:r32:l30:q33')).toBe(false)
+  expect(data.has('blackout.ghost.seed:0.125:generated-valley:r32:l30:q33')).toBe(false)
+  expect(JSON.parse(data.get(SEEDED_RANDOM_RECORDS_STORAGE_KEY)!)).toHaveLength(SEEDED_RANDOM_RECORD_RETENTION)
+  for (const id of protectedIds) expect(data.has(`blackout.history.${id}`)).toBe(true)
+})

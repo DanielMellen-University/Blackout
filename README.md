@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.971**. Previous roadmap chunk: **10.970**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.972**. Previous roadmap chunk: **10.971**.
 
-Recent changes from **10.971**. Start approved step 3 with a pure seeded mission spec and terrain profile carried through existing terrain and settlement workers. Exactly two theme recipes are reserved. Preserve b20 physics, b21 nitro, existing missions and paused exclusions; theme delivery follows in 10.972 and 10.973.
+Recent changes from **10.972**. Ship the approved Desert run: each launch generates a seeded desert world with dunes, mesas, badlands, dry washes, sparse towns and warm haze. Fly five low gates and land on the generated runway using existing medals and records. Preserve original missions, b20 physics, b21 nitro and all paused exclusions. See docs/reviews/generator/README.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

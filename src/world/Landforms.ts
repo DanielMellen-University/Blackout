@@ -99,11 +99,23 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
     const forward = dx * Math.sin(profile.yaw) + dz * Math.cos(profile.yaw)
     const runwayBlend = smoothstep(180, 650, Math.abs(right)) * .5 + smoothstep(1000, 2000, Math.abs(forward)) * .5
     out.height = profile.baseHeight + runwayBlend * profile.relief * fbm(right / 4000, forward / 4000, 2)
+    let desertPlateau = 0
+    if (profile.theme === 'desert-run') {
+      const warp = (valueNoise(right / 1400, forward / 1900) - .5) * 280
+      const dune = (1 + Math.sin((right + warp) / 115 + forward / 650 + profile.phase)) * .5
+      const dunes = dune * dune * (18 + fbm(right / 1500, forward / 1500, 2) * 34)
+      const mesa = smoothstep(.32, .54, fbm(right / 2700 + 84, forward / 3200 - 91, 2))
+      const shelf = smoothstep(2100, 3000, Math.abs(right))
+      desertPlateau = mesa * shelf
+      const wash = 1 - smoothstep(28, 150, Math.abs(right - 600 * Math.sin(forward / 1800 + profile.phase)))
+      const badlands = fbm(right / 440 + 12, forward / 800, 2) * mesa * 55
+      out.height = profile.baseHeight + runwayBlend * (dunes + shelf * (mesa * profile.relief + badlands) - wash * 25)
+    }
     out.coast = 1
     out.moisture = profile.theme === 'desert-run' ? .04 : .32
     out.temperature = profile.theme === 'desert-run' ? .9 : .38
     out.highlands = 0; out.foothills = 0; out.ridge = 0; out.alpineValley = 0
-    out.plateau = 0; out.badlands = 0; out.dunes = 0; out.alluvial = 0
+    out.plateau = desertPlateau; out.badlands = profile.theme === 'desert-run' ? .8 : 0; out.dunes = profile.theme === 'desert-run' ? 1 : 0; out.alluvial = 0
     out.karst = 0; out.glacial = 0; out.cold = 0; out.hot = 0; out.dry = 1
     out.ravine = 0; out.volcanic = 0; out.caldera = 0; out.salt = 0
     return out

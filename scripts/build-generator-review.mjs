@@ -4,7 +4,7 @@ import { build } from 'vite'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-const hook = await readFile('scripts/browser-nitro-b21.js', 'utf8')
+const hook = await readFile('scripts/browser-generator.js', 'utf8')
 const hookSha256 = createHash('sha256').update(hook).digest('hex')
 const outDir = process.env.B21_DIST || '/tmp/blackout-generator-production'
 await build({ build: { outDir, emptyOutDir: true }, plugins: [{

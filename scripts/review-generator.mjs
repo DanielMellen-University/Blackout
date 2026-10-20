@@ -3,6 +3,7 @@ const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || '/tmp/blackou
 const theme = process.env.REVIEW_COURSE || 'training-orbit'
 const seeds = (process.env.REVIEW_SEEDS || '42').split(',')
 const part = process.env.REVIEW_PART || 'a'
+const smoke = part === 'a' || process.env.REVIEW_SMOKE === '1'
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/snap/bin/chromium', args: ['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface'] })
 try {
  for (const seed of seeds) {
@@ -31,7 +32,7 @@ try {
   while(Date.now()-started<600000){
    await page.waitForTimeout(1000)
    final=await page.evaluate(()=>window.__training.state())
-   samples.push(final)
+   samples.push(Object.fromEntries(['seconds','stage','next','phase','position','velocity','speed','agl','status','onGround','loadFactor','controls','nitro','stream','coverage','lod','heapMB'].map(key=>[key,final[key]])))
    if(Math.floor(final.seconds)%15===0)console.log(theme,seed,final.seconds.toFixed(1),final.stage,final.next,final.status)
    if(!shot && final.next>=1){
     for(const camera of ['chase','cockpit']){
@@ -43,7 +44,7 @@ try {
    if(!approach && final.stage==='approach' && final.agl<80 && final.agl>8){
     await page.evaluate(()=>window.__training.camera('cockpit'));await page.waitForTimeout(200);await page.evaluate(()=>window.__training.capture());await page.screenshot({path:`${dir}/approach-cockpit.jpg`,type:'jpeg',quality:87});pictures.push('approach-cockpit.jpg');await page.evaluate(()=>window.__training.camera('chase'));approach=true
    }
-   if(part==='a' && shot) break
+   if(smoke && shot) break
    if(final.resultsOpen || final.status==='crashed')break
   }
   const metrics=await page.evaluate(()=>{
@@ -51,9 +52,9 @@ try {
    return {frames:values.length,fps:values.length*1000/sum,p50:values[Math.floor(values.length*.5)],p95:values[Math.floor(values.length*.95)],max:values.at(-1),over50:values.filter(x=>x>50).length,over100:values.filter(x=>x>100).length,heapMB:performance.memory?.usedJSHeapSize/1048576}
   })
   await page.evaluate(()=>window.__training.capture());await page.screenshot({path:`${dir}/final.jpg`,type:'jpeg',quality:87});pictures.push('final.jpg')
-  const pass=errors.length===0&&(part==='a'?shot:final.status==='landed'&&final.phase==='complete'&&final.next===5&&final.resultsOpen)
-  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,pass,errors,pictures,metrics,build,final,samples},null,2)+'\n')
-  console.log('RESULT',JSON.stringify({theme,seed,part,pass,metrics}))
+  const pass=errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?shot:final.status==='landed'&&final.phase==='complete'&&final.next===5&&final.resultsOpen)
+  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,pass,errors,pictures,metrics,build,final,samples},null,2)+'\n')
+  console.log('RESULT',JSON.stringify({theme,seed,part,smoke,pass,metrics}))
   await context.close()
   if(!pass)throw Error(`Failed ${theme} ${seed}`)
  }

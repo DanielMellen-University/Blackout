@@ -1,4 +1,7 @@
-import { flightRecordId } from '../core/FlightRevision'
+import { normalizeWorldSeed } from '../core/WorldSeed'
+import { generatedThemeForProfile } from '../world/TerrainProfile'
+import { generateMission } from './MissionGenerator'
+import { FLIGHT_REVISION_TAG, flightRecordId } from '../core/FlightRevision'
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
@@ -99,6 +102,11 @@ export const COURSE_LIBRARY = [
     detail: 'New terrain and route every time',
     seed: null,
     profile: null,
+  },
+  {
+    id: 'desert-run', label: 'Desert run',
+    detail: 'A new seeded desert world. Race five low gates through dunes and dry washes, then return to your generated runway and land for a medal.',
+    seed: null, profile: 'generated-desert', weather: 'clear', timeOfDay: .46,
   },
   {
     id: 'free-flight',
@@ -945,7 +953,7 @@ function resolveWeatherApproach(course: CourseDefinition): CourseDefinition {
 
 /** Keep this featured mission's explicit seed replay in the existing selection/record family. */
 export function resolveCourseReplaySeed(course: CourseDefinition, seed: number | null): CourseDefinition {
-  if ((course.id !== 'contour-circuit' && course.id !== 'weather-approach') || seed === null || !Number.isSafeInteger(seed)) return course
+  if ((course.id !== 'contour-circuit' && course.id !== 'weather-approach' && !generatedThemeForProfile(course.profile)) || seed === null || (generatedThemeForProfile(course.profile) ? normalizeWorldSeed(seed) === null : !Number.isSafeInteger(seed))) return course
   const replay = { ...course, seed, detail: `${course.detail} · SEED ${seed}` }
   return course.id === 'weather-approach' ? resolveWeatherApproach(replay) : replay
 }
@@ -979,11 +987,11 @@ export function courseSessionId(
 ): string {
   if (selectedCourseId === 'random') {
     if (!seededRandom) return RANDOM_COURSE_RUN_ID
-    const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
+    const safeSeed = generatedThemeForProfile(profile) ? normalizeWorldSeed(worldSeed) ?? .001 : Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
     return `${courseSessionBaseId(safeSeed, profile)}:custom`
   }
   if (profile === 'free') return flightRecordId('free-flight')
-  const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
+  const safeSeed = generatedThemeForProfile(profile) ? normalizeWorldSeed(worldSeed) ?? .001 : Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
   const period = selectedCourseId === DAILY_OPS_COURSE_ID
     ? 'daily'
     : selectedCourseId === WEEKLY_OPS_COURSE_ID
@@ -999,7 +1007,10 @@ export function courseSessionId(
 
 /** Keep authored records stable while separating the one legacy key collision. */
 function courseSessionBaseId(seed: number, profile: MissionRouteProfile): string {
-  return flightRecordId(`seed:${seed}:${profile}`)
+  const theme = generatedThemeForProfile(profile)
+  const spec = theme ? generateMission(seed, theme) : null
+  const revision = spec ? `:l${spec.terrain.landscapeRevision}:q${spec.terrain.routeRevision}` : ''
+  return (spec ? `seed:${spec.seed}:${profile}:${FLIGHT_REVISION_TAG}` : flightRecordId(`seed:${seed}:${profile}`)) + revision
 }
 
 function courseIdentitySuffix(id: CourseId): string {

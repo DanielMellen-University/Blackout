@@ -1,3 +1,4 @@
+import { flightConfig } from '../aircraft/flightConfig'
 import { MISSION_THEMES, type MissionTheme, type TerrainProfile } from '../world/TerrainProfile'
 
 export interface GeneratedPoint { x: number; y: number; z: number }
@@ -15,7 +16,7 @@ export interface GeneratedMissionSpec {
 export function generateMission(seed: number, requestedTheme?: MissionTheme): GeneratedMissionSpec {
   if (!Number.isFinite(seed) || !Number.isSafeInteger(Math.round(seed * 1e6))) throw new Error('Invalid mission seed')
   if (requestedTheme !== undefined && !MISSION_THEMES.includes(requestedTheme)) throw new Error('Invalid mission theme')
-  const normalized = Math.round(seed * 1e6) / 1e6 || .001
+  const normalized = Math.round(seed * 1e6) / 1e6 || (seed < 0 ? -.001 : .001)
   let state = Math.round(normalized * 1e6) | 0
   const random = (): number => {
     state = Math.imul(state ^ (state >>> 16), 0x45d9f3b)
@@ -28,7 +29,7 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
     theme, landscapeRevision: 30, routeRevision: 33,
     originX: Math.round((random() - .5) * 10000), originZ: Math.round((random() - .5) * 10000),
     yaw: (random() - .5) * .7, baseHeight: 180 + random() * 100,
-    relief: theme === 'desert-run' ? 380 : 7600,
+    relief: theme === 'desert-run' ? 850 : 7600,
     valleyHalfWidth: 2900 + random() * 350, phase: random() * Math.PI * 2, dry: true,
   }
   const start = { x: terrain.originX, y: terrain.baseHeight, z: terrain.originZ, yaw: terrain.yaw }
@@ -39,7 +40,7 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
     y: start.y + 145,
     z: start.z - Math.sin(start.yaw) * right + Math.cos(start.yaw) * forward,
   }))
-  return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : 'generated-valley', terrain, start,
+  return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : 'generated-valley', terrain, start: { ...start, x: start.x - Math.sin(start.yaw) * 45, y: start.y + flightConfig.gearHeight, z: start.z - Math.cos(start.yaw) * 45 },
     landingRunway: { ...start, length: 120, width: 18 }, course,
     goals: { gates: 5, landingRequired: true, scoring: 'existing-medals', referenceSpeed: 150 } }
 }

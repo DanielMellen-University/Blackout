@@ -1,3 +1,5 @@
+import { generateMission } from './MissionGenerator'
+import { generatedThemeForProfile } from '../world/TerrainProfile'
 import {
   AdditiveBlending,
   BufferGeometry,
@@ -69,7 +71,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'weather' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'weather' | 'generated-desert' | 'generated-valley' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -122,6 +124,8 @@ export interface MissionRouteValidation {
 }
 
 const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
+  'generated-desert': 'DESERT RUN',
+  'generated-valley': 'MOUNTAIN VALLEY RUN',
   contour: 'CONTOUR CIRCUIT',
   weather: 'WEATHER APPROACH',
   orbit: 'ORBIT',
@@ -295,6 +299,7 @@ export function routeProfileLabel(profile: MissionRouteProfile): string {
 }
 
 export function missionChallengeForProfile(profile: MissionRouteProfile): MissionChallenge {
+  if (generatedThemeForProfile(profile)) return 'range'
   if (profile === 'sweep') return 'range'
   if (profile === 'slalom') return 'precision'
   if (profile === 'ridge') return 'altitude'
@@ -333,6 +338,7 @@ export function routeModifierForSpawn(
   spawnYaw = 0,
   profile = routeProfileForSpawn(spawnX, spawnZ, spawnYaw),
 ): MissionRouteModifier {
+  if (generatedThemeForProfile(profile)) return 'steady'
   const safeX = finiteOr(spawnX, 0)
   const safeZ = finiteOr(spawnZ, 0)
   const safeYaw = finiteOr(spawnYaw, 0)
@@ -396,6 +402,9 @@ export function buildMissionRoute(
       y: safeSpawnY + offset.height + i * (safeProfile === 'weather' ? 0 : safeProfile === 'slalom' || safeProfile === 'canyon' || safeProfile === 'night' || safeProfile === 'badlands' ? 12 : safeProfile === 'ridge' || safeProfile === 'alpine' || safeProfile === 'thermal' ? 30 : safeProfile === 'volcanic' ? 44 : safeProfile === 'desert' || safeProfile === 'coast' || safeProfile === 'fjord' || safeProfile === 'river' || safeProfile === 'savanna' || safeProfile === 'tundra' || safeProfile === 'swamp' || safeProfile === 'monsoon' ? 16 : safeProfile === 'approach' ? 10 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
+
+  const generatedTheme = generatedThemeForProfile(safeProfile)
+  if (generatedTheme) points = generateMission(getWorldSeed(), generatedTheme).course.map(point => ({ ...point }))
 
   if (safeProfile === 'contour') {
     // Five bounded choices reuse the existing orbit and gate corridor. Only

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.972** Ship the approved Desert run: each launch generates a seeded desert world with dunes, mesas, badlands, dry washes, sparse towns and warm haze. Fly five low gates and land on the generated runway using existing medals and records. Preserve original missions, b20 physics, b21 nitro and all paused exclusions. See docs/reviews/generator/README.md.
 - **10.971** Start approved step 3 with a pure seeded mission spec and terrain profile carried through existing terrain and settlement workers. Exactly two theme recipes are reserved. Preserve b20 physics, b21 nitro, existing missions and paused exclusions; theme delivery follows in 10.972 and 10.973.
 - **10.970** Repair final b21 CI: fold nitro timings into the existing README controls list to preserve its length limit, and allow the unchanged three-seed hydrology regression 30 seconds on parallel workers. Preserve every assertion, production terrain and flight behavior. Step 2 remains done and step 3 remains pending approval.
 - **10.969** Close approved roadmap step 2 after the verified b20 physics overhaul and b21 nitro and boost delivery. Mark missions as the next step pending explicit approval, preserve the current-mission polish freeze and all paused exclusions, and synchronize release metadata. See docs/reviews/nitro-b21/README.md.

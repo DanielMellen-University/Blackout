@@ -1,3 +1,5 @@
+import { generateMission } from '../systems/MissionGenerator'
+import { generatedThemeForProfile, getTerrainProfile, setTerrainProfile } from './TerrainProfile'
 import {
   AmbientLight,
   DirectionalLight,
@@ -337,6 +339,7 @@ export class World {
     if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
       throw new Error('World seed must be finite')
     }
+    const previousTerrainProfile = getTerrainProfile()
     const previousSeed = this.seed
     const previousProfile = this.missionProfile
     const previousPad = getOpsPad()
@@ -351,6 +354,7 @@ export class World {
     const previousTimeOfDayLocked = this.atmosphere.timeOfDayLocked
     let liveWorldCleared = false
     const restore = (): void => {
+      setTerrainProfile(previousTerrainProfile)
       setWorldSeed(previousSeed)
       this.seed = previousSeed
       this.missionProfile = previousProfile
@@ -372,11 +376,14 @@ export class World {
       for (let attempt = 0; attempt < (requestedSeed === undefined ? 8 : 1); attempt++) {
         const nextSeed = requestedSeed ?? randomizeWorldSeed()
         setWorldSeed(nextSeed)
+        const theme = generatedThemeForProfile(requestedProfile)
+        const generated = theme ? generateMission(nextSeed, theme) : null
+        setTerrainProfile(generated?.terrain ?? null)
         clearOpsPad()
         // A first-ever boot must remain recoverable even if a future terrain
         // change makes every natural-pad probe reject. Re-seeds after a world
         // is committed still use the normal rollback path below.
-        const pad = findPlayableSpawn() ?? (!this.committed && requestedSeed === undefined ? emergencySpawn() : null)
+        const pad: FlatSpawn | null = generated ? { ...generated.landingRunway, biome: theme === 'desert-run' ? 'desert' : 'plains' } : findPlayableSpawn() ?? (!this.committed && requestedSeed === undefined ? emergencySpawn() : null)
         if (!pad) continue
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed

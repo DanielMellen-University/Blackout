@@ -1,3 +1,4 @@
+import { getTerrainProfile } from './TerrainProfile'
 import { smoothstep } from './noise'
 import { sampleLandformsInto, type LandformSample } from './Landforms'
 import { sampleHydrologyInto, type HydrologySample } from './Hydrology'
@@ -82,7 +83,12 @@ export function sampleGeographyInto(out: Climate, x: number, z: number): Climate
   biomeWeights[10]![1] = snow * 3
   biomeWeights[11]![1] = volcanic * 4
   biomeWeights[12]![1] = salt * 4
-  let biome: Biome = 'plains', biomeB: Biome = 'plains', best = 0, second = 0
+  if (getTerrainProfile()?.theme === 'desert-run') {
+    for (const weight of biomeWeights) weight[1] = 0
+    biomeWeights[5]![1] = 1 - landform.plateau * .75
+    biomeWeights[6]![1] = .12 + landform.plateau * 2
+  }
+  let biome: Biome = 'plains' , biomeB: Biome = 'plains', best = 0, second = 0
   for (const [candidate, weight] of biomeWeights) {
     if (weight > best) { second = best; biomeB = biome; best = weight; biome = candidate }
     else if (weight > second) { second = weight; biomeB = candidate }

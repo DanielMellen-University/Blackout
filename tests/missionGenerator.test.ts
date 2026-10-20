@@ -10,7 +10,8 @@ describe('approved seeded mission generator', () => {
       expect(spec.theme).toBe(theme)
       expect(spec.course).toHaveLength(spec.goals.gates)
       expect(spec.goals).toMatchObject({ landingRequired: true, scoring: 'existing-medals' })
-      expect(spec.landingRunway).toMatchObject(spec.start)
+      expect(spec.landingRunway.yaw).toBe(spec.start.yaw)
+      expect(Math.hypot(spec.landingRunway.x - spec.start.x, spec.landingRunway.z - spec.start.z)).toBeCloseTo(45)
       for (const point of [spec.start, spec.landingRunway, ...spec.course])
         for (const axis of ['x', 'y', 'z'] as const) expect(Number.isFinite(point[axis])).toBe(true)
       for (let i = 1; i < spec.course.length; i++) expect(Math.hypot(spec.course[i]!.x - spec.course[i-1]!.x, spec.course[i]!.z - spec.course[i-1]!.z)).toBeGreaterThan(800)
@@ -53,4 +54,42 @@ it('reshapes the shared geography paths and clears back to the original world', 
   } finally { setTerrainProfile(null) }
   expect(getTerrainProfile()).toBeNull()
   expect(sampleGeographyHeight(800, 3000)).toBe(original)
+})
+
+import { Scene } from 'three'
+import { MissionSystem } from '../src/systems/Mission'
+import { setOpsPad, clearOpsPad } from '../src/world/terrainSample'
+import { courseDefinitionForId, courseRunId, courseSessionId, resolveCourseReplaySeed } from '../src/systems/CourseLibrary'
+
+it.each([42, 73, 808])('flies the desert recipe through the existing mission and record system on seed %s', seed => {
+  const spec = generateMission(seed, 'desert-run')
+  setWorldSeed(seed); setTerrainProfile(spec.terrain)
+  setOpsPad(spec.landingRunway.x, spec.landingRunway.z, spec.landingRunway.y, spec.landingRunway.yaw)
+  const mission = new MissionSystem(new Scene())
+  try {
+    mission.start(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, spec.profile)
+    expect(mission.routeProfile).toBe(spec.profile)
+    expect(mission.totalGates).toBe(5)
+    expect(mission.routeFallbackUsed).toBe(false)
+    expect(mission.timeAllowanceSec).toBeGreaterThan(80)
+    const replay = resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed)
+    const record = courseRunId(replay)
+    expect(record).toBe(`seed:${seed}:generated-desert:r32:l30:q33`)
+    expect(courseSessionId('desert-run', seed, spec.profile)).toBe(record)
+    for (let x = -12000; x <= 12000; x += 2000) {
+      const sample = sampleGeography(spec.terrain.originX + x, spec.terrain.originZ + x)
+      expect(['desert', 'mesa']).toContain(sample.biome)
+      expect(sample.moisture).toBeLessThan(.1)
+    }
+  } finally { mission.dispose(); setTerrainProfile(null); clearOpsPad() }
+})
+
+it('keeps fractional generated seeds replayable and separate in existing record storage', () => {
+  const base = courseDefinitionForId('desert-run')
+  const first = resolveCourseReplaySeed(base, 42.123456)
+  const second = resolveCourseReplaySeed(base, 42.654321)
+  expect(first.seed).toBe(42.123456)
+  expect(courseSessionId('desert-run', 42.123456, 'generated-desert')).toBe(courseRunId(first))
+  expect(courseRunId(first)).not.toBe(courseRunId(second))
+  expect(courseRunId(first)).not.toBe(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('contour-circuit'), 42)))
 })
