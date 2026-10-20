@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.976**. Previous roadmap chunk: **10.975**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.977**. Previous roadmap chunk: **10.976**.
 
-Recent changes from **10.976**. Deliver the approved Volcanic run through the existing seeded generator, terrain and workers: giant cones, calderas, dark lava fields and ash-toned atmosphere. Reuse five gates, runway landings, medals and bounded theme records. Verify seeds 42, 73 and 808 in chase and cockpit. Four approved themes are delivered; step 3 remains started and further themes require separate approval. See docs/reviews/generator/expansion.md.
+Recent changes from **10.977**. Verify all four delivered approved themes with eight complete browser flights: each new theme on 1337, 2026 and 9001 plus seed-42 Desert run and Mountain valley run regressions. Check every gate, nitro refill, runway landing and medal; retain full-cadence frame, stutter, coverage, LOD and heap evidence. Step 3 remains started; further themes require separate approval. See docs/reviews/generator/expansion-completion-results.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

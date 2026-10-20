@@ -34,10 +34,12 @@ for (const [theme,seeds] of matrix) for (const seed of seeds) {
  if(smoke) assert.ok(f.next>=1)
  else {
   assert.equal(f.status,'landed'); assert.equal(f.phase,'complete'); assert.equal(f.next,5); assert.equal(f.resultsOpen,true)
+  assert.equal(f.result.courseId,f.recordId); assert.ok(f.result.landingScore>0)
   assert.equal(f.result.gatesCleared,5); assert.equal(f.result.gatesTotal,5); assert.ok(f.result.totalScore>0)
-  assert.ok(['complete','bronze','silver','gold'].includes(f.result.medal)); assert.equal(f.gates.length,5); assert.ok(f.gates.every(g=>g.passed))
+  assert.ok(['bronze','silver','gold'].includes(f.result.medal)); assert.equal(f.gates.length,5); assert.ok(f.gates.every(g=>g.passed))
   assert.ok(f.contact && Math.abs(f.contact.localX)<9 && Math.abs(f.contact.localZ)<60)
   assert.ok(f.nitroTimeline.some(s=>s.boosting)); assert.equal(f.nitroRefills.length,5)
+  assert.ok(f.nitroRefills.every(s=>s.after.fraction>s.before.fraction))
   assert.ok(f.nitroRefills.every(s=>Math.abs(s.after.fraction-Math.min(1,s.before.fraction+.25))<1e-9))
  }
  const samples=r.samples.filter(s=>s.seconds>10), m=r.metrics
