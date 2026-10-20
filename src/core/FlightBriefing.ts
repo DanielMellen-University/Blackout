@@ -1,3 +1,5 @@
+import { flightConfig } from '../aircraft/flightConfig'
+import { displayedKnots } from './airspeed'
 import {
   DEFAULT_KEYBOARD_BINDINGS,
   keyboardBindingLabel,
@@ -9,6 +11,8 @@ import {
 
 export type FlightInputSource = 'keyboard' | 'gamepad'
 export const BRIEFING_DURATION_SECONDS = 16
+/** Round up to a readable speed that satisfies the configured rotation reference. */
+export const TAKEOFF_ROTATE_KTS = Math.ceil(displayedKnots(flightConfig.rotateSpeed) / 5) * 5
 export interface BriefingControls {
   inputSource?: FlightInputSource
   keyboardPitch?: KeyboardPitchPreference
@@ -108,7 +112,7 @@ export function flightBriefingHint(state: BriefingControls & {
   const gates = Number.isFinite(state.gatesPassed) ? Math.max(0, Math.floor(state.gatesPassed)) : 0
   if (state.onGround) {
     const controls = briefingControls(state)
-    return `${speed < 55 ? `${controls.power} POWER · ` : ''}AT 60 KT: ${controls.rotate} ROTATE · GEAR AUTO`
+    return `${speed < TAKEOFF_ROTATE_KTS - 5 ? `${controls.power} POWER · ` : ''}AT ${TAKEOFF_ROTATE_KTS} KT: ${controls.rotate} ROTATE · GEAR AUTO`
   }
   if (state.emergencyReturn || state.approachActive || (state.missionPhase === 'returning' && state.totalGates !== 0)) {
     const powerDown = state.inputSource === 'gamepad' ? 'LT / L2' : 'CTRL / 1'

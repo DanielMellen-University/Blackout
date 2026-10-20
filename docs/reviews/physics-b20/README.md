@@ -46,7 +46,14 @@ Focused checks cover rates and settling, turn loss and G, cruise/climb/dive ener
 
 ## Part B: production browser flights
 
-Pending. Evidence will include free flights on two seeds, hard turns, stall/recovery, climbs/dives, full landings and existing mission completion checks. Current missions receive no polish; only a reproduced physics compatibility failure may justify a fix.
+Browser review reproduced two compatibility defects, fixed in 10.962:
+
+- The static takeoff brief and live hint still said 60 kt after the rotation reference moved to 40 m/s. Both now use a readable 80 kt derived from configuration.
+- `ChallengeRun.reset` recognized only the literal `free-flight` ID. The revisioned ID accidentally enabled scoring, contracts and a terminal landing report. Both legacy and current IDs now preserve the existing unscored, open-ended Free flight contract, with no record writes. The complete existing contract test runs for both IDs.
+
+The 195 affected briefing, HUD, challenge, physics and record tests pass. The production build passes. The ordinary production UI is visually checked at 80 kt in records-r31.jpg. Live runway contacts on seeds 42 and 73 remain in the running Free flight phase without results or scores after the fix; the final full-stop pilot repeat follows. Four normal-time browser missions have already cleared all five gates and landed: Training, Contour, Weather approach and Daily. The review pilot's unsafe return paths and the excluded clock diagnostic are retained separately; they do not count as successful flights. No terrain or authored mission changes are justified by those attempts.
+
+Ongoing evidence will include free flights on two seeds, hard turns, stall/recovery, climbs/dives, full landings and existing mission completion checks. Current missions receive no polish; only a reproduced physics compatibility failure may justify a fix.
 
 ## Part C: roadmap close-out
 

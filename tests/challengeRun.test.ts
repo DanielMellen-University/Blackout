@@ -1,3 +1,4 @@
+import { flightRecordId } from '../src/core/FlightRevision'
 import { describe, expect, it } from 'vitest'
 import {
   ChallengeRun,
@@ -275,7 +276,7 @@ describe('ChallengeRun', () => {
     ).toBeNull()
   })
 
-  it('keeps free flight unscored and open after landing without altering saved mission records', () => {
+  it.each(['free-flight', flightRecordId('free-flight')])('keeps free flight unscored and open after landing without altering saved mission records for %s', (freeId) => {
     const values = new Map([['blackout.history.free-flight', '{"runStreak":3,"runs":4}']])
     const storage = {
       getItem: (key: string) => values.get(key) ?? null,
@@ -283,7 +284,7 @@ describe('ChallengeRun', () => {
     }
     const saved = [...values]
     const run = new ChallengeRun(storage)
-    run.reset('free-flight', 0, 'balanced', 42, true)
+    run.reset(freeId, 0, 'balanced', 42, true)
     expect(run.objectiveLabel).toBe('Explore freely')
     expect(run.contractLabel).toBe('')
     run.update(0.5, 0)

@@ -76,7 +76,7 @@ import {
   Time,
 } from './core/Time'
 import { bannerRemainingMs, bannerUntilFromRemaining, MAX_BANNER_DURATION_MS } from './core/BannerClock'
-import { FlightBriefingSession, briefingControls } from './core/FlightBriefing'
+import { FlightBriefingSession, briefingControls, TAKEOFF_ROTATE_KTS } from './core/FlightBriefing'
 import {
   ChallengeRun,
   courseMasteryTierForProgress,
@@ -898,6 +898,7 @@ export async function boot(): Promise<void> {
   if (gearKeySelect) gearKeySelect.value = initialKeyboardBindings.gear
   if (stabilityAssistToggle) stabilityAssistToggle.checked = initialStabilityAssist
   const syncTakeoffBrief = (): void => {
+    for (const element of document.querySelectorAll('[data-rotate-speed]')) element.textContent = String(TAKEOFF_ROTATE_KTS)
     const controls = briefingControls({
       inputSource: input.inputSource ?? 'keyboard',
       keyboardPitch: input.keyboardPitch,

@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { BRIEFING_DURATION_SECONDS, briefingControls, briefingRemainingSeconds, flightBriefingHint, FlightBriefingSession } from '../src/core/FlightBriefing'
+import { BRIEFING_DURATION_SECONDS, TAKEOFF_ROTATE_KTS, briefingControls, briefingRemainingSeconds, flightBriefingHint, FlightBriefingSession } from '../src/core/FlightBriefing'
 import { normalizeKeyboardBindings } from '../src/core/FlightPreferences'
 
 const takeoff = { onGround: true, speed: 12, altitudeM: 0, missionPhase: 'ready', gatesPassed: 0, gearDown: true }
 
 describe('flight briefing', () => {
+  it('uses the b20 rotation speed in both the static brief and live hint', () => {
+    expect(TAKEOFF_ROTATE_KTS).toBe(80)
+    expect(flightBriefingHint({ ...takeoff, speed: 70 })).toContain('POWER')
+    expect(flightBriefingHint({ ...takeoff, speed: 80 })).not.toContain('POWER')
+  })
   it('shows the current climb and turn mappings before the first gate', () => {
     const state = { ...takeoff, onGround: false, altitudeM: 40 }
     expect(flightBriefingHint(state)).toBe('W CLIMB · A/D TURN · FOLLOW GATE 1 ARROW')
@@ -17,7 +22,7 @@ describe('flight briefing', () => {
     const keyboardBindings = normalizeKeyboardBindings({ boost: 'KeyG', airbrake: 'KeyF', gear: 'KeyH' })
     const options = { keyboardPitch: 'w-down' as const, keyboardBindings }
     expect(briefingControls(options)).toEqual({ power: 'SHIFT / 2', rotate: 'S', gear: 'H' })
-    expect(flightBriefingHint({ ...takeoff, ...options })).toBe('SHIFT / 2 POWER · AT 60 KT: S ROTATE · GEAR AUTO')
+    expect(flightBriefingHint({ ...takeoff, ...options })).toBe('SHIFT / 2 POWER · AT 80 KT: S ROTATE · GEAR AUTO')
     expect(flightBriefingHint({ ...takeoff, ...options, onGround: false, missionPhase: 'returning', gearDown: false }))
       .toBe('CTRL / 1 REDUCE POWER · H GEAR DOWN · FOLLOW BASE ARROW')
     for (const gear of ['Space', 'KeyB', 'KeyG', 'KeyF', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyI']) {
@@ -28,7 +33,7 @@ describe('flight briefing', () => {
 
   it('describes the actual standard-controller mapping', () => {
     const state = { ...takeoff, inputSource: 'gamepad' as const }
-    expect(flightBriefingHint(state)).toBe('RT / R2 POWER · AT 60 KT: LEFT STICK UP ROTATE · GEAR AUTO')
+    expect(flightBriefingHint(state)).toBe('RT / R2 POWER · AT 80 KT: LEFT STICK UP ROTATE · GEAR AUTO')
     expect(flightBriefingHint({ ...state, onGround: false, missionPhase: 'returning', gearDown: false })).toContain('LT / L2 REDUCE POWER · X / SQUARE GEAR DOWN')
     expect(flightBriefingHint({ ...state, onGround: false, gatesPassed: 2 })).toContain('RIGHT STICK YAW')
   })

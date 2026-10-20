@@ -1,3 +1,4 @@
+import { flightRecordId } from '../core/FlightRevision'
 import { MAX_STUNT_ROLLS } from './StuntTracker'
 import { MAX_COMBO_COUNT } from './FlightCombo'
 import { SortieContractTracker, type SortieContractKind } from './SortieContract'
@@ -1025,7 +1026,7 @@ export class ChallengeRun {
     this.totalGates = Math.max(0, Math.floor(totalGates))
     this.timeAllowanceSec = Number.isFinite(timeAllowanceSec) ? Math.max(0, Math.min(3_600, timeAllowanceSec)) : 0
     this.scoringFocus = scoringFocus
-    this.freeFlight = courseId === 'free-flight'
+    this.freeFlight = courseId === 'free-flight' || courseId === flightRecordId('free-flight')
     this.altitudeMilestone = 0
     this.phase = 'ready'
     this.elapsedSec = 0
