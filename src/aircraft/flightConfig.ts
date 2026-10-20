@@ -7,14 +7,21 @@ export const flightConfig = {
 
   /** Dry thrust (N). */
   maxThrust: 780_000,
-  boostThrustMul: 1.65,
+  boostThrustMul: (650 / 340) ** 2,
+
+  /** Normalized reserve; full burst lasts 12 s, passive refill takes 45 s. */
+  nitroDrainPerSecond: 1 / 12,
+  nitroRefillPerSecond: 1 / 45,
+  nitroGateRefill: 0.25,
+  /** Hysteresis prevents empty-edge flicker even with boost held. */
+  nitroRestartFraction: 0.15,
 
   /** Low-speed lift reference, m/s (~93 kt); not an artificial speed floor. */
   minSpeed: 48,
   /** Level military cruise, m/s (~660 kt). Thrust balances drag here. */
   cruiseSpeed: 340,
-  /** Level afterburner cruise, m/s (~1010 kt). */
-  cruiseSpeedBoost: 520,
+  /** Level afterburner cruise, m/s (~1264 kt). */
+  cruiseSpeedBoost: 650,
   /** Dive cap, m/s (~1320 kt). Dry and afterburner share it. */
   maxSpeed: 680,
   maxSpeedBoost: 680,

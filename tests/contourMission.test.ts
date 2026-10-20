@@ -45,7 +45,7 @@ describe('Contour circuit', () => {
   it('shows a replay seed record without replacing the featured default or another course', () => {
     const featured=courseDefinitionForId('contour-circuit')
     const replay=resolveCourseReplaySeed(featured,73)
-    expect(courseRunId(replay)).toBe('seed:73:contour:r31')
+    expect(courseRunId(replay)).toBe('seed:73:contour:r32')
     expect(replay.detail).toContain('SEED 73')
     expect(featured.seed).toBe(42)
     expect(resolveCourseReplaySeed(featured,null)).toBe(featured)
@@ -54,13 +54,13 @@ describe('Contour circuit', () => {
     expect(resolveCourseReplaySeed(training,73)).toBe(training)
     const active=new CourseSession(Date.now()).capture('contour-circuit',73,'contour')
     expect(active.course.seed).toBe(73)
-    expect(active.recordId).toBe('seed:73:contour:r31')
+    expect(active.recordId).toBe('seed:73:contour:r32')
   })
 
   it('is featured and uses the existing per-seed course record identity',()=>{
     expect(FEATURED_MISSION_IDS).toContain('contour-circuit')
     expect(courseDefinitionForId('contour-circuit')).toMatchObject({profile:'contour',seed:42,weather:'clear'})
-    expect(courseSessionId('contour-circuit',42,'contour')).toBe('seed:42:contour:r31')
-    expect(courseSessionId('contour-circuit',73,'contour')).toBe('seed:73:contour:r31')
+    expect(courseSessionId('contour-circuit',42,'contour')).toBe('seed:42:contour:r32')
+    expect(courseSessionId('contour-circuit',73,'contour')).toBe('seed:73:contour:r32')
   })
 })

@@ -37,8 +37,8 @@ describe('b20 jet handling envelope', () => {
     expect(Math.abs(metrics.recovery.verticalMps)).toBeLessThan(3)
     expect(metrics.recovery.altitudeChangeM).toBeGreaterThan(-180)
   })
-  it('leaves afterburner commands, thrust and speed limits unchanged', () => {
-    expect([C.cruiseSpeedBoost, C.maxSpeed, C.maxSpeedBoost, C.milAccel, C.afterburnerMinThrottle]).toEqual([520, 680, 680, 48, .05])
+  it('preserves dry physics and the shared dive cap during b21 boost', () => {
+    expect([C.cruiseSpeedBoost, C.maxSpeed, C.maxSpeedBoost, C.milAccel, C.afterburnerMinThrottle]).toEqual([650, 680, 680, 48, .05])
   })
   it('does not charge a turn penalty for pure roll and remains stable across step rates', () => {
     setContactHeightSampler(() => 0)

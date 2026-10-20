@@ -63,6 +63,7 @@ export function resolveEngineState(
   out: EngineState,
   fuelFraction = 1,
   afterburnerHeatLocked = false,
+  nitroAvailable = true,
 ): EngineState {
   const lever = Number.isFinite(controls.throttle)
     ? MathUtils.clamp(controls.throttle, 0, 1)
@@ -70,12 +71,12 @@ export function resolveEngineState(
   const safeFuel = Number.isFinite(fuelFraction) ? MathUtils.clamp(fuelFraction, 0, 1) : 0
   const fuelAvailable = safeFuel > 0.0001
   const afterburnerRequested = controls.boost === true
-  // Heat and the fuel-reserve lock are retired. Burner stays available until the tank is empty.
-  const afterburnerActive = fuelAvailable &&
+  // Heat and the fuel-reserve lock remain retired. Nitro and usable fuel gate the burner.
+  const afterburnerActive = nitroAvailable && fuelAvailable &&
     afterburnerRequested &&
     afterburnerThrottleReady(lever)
   const cruise = afterburnerActive ? C.cruiseSpeedBoost : C.cruiseSpeed
-  const thrustMul = afterburnerActive ? (C.cruiseSpeedBoost / C.cruiseSpeed) ** 2 : 1
+  const thrustMul = afterburnerActive ? C.boostThrustMul : 1
 
   out.lever = lever
   out.afterburnerRequested = afterburnerRequested

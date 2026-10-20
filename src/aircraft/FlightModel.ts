@@ -268,7 +268,7 @@ export class FlightModel {
       const s = velocity.length()
       const idle = lever < C.idleLever && !boost
       const cruise = C.cruiseSpeed
-      const thrustMul = boost ? (C.cruiseSpeedBoost / cruise) ** 2 : 1
+      const thrustMul = boost ? C.boostThrustMul : 1
       const thrust = engine.fuelAvailable ? C.milAccel * lever * thrustMul : 0
       const drag = C.milAccel * (s / cruise) ** 2
       let along = thrust - drag

@@ -21,6 +21,7 @@ import {
   resolveEngineState,
   type EngineState,
 } from './EngineState'
+import { createNitroState, resetNitro, updateNitro } from './NitroSystem'
 import { flightConfig } from './flightConfig'
 import { FlightModel, runwayGripForWeather } from './FlightModel'
 import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
@@ -103,6 +104,7 @@ export class Aircraft {
   private readonly prevVelocity = new Vector3()
   readonly engineState: EngineState = createEngineState()
   readonly engineHeat: EngineHeatState = createEngineHeatState()
+  readonly nitro = createNitroState()
   readonly fuel: FuelState = createFuelState()
   /** Bounded weather gust strength supplied by the world before physics steps. */
   weatherGust = 0
@@ -302,6 +304,7 @@ export class Aircraft {
     this.angularVelocity.set(0, 0, 0)
     this.prevVelocity.copy(this.velocity)
     resetFuel(this.fuel)
+    resetNitro(this.nitro)
     resetEngineHeat(this.engineHeat)
     this.loadFactor = 1
     this.impactVy = 0
@@ -392,8 +395,10 @@ export class Aircraft {
     this.groundCacheValid = false
     this.prevVelocity.copy(this.velocity)
     this.normalizeControls()
-    updateFuel(this.fuel, dt, this.controls.throttle, this.controls.boost)
-    resolveEngineState(this.controls, this.engineState, this.fuel.fraction, this.engineHeat.afterburnerLocked)
+    resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
+    const burning = updateNitro(this.nitro, dt, this.engineState.afterburnerActive)
+    updateFuel(this.fuel, dt, this.controls.throttle, burning)
+    resolveEngineState(this.controls, this.engineState, this.fuel.fraction, false, burning)
     updateEngineHeat(this.engineHeat, dt, this.controls.throttle, this.engineState.afterburnerActive)
     this.flight.step(this, dt)
     if (this.impact) {

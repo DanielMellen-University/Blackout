@@ -11,6 +11,7 @@ import {
   WebGLRenderer,
 } from 'three'
 import { Aircraft } from './aircraft/Aircraft'
+import { refillNitroAtGate } from './aircraft/NitroSystem'
 import { afterburnerLockReason } from './aircraft/EngineState'
 import {
   cameraModeCue,
@@ -2320,6 +2321,7 @@ export async function boot(): Promise<void> {
           if (event === 'pass') {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
+            refillNitroAtGate(aircraft.nitro)
             const comboEligible = Number.isFinite(quality) && quality >= 0.82
             const comboEvent = comboEligible ? recordComboAction('gate') : null
             if (!comboEligible) combo.break()
@@ -2340,6 +2342,7 @@ export async function boot(): Promise<void> {
           if (event === 'complete') {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
+            refillNitroAtGate(aircraft.nitro)
             const comboEligible = Number.isFinite(quality) && quality >= 0.82
             const comboEvent = comboEligible ? recordComboAction('gate') : null
             if (!comboEligible) combo.break()
