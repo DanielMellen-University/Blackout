@@ -32,6 +32,10 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
     relief: theme === 'desert-run' ? 850 : 7600,
     valleyHalfWidth: 2900 + random() * 350, phase: random() * Math.PI * 2, dry: true,
   }
+  if (theme === 'desert-run' || theme === 'mountain-valley-run') {
+    terrain.landscapeRevision = 33; terrain.routeRevision = 36
+    terrain.yaw *= Math.PI * 2 / .7
+  }
   if (theme === 'coastal-island-run') {
     terrain.baseHeight = 55; terrain.relief = 520
     terrain.landscapeRevision = 31; terrain.routeRevision = 34
@@ -42,10 +46,24 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
   }
   const start = { x: terrain.originX, y: terrain.baseHeight, z: terrain.originZ, yaw: terrain.yaw }
   const spread = 1350 + random() * 350, length = 3000 + random() * 600
-  const offsets = [[0, 1800], [spread, length], [spread, -300], [0, -2600], [0, -1400]] as const
-  const course = offsets.map(([right, forward]) => ({
+  let offsets: readonly (readonly [number, number])[] = [[0, 1800], [spread, length], [spread, -300], [0, -2600], [0, -1400]]
+  let heights = [145, 145, 145, 145, 145]
+  if (theme === 'desert-run' || theme === 'mountain-valley-run') {
+    // Mirror and reshape the circuit independently of the world's position.
+    // The two final gates remain aligned with the same flat runway approach.
+    const hand = random() < .5 ? -1 : 1
+    const valley = theme === 'mountain-valley-run'
+    const width = (valley ? 1450 : 1100) + random() * (valley ? 700 : 1050)
+    const outbound = (valley ? 3000 : 2650) + random() * (valley ? 1450 : 1250)
+    offsets = [[hand * (random() - .5) * 260, 1400 + random() * 650],
+      [hand * width, outbound], [hand * width * (.45 + random() * .5), -100 + random() * 800],
+      [0, -2700 - random() * 650], [0, -1400 - random() * 180]]
+    heights = [140 + random() * 40, 145 + random() * 65, 125 + random() * 70,
+      130 + random() * 30, 105 + random() * 30]
+  }
+  const course = offsets.map(([right, forward], index) => ({
     x: start.x + Math.cos(start.yaw) * right + Math.sin(start.yaw) * forward,
-    y: start.y + 145,
+    y: start.y + heights[index]!,
     z: start.z - Math.sin(start.yaw) * right + Math.cos(start.yaw) * forward,
   }))
   return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : theme === 'coastal-island-run' ? 'generated-coastal' : theme === 'volcanic-run' ? 'generated-volcanic' : 'generated-valley', terrain, start: { ...start, x: start.x - Math.sin(start.yaw) * 45, y: start.y + flightConfig.gearHeight, z: start.z - Math.cos(start.yaw) * 45 },

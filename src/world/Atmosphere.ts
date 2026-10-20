@@ -822,8 +822,13 @@ export class Atmosphere {
 
     if (getTerrainProfile()?.theme === 'desert-run') {
       _c2.setHex(0xc7a979)
-      _horizon.lerp(_c2, dayFactor * .58)
-      _c.lerp(_c2, dayFactor * .12)
+      _horizon.lerp(_c2, dayFactor * .64)
+      _c.lerp(_c2, dayFactor * .16)
+    }
+    if (getTerrainProfile()?.theme === 'mountain-valley-run') {
+      _c2.setHex(0xb5cad6)
+      _horizon.lerp(_c2, dayFactor * .3)
+      _c.lerp(_c2, dayFactor * .08)
     }
     if (getTerrainProfile()?.theme === 'volcanic-run') {
       _c2.setHex(0x91877e)
@@ -895,6 +900,8 @@ export class Atmosphere {
     _c2.copy(COL_SUN)
     if (dusk > 0.15) _c2.lerp(COL_SUN_DUSK, dusk * 0.85)
     if (elev < 0.12) _c2.lerp(COL_SUN_LOW, 1 - sunUp)
+    if (getTerrainProfile()?.theme === 'desert-run') _c2.lerp(_hemiGround.setHex(0xffdbab), dayFactor * .12)
+    if (getTerrainProfile()?.theme === 'mountain-valley-run') _c2.lerp(_hemiGround.setHex(0xe8f3ff), dayFactor * .1)
     this.sun.color.copy(_c2)
     this.sun.intensity =
       (0.25 + dayFactor * 1.55) * sunUp * clearMul * w.sunMul

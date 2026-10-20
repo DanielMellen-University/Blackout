@@ -11,11 +11,14 @@ const files=execFileSync('git',['ls-files','--cached','--others','--exclude-stan
 const digest=v=>createHash('sha256').update(v).digest('hex')
 const hashes=Object.fromEntries(await Promise.all(files.map(async f=>[f,digest(await readFile(f))])))
 const hookHash=digest(await readFile('scripts/browser-generator.js'))
+const profiles={'desert-run':'generated-desert','mountain-valley-run':'generated-valley','coastal-island-run':'generated-coastal','generated-volcanic-run':'generated-volcanic'}
 const rows=[]
 for(const theme of themes)for(const seed of seeds){
  const receipt=`docs/reviews/generator/${part}/${theme}-${seed}/run.json`
  const r=JSON.parse(await readFile(receipt,'utf8')),f=r.final
  assert.equal(r.pass,true,receipt);assert.deepEqual(r.errors,[]);assert.equal(f.course,theme);assert.equal(f.seed,seed)
+ assert.ok(f.recordId.startsWith(`seed:${seed}:${profiles[theme]}:r32:l`),`${receipt}: profile/record identity`)
+ assert.match(f.recordId,/:l\d+:q\d+$/)
  assert.equal(r.build.production,true);assert.equal(r.build.minified,true);assert.equal(r.build.hookSha256,hookHash)
  assert.deepEqual(Object.keys(r.build.sourceHashes).sort(),files.sort())
  for(const [file,hash]of Object.entries(hashes))if(file!=='src/core/Version.ts')assert.equal(r.build.sourceHashes[file],hash,`${receipt}: runtime drift ${file}`)

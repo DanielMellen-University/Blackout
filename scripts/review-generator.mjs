@@ -35,6 +35,8 @@ try {
    await cdp.send('Tracing.start',{categories:'devtools.timeline,v8,blink.user_timing,gpu,disabled-by-default-devtools.timeline,disabled-by-default-v8.cpu_profiler',transferMode:'ReturnAsStream'})
   }
   await page.locator('#btn-play').click()
+  await page.locator('#startup-screen').waitFor({state:'hidden'})
+  await page.waitForFunction(()=>window.__training.state().playing)
   await page.evaluate(()=>{
    performance.mark('review-flight-start'); window.__training.start()
    window.__reviewFrames=[]; window.__reviewFrameTimes=[]; window.__reviewCaptures=[]; let prior=performance.now()
@@ -46,6 +48,16 @@ try {
    await action()
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))
    await page.evaluate(({label,start})=>{const end=performance.now();performance.mark(`review-capture-${label}-end`);window.__reviewCaptures.push({label,start,end})},{label,start})
+  }
+  if(capture && process.env.REVIEW_RUNWAY_VIEWS==='1'){
+   await captureWindow('runway',async()=>{
+    for(const camera of ['chase','cockpit']){
+     await page.evaluate(mode=>window.__training.camera(mode),camera);await page.waitForTimeout(200)
+     await page.evaluate(()=>window.__training.capture())
+     const name=`runway-${camera}.jpg`;await page.screenshot({path:`${dir}/${name}`,type:'jpeg',quality:87});pictures.push(name)
+    }
+    await page.evaluate(()=>window.__training.camera('chase'))
+   })
   }
   let final,shot=false,approach=false
   const started=Date.now()
@@ -62,7 +74,7 @@ try {
     }
     await page.evaluate(()=>window.__training.camera('chase'));});shot=true
    }
-   if(capture && !approach && final.stage==='approach' && final.agl<80 && final.agl>8){
+   if(capture && !approach && final.stage==='approach' && final.agl<30 && final.agl>8){
     await captureWindow('approach',async()=>{await page.evaluate(()=>window.__training.camera('cockpit'));await page.waitForTimeout(200);await page.evaluate(()=>window.__training.capture());await page.screenshot({path:`${dir}/approach-cockpit.jpg`,type:'jpeg',quality:87});pictures.push('approach-cockpit.jpg');await page.evaluate(()=>window.__training.camera('chase'));});approach=true
    }
    if(smoke && (shot || (!capture && final.next>=1))) break

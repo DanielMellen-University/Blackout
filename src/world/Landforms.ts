@@ -103,21 +103,26 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
     let valleyWall = 0
     if (profile.theme === 'desert-run') {
       const warp = (valueNoise(right / 1400, forward / 1900) - .5) * 280
-      const dune = (1 + Math.sin((right + warp) / 115 + forward / 650 + profile.phase)) * .5
-      const dunes = dune * dune * (18 + fbm(right / 1500, forward / 1500, 2) * 34)
+      const duneScale = 95 + Math.sin(profile.phase) * 22
+      const dune = (1 + Math.sin((right + warp) / duneScale + forward / 650 + profile.phase)
+        * (.82 + .18 * Math.sin(forward / 430 - right / 800 + profile.phase))) * .5
+      const dunes = dune * dune * (24 + fbm(right / 1500, forward / 1500, 2) * 34)
       const mesa = smoothstep(.32, .54, fbm(right / 2700 + 84, forward / 3200 - 91, 2))
       const shelf = smoothstep(2100, 3000, Math.abs(right))
       desertPlateau = mesa * shelf
       const wash = 1 - smoothstep(28, 150, Math.abs(right - 600 * Math.sin(forward / 1800 + profile.phase)))
-      const badlands = fbm(right / 440 + 12, forward / 800, 2) * mesa * 55
+      const erosion = .55 + .45 * Math.pow(Math.sin(forward / 240 + warp / 180), 2)
+      const badlands = fbm(right / 440 + 12, forward / 800, 2) * mesa * 70 * erosion
       out.height = profile.baseHeight + runwayBlend * (dunes + shelf * (mesa * profile.relief + badlands) - wash * 25)
     }
     if (profile.theme === 'mountain-valley-run') {
       const bend = Math.sin(forward / 3200 + profile.phase) * 600 * smoothstep(1200, 5000, Math.abs(forward))
       const distance = Math.abs(right - bend)
       valleyWall = smoothstep(profile.valleyHalfWidth, profile.valleyHalfWidth + 3000, distance)
-      const peaks = .78 + fbm(right / 2400 + 17, forward / 2200 - 65, 3) * .52
-      const floor = fbm(right / 1800, forward / 2400, 2) * 24
+      const spurs = .92 + .08 * Math.pow(Math.sin(forward / 900 + profile.phase + right / 2400), 2)
+      const peaks = (.86 + fbm(right / 2400 + 17, forward / 2200 - 65, 3) * .46) * spurs
+      const floor = fbm(right / 1800, forward / 2400, 2) * 18
+        + (1 + Math.sin(forward / 1100 + profile.phase)) * 3 * smoothstep(900, 2100, Math.abs(right))
       out.height = profile.baseHeight + runwayBlend * floor + valleyWall * profile.relief * peaks
     }
     out.coast = 1
