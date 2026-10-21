@@ -52,6 +52,10 @@ for(const job of jobs)for(const seed of job.seeds.split(',').map(Number)) {
  if(r.smoke){
   assert.equal(r.capture,true);assert.equal(r.timingEligible,false)
   for(const camera of ['chase','cockpit'])assert.ok((await readFile(receipt.replace('run.json',`gates-${camera}.jpg`))).length>10000)
+  if(execution.completedFrameCapture){
+   assert.deepEqual(r.captureFences.map(f=>f.picture),r.pictures)
+   assert.ok(r.captureFences.every(f=>Number.isFinite(f.ms)&&f.ms>=0))
+  }
  }else{
   const metrics=assertCaptureFreeTiming(r)
   for(const key of Object.keys(metrics))assert.equal(r.metrics[key],metrics[key])

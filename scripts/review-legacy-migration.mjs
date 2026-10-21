@@ -29,11 +29,15 @@ try {
   }
  }
 } finally {await server.close()}
-const part=`migration-${stage}-${mode}`
+if(process.env.MIGRATION_COURSES){
+ const selected=new Set(process.env.MIGRATION_COURSES.split(','))
+ jobs.splice(0,jobs.length,...jobs.filter(job=>selected.has(job.course)))
+}
+const part=process.env.REVIEW_PART || `migration-${stage}-${mode}`
 await mkdir(`docs/reviews/generator/${part}`,{recursive:true})
 await writeFile(`docs/reviews/generator/${part}/jobs.json`,JSON.stringify(jobs,null,2)+'\n')
 const concurrency = mode === 'full' ? 1 : Math.max(1, Math.min(2, Math.trunc(Number(process.env.MIGRATION_CONCURRENCY) || 1)))
-await writeFile(`docs/reviews/generator/${part}/execution.json`,JSON.stringify({mode,browserConcurrency:concurrency,timingEligible:mode==='full'},null,2)+'\n')
+await writeFile(`docs/reviews/generator/${part}/execution.json`,JSON.stringify({mode,browserConcurrency:concurrency,timingEligible:mode==='full',completedFrameCapture:mode==='smoke'},null,2)+'\n')
 let next=0, failure
 async function worker(){
  while(!failure && next<jobs.length){

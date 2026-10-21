@@ -95,6 +95,21 @@ it('keeps three shared periods per rotating mission deterministic through the ge
       mission.start(spec.start.x,spec.start.y,spec.start.z,spec.start.yaw,c.profile!,modifier)
       expect(mission.totalGates).toBe(5);expect(mission.routeFallbackUsed).toBe(false)
       expect(mission.scoringFocus).toBe(scoringFocusForModifier(modifier))
+      const route=buildMissionRoute(spec.start.x,spec.start.y,spec.start.z,spec.start.yaw,c.profile!,modifier)
+      let previous=spec.start
+      for(const [leg,point] of route.entries()) {
+        const dx=point.x-previous.x,dz=point.z-previous.z,length=Math.hypot(dx,dz)
+        expect(Math.atan2(Math.abs(point.y-previous.y),length)*180/Math.PI).toBeLessThan(25)
+        for(let i=1;i<=60;i++)for(const side of [-34,0,34]) {
+          const t=i/60,x=previous.x+dx*t+dz/length*side,z=previous.z+dz*t-dx/length*side
+          expect(previous.y+(point.y-previous.y)*t-sampleTerrainSurfaceHeightFast(x,z))
+            .toBeGreaterThanOrEqual(missionLegClearance(leg,length*t,length)-.5)
+        }
+        previous={...point,yaw:pad.yaw}
+      }
+      for(const right of [-8,0,8])for(const forward of [-55,0,55])
+        expect(sampleTerrainSurfaceHeightFast(pad.x+Math.cos(pad.yaw)*right+Math.sin(pad.yaw)*forward,
+          pad.z-Math.sin(pad.yaw)*right+Math.cos(pad.yaw)*forward)).toBeCloseTo(pad.y,4)
       const key=c.daily?lib.dailyOpsDayKey(date):c.weekly?lib.weeklyOpsWeekKey(date):lib.monthlyOpsMonthKey(date)
       expect(courseSessionId(id,c.seed!,c.profile!,key)).toBe(lib.courseRunId(c,date))
       for(let f=-1300;f<=-80;f+=40)expect(sampleTerrainSurfaceHeightFast(pad.x+Math.sin(pad.yaw)*f,pad.z+Math.cos(pad.yaw)*f)-pad.y).toBeLessThan(1.4-f*.052-2)

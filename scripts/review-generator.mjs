@@ -38,6 +38,41 @@ try {
   const buildId=await page.evaluate(()=>window.__training.buildId)
   const build=JSON.parse(await readFile(`docs/reviews/generator/hooks-build/hooks/${buildId}.json`,'utf8'))
   await page.locator('#startup-screen').waitFor({state:'hidden'})
+  const captureFences=[]
+  let captureCdp, captureRendererId
+  if(capture){
+   // Inspect the existing observer closure instead of changing the runtime hook.
+   captureCdp=await context.newCDPSession(page)
+   const code=await page.evaluate(()=>window.__training.capture.toString())
+   const renderName=code.match(/([\w$]+)\([\w$]+\.scene,/)[1]
+   const {result:fn}=await captureCdp.send('Runtime.evaluate',{expression:'window.__training.capture'})
+   const detail=await captureCdp.send('Runtime.getProperties',{objectId:fn.objectId})
+   const scopes=await captureCdp.send('Runtime.getProperties',{objectId:detail.internalProperties.find(p=>p.name==='[[Scopes]]').value.objectId,ownProperties:true})
+   let renderId
+   for(const scope of scopes.result){
+    if(!scope.value?.objectId)continue
+    const properties=await captureCdp.send('Runtime.getProperties',{objectId:scope.value.objectId,ownProperties:true})
+    renderId=properties.result.find(p=>p.name===renderName)?.value?.objectId
+    if(renderId)break
+   }
+   if(!renderId)throw Error('Capture renderer binding missing')
+   const bound=await captureCdp.send('Runtime.getProperties',{objectId:renderId})
+   captureRendererId=bound.internalProperties.find(p=>p.name==='[[BoundThis]]')?.value?.objectId
+   if(!captureRendererId)throw Error('Capture renderer instance missing')
+  }
+  const captureStill=async name=>{
+   // A desynchronized canvas can be sampled while GPU commands are outstanding.
+   // Hold only drawing, complete one normal render, then read the stable canvas.
+   // Simulation and the controls pilot continue; capture sessions are never timing proof.
+   await page.evaluate(()=>{window.__training.setRenderInterval(1000000);window.__training.capture()})
+   try {
+    const fence=await captureCdp.send('Runtime.callFunctionOn',{objectId:captureRendererId,
+     functionDeclaration:'function(){const gl=this.getContext(),start=performance.now();gl.finish();return {ms:performance.now()-start,desynchronized:gl.getContextAttributes().desynchronized}}',returnByValue:true})
+    if(fence.exceptionDetails)throw Error(JSON.stringify(fence.exceptionDetails))
+    captureFences.push({picture:name,...fence.result.value})
+    await page.screenshot({path:`${dir}/${name}`,type:'jpeg',quality:87})
+   }finally{await page.evaluate(()=>window.__training.setRenderInterval(0))}
+  }
   let cdp
   if(profile){
    cdp=await context.newCDPSession(page)
@@ -63,8 +98,7 @@ try {
    await captureWindow('runway',async()=>{
     for(const camera of ['chase','cockpit']){
      await page.evaluate(mode=>window.__training.camera(mode),camera);await page.waitForTimeout(200)
-     await page.evaluate(()=>window.__training.capture())
-     const name=`runway-${camera}.jpg`;await page.screenshot({path:`${dir}/${name}`,type:'jpeg',quality:87});pictures.push(name)
+     const name=`runway-${camera}.jpg`;await captureStill(name);pictures.push(name)
     }
     await page.evaluate(()=>window.__training.camera('chase'))
    })
@@ -80,12 +114,12 @@ try {
     await captureWindow('gates',async()=>{
     for(const camera of ['chase','cockpit']){
      await page.evaluate(mode=>window.__training.camera(mode),camera);await page.waitForTimeout(250)
-     await page.evaluate(()=>window.__training.capture());const name=`gates-${camera}.jpg`;await page.screenshot({path:`${dir}/${name}`,type:'jpeg',quality:87});pictures.push(name)
+     const name=`gates-${camera}.jpg`;await captureStill(name);pictures.push(name)
     }
     await page.evaluate(()=>window.__training.camera('chase'));});shot=true
    }
    if(capture && !approach && final.stage==='approach' && final.agl<30 && final.agl>8){
-    await captureWindow('approach',async()=>{await page.evaluate(()=>window.__training.camera('cockpit'));await page.waitForTimeout(200);await page.evaluate(()=>window.__training.capture());await page.screenshot({path:`${dir}/approach-cockpit.jpg`,type:'jpeg',quality:87});pictures.push('approach-cockpit.jpg');await page.evaluate(()=>window.__training.camera('chase'));});approach=true
+    await captureWindow('approach',async()=>{await page.evaluate(()=>window.__training.camera('cockpit'));await page.waitForTimeout(200);await captureStill('approach-cockpit.jpg');pictures.push('approach-cockpit.jpg');await page.evaluate(()=>window.__training.camera('chase'));});approach=true
    }
    if(smoke && (shot || (!capture && final.next>=1))) break
    if(final.resultsOpen || final.status==='crashed')break
@@ -93,7 +127,7 @@ try {
   const {frameTimes,captureWindows,heapMB}=await page.evaluate(()=>({frameTimes:window.__reviewFrameTimes,captureWindows:window.__reviewCaptures,heapMB:performance.memory?.usedJSHeapSize/1048576}))
   const metrics={...summarizeFlightFrames(frameTimes),heapMB}
   const timingEligible=!capture&&!profile&&!smoke
-  if(capture){await page.evaluate(()=>window.__training.capture());await page.screenshot({path:`${dir}/final.jpg`,type:'jpeg',quality:87});pictures.push('final.jpg')}
+  if(capture){await captureStill('final.jpg');pictures.push('final.jpg')}
   if(cdp){
    const complete=new Promise(resolve=>cdp.once('Tracing.tracingComplete',resolve))
    await cdp.send('Tracing.end');const {stream}=await complete
@@ -103,7 +137,7 @@ try {
   }
   const refillPass=final.nitroRefills.length >= (smoke ? 1 : 5) && final.nitroRefills.every(r=>Math.abs(r.after.fraction-Math.min(1,r.before.fraction+.25))<1e-6)
   const pass=refillPass&&errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?(shot||(!capture&&final.next>=1)):final.status==='landed'&&final.phase==='complete'&&final.next===5&&final.resultsOpen)
-  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,capture,profile,frameTimes,captureWindows,timingEligible,timingStart,browserInfo,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
+  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,capture,profile,frameTimes,captureWindows,captureFences,timingEligible,timingStart,browserInfo,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
   console.log('RESULT',JSON.stringify({theme,seed,part,smoke,timingEligible,pass,metrics}))
   await context.close()
   if(!pass)throw Error(`Failed ${theme} ${seed}`)
