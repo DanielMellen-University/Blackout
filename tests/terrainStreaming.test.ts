@@ -1,4 +1,4 @@
-import { BackSide, DoubleSide, FrontSide, Group, Mesh, MeshStandardMaterial, Scene } from 'three'
+import { BackSide, DoubleSide, FrontSide, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, Scene } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateTerrainGeometry, type TerrainGeometryData, type TerrainGeometrySteps } from '../src/world/TerrainGeometry'
 import { TERRAIN_ROOT_SIZE, tileKey } from '../src/world/TerrainLayout'
@@ -87,6 +87,47 @@ afterEach(() => {
 })
 
 describe('terrain streaming integration', () => {
+  it('pins exact fade shader variants across warmups and releases them on terrain teardown', async () => {
+    const scene = new Scene(), camera = new PerspectiveCamera()
+    const live = [internal.groundMatNear, internal.groundMatFar, internal.waterMat]
+    const liveDisposals = live.map(m => vi.spyOn(m, 'dispose'))
+    let privateDisposals: ReturnType<typeof vi.spyOn>[] = []
+    let geometryDisposal: ReturnType<typeof vi.spyOn> | undefined
+    const compileAsync = vi.fn(async (fixtures: Group) => {
+      const meshes: Mesh[] = []
+      fixtures.traverse(o => { if (o instanceof Mesh) meshes.push(o) })
+      expect(meshes).toHaveLength(6)
+      expect(meshes.slice(0, 3).map(m => m.material)).toEqual(live)
+      const fades = meshes.slice(3)
+      expect(fades.map(m => m.receiveShadow)).toEqual([true, true, false])
+      expect(fades.map(m => (m.material as MeshStandardMaterial).side)).toEqual([FrontSide, BackSide, FrontSide])
+      for (const mesh of fades) {
+        const material = mesh.material as MeshStandardMaterial
+        expect(material.transparent).toBe(true)
+        expect(material.depthWrite).toBe(false)
+        expect(material.alphaHash).toBe(false)
+        expect(material.opacity).toBe(.5)
+        expect(material.customProgramCacheKey()).toBe(internal.groundMatNear.customProgramCacheKey())
+        privateDisposals.push(vi.spyOn(material, 'dispose'))
+      }
+      geometryDisposal = vi.spyOn(meshes[0]!.geometry, 'dispose')
+      return fixtures
+    })
+    const renderer = { compileAsync, render: vi.fn(), getContext: () => ({ isContextLost: () => true }) as unknown as WebGL2RenderingContext }
+    await terrain.warmupMaterials(renderer, camera, scene)
+    expect(compileAsync).toHaveBeenCalledOnce()
+    expect(privateDisposals).toHaveLength(3)
+    for (const dispose of privateDisposals) expect(dispose).not.toHaveBeenCalled()
+    for (const dispose of liveDisposals) expect(dispose).not.toHaveBeenCalled()
+    expect(geometryDisposal).toHaveBeenCalledOnce()
+    expect(scene.children).toHaveLength(0)
+    const pinned = (terrain as unknown as { warmupFadeMaterials: MeshStandardMaterial[] }).warmupFadeMaterials.slice()
+    await terrain.warmupMaterials(renderer, camera, scene)
+    expect((terrain as unknown as { warmupFadeMaterials: MeshStandardMaterial[] }).warmupFadeMaterials).toEqual(pinned)
+    terrain.dispose()
+    for (const dispose of privateDisposals) expect(dispose).toHaveBeenCalledOnce()
+  })
+
   it('advances worker recovery only by the bounded active terrain delta', () => {
     const workers = (terrain as unknown as { workers: { advance(dt: number): void } }).workers
     const advance = vi.spyOn(workers, 'advance')

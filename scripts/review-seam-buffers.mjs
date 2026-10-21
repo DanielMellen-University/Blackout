@@ -6,7 +6,9 @@ import { createHash } from 'node:crypto'
 const ref = process.argv[2] || 'd0b4a6c'
 const output = process.argv[3] || 'docs/reviews/performance-10.926/seam-buffers.json'
 const baseline = execFileSync('git',['show',`${ref}:src/world/TerrainSeams.ts`],{encoding:'utf8'})
+const selectedSeeds = process.env.REVIEW_SEEDS?.split(',').map(Number)
 const fixtures = JSON.parse(readFileSync('docs/reviews/terrain-10.924/after-edges.json','utf8')).fixtures
+ .filter(f => !selectedSeeds || selectedSeeds.includes(f.seed))
 const hash = geometry => {
  const h = createHash('sha256')
  for (const [name,a] of Object.entries(geometry.attributes)) { h.update(name); h.update(new Uint8Array(a.array.buffer,a.array.byteOffset,a.array.byteLength)) }

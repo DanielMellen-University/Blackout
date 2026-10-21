@@ -64,21 +64,15 @@ const samples = Array.from({ length: 6 }, () => new Array<number>(8).fill(0))
 export function joinTerrainEdges(tile: TerrainEdgeTile, baseVertices: number,
   joins: readonly TerrainEdgeJoin[]): BufferGeometry {
   const source = tile.geometry
-  let vertices = baseVertices, indexCount = 0
+  const coreIndices = tile.segs * tile.segs * 6
+  let vertices = baseVertices, indexCount = coreIndices
   const triangle = (a: number, b: number, c: number): void => {
     indices[indexCount++] = a; indices[indexCount++] = b; indices[indexCount++] = c
   }
-  for (const [name, target, size] of [['position', positions, 3], ['normal', normals, 3], ['color', colors, 3], ['uv', uv, 2]] as const) {
-    const attr = source.getAttribute(name)
-    for (let i = 0; i < baseVertices * size; i++) target[i] = attr ? attr.array[i]! : 0
-  }
   const span = CHUNK_SIZE * tile.size, half = span / 2, core = (tile.segs + 1) ** 2
   const p = source.getAttribute('position'), original = source.index!
-  const coreIndices = tile.segs * tile.segs * 6
-  for (let i = 0; i < coreIndices + baseVertices - core; i += 3) {
-    const a = i < coreIndices ? original.getX(i) : core + i - coreIndices
-    const b = i < coreIndices ? original.getX(i + 1) : a + 1
-    const c = i < coreIndices ? original.getX(i + 2) : a + 2
+  for (let i = core; i < baseVertices; i += 3) {
+    const a = i, b = a + 1, c = a + 2
     // Drop only skirt triangles whose entire interval has a resident replacement.
     let covered = false
     if (a >= core) for (const j of joins) {
@@ -160,11 +154,16 @@ export function joinTerrainEdges(tile: TerrainEdgeTile, baseVertices: number,
   const geometry = new BufferGeometry()
   for (const [name, array, size] of [['position', positions, 3], ['normal', normals, 3], ['color', colors, 3], ['uv', uv, 2]] as const) {
     const values = new Float32Array(vertices * size)
-    for (let i = 0; i < values.length; i++) values[i] = array[i]!
+    // Core and original skirt attributes already have their final type. Copy
+    // them directly instead of round-tripping the entire tile through JS arrays.
+    const attr = source.getAttribute(name), base = baseVertices * size
+    if (attr) values.set(attr.array.subarray(0, base))
+    for (let i = base; i < values.length; i++) values[i] = array[i]!
     geometry.setAttribute(name, new BufferAttribute(values, size))
   }
   const values = new Uint32Array(indexCount)
-  for (let i = 0; i < values.length; i++) values[i] = indices[i]!
+  values.set(original.array.subarray(0, coreIndices))
+  for (let i = coreIndices; i < values.length; i++) values[i] = indices[i]!
   geometry.setIndex(new BufferAttribute(values, 1))
   geometry.computeBoundingSphere()
   return geometry

@@ -319,6 +319,9 @@ export class TerrainSystem {
   private readonly groundMatFar: MeshStandardMaterial
   /** One shared opaque water material for settled streamed tiles. */
   private readonly waterMat: MeshStandardMaterial
+  // Keep fade programs referenced between streamed tiles, avoiding repeat
+  // compilation when the last live tile finishes fading.
+  private readonly warmupFadeMaterials: MeshStandardMaterial[] = []
   private readonly weatherShaderSource = new ShaderSourceCache()
   private readonly weatherRain = { value: 0 }
   private readonly weatherSnow = { value: 0 }
@@ -382,9 +385,8 @@ export class TerrainSystem {
     )
   }
 
-  /** Workers need not finish a water tile before its existing shader can be
-   * prepared. One private triangle covers near/far ground and physical water
-   * attributes, including the near-ground shadow-receiving variant. */
+  /** Prepare settled and streaming-fade programs before flight, including
+   * front/back near-ground variants. Workers need not finish a water tile. */
   async warmupMaterials(renderer: WarmupRenderer, camera: Camera, scene: Scene): Promise<void> {
     const geometry = new BufferGeometry()
     geometry.setAttribute('position', new Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 0, 1], 3))
@@ -396,6 +398,23 @@ export class TerrainSystem {
     const fixtures = new Group(), near = new Mesh(geometry, this.groundMatNear)
     near.receiveShadow = true
     fixtures.add(near, new Mesh(geometry, this.groundMatFar), new Mesh(geometry, this.waterMat))
+    // Fade programs differ from settled ground by OPAQUE, sidedness and
+    // shadow reception. Use the real stamping path so shader hooks match.
+    const fades = new Group()
+    let variant = 0
+    for (const [source, name, shadows] of [
+      [this.groundMatNear, 'TerrainChunk', true],
+      [this.groundMatNear, 'TerrainBackfaces', true],
+      [this.groundMatFar, 'TerrainChunk', false],
+    ] as const) {
+      const mesh = new Mesh(geometry, this.warmupFadeMaterials[variant++] ?? source)
+      mesh.name = name; mesh.receiveShadow = shadows; fades.add(mesh)
+    }
+    if (!this.warmupFadeMaterials.length) {
+      this.stampChunkMeshes(fades, .5)
+      for (const mesh of fades.children) this.warmupFadeMaterials.push((mesh as Mesh).material as MeshStandardMaterial)
+    }
+    fixtures.add(fades)
     try { await warmupMaterials(renderer, fixtures, camera, scene) }
     finally { geometry.dispose() }
   }
@@ -597,12 +616,14 @@ export class TerrainSystem {
     this.invalidateSampleChunk()
   }
 
-  /** Release streamed geometry and the shared near-field prop factory. */
+  /** Release streamed geometry and shared materials. */
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
     this.workers.dispose()
     this.clearAll()
+    for (const material of this.warmupFadeMaterials) material.dispose()
+    this.warmupFadeMaterials.length = 0
     this.groundMatNear.dispose()
     this.groundMatFar.dispose()
     this.waterMat.dispose()

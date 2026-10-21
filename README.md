@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.988**. Previous roadmap chunk: **10.987**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.989**. Previous roadmap chunk: **10.988**.
 
-Recent changes from **10.988**. Complete the approved Waterway migration proof and fix Waterway admission to the existing 12-family record-retention allowlist. All 72 existing fixed missions and all shared Ops periods now use the generator. The five themes are exactly Desert run, Mountain valley run, Coastal island run, Volcanic run and Waterway. Further themes and features need separate approval. Preserve paused systems, b20 physics, b21 nitro and all budgets. See docs/reviews/generator/proof-10.988.md.
+Recent changes from **10.989**. Reduce existing generated-mission frame spikes by copying unchanged seam cores directly and preparing retained terrain fade shader variants before launch. Preserve behavior, visuals, b20 physics, b21 nitro, the 10.978 presentation fix, collision, water and budgets. No new feature or theme is approved; further themes and features need separate approval. See docs/reviews/generator/frame-spikes-10.989.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

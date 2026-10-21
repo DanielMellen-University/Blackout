@@ -1,0 +1,547 @@
+{
+  "originalTraceSha256": "e83436b2271f6e2f5da4408db66102b542b965a35dca79331312f973f02a0e03",
+  "mainThread": {
+    "pid": 2140545,
+    "tid": 2140545
+  },
+  "method": "Before diagnostic only, not acceptance. Main-thread spans intersect raw intervals strictly over 50 ms. Nested times overlap and must not be summed. CPU profile 0x1 only; worker samples excluded. Minified Z is joinTerrainEdges, rs is edgeSample. Retained trace is a main-thread excerpt, plus its CPU profile, with original timestamps.",
+  "slowSpanMs": [
+    [
+      "RunTask",
+      10062.50399914552
+    ],
+    [
+      "v8.callFunction",
+      4099.836996643072
+    ],
+    [
+      "FunctionCall",
+      4080.3459966430637
+    ],
+    [
+      "FireAnimationFrame",
+      3986.364996398929
+    ],
+    [
+      "GLES2::ReadPixels",
+      3233.4030027465833
+    ],
+    [
+      "ImplementationBase::WaitForCmd",
+      2968.6340020141624
+    ],
+    [
+      "CommandBufferHelper::Finish",
+      2967.2600020141595
+    ],
+    [
+      "CommandBufferProxyImpl::WaitForGetOffset",
+      2922.1080020751947
+    ],
+    [
+      "CommandBufferHelper::Flush",
+      319.40599957275293
+    ],
+    [
+      "UpdateLayoutTree",
+      283.84299987792957
+    ],
+    [
+      "Paint",
+      241.07999987792857
+    ],
+    [
+      "CommandBufferProxyImpl::Flush",
+      225.92399957275325
+    ],
+    [
+      "Layerize",
+      178.66599993896483
+    ],
+    [
+      "Layout",
+      147.09699963378915
+    ],
+    [
+      "HandlePostMessage",
+      138.7160000610352
+    ],
+    [
+      "GLES2Implementation::GetProgramiv",
+      120.96299987793005
+    ],
+    [
+      "PrePaint",
+      77.97800012207041
+    ],
+    [
+      "Commit",
+      61.411000061035175
+    ],
+    [
+      "MajorGC",
+      44.559
+    ],
+    [
+      "V8.GCFinalizeMC",
+      44.315
+    ],
+    [
+      "V8.GC_MARK_COMPACTOR",
+      44.225
+    ],
+    [
+      "HitTest",
+      41.53199993896486
+    ],
+    [
+      "GLES2Implementation::GetShaderiv",
+      37.546999938964866
+    ],
+    [
+      "CommandBuffer::OrderingBarrier",
+      20.441999938965083
+    ],
+    [
+      "PaintImage",
+      19.27599999999999
+    ]
+  ],
+  "maximumSlowSpanMs": [
+    [
+      "RunTask",
+      82.314
+    ],
+    [
+      "FireAnimationFrame",
+      65.097
+    ],
+    [
+      "v8.callFunction",
+      65.075
+    ],
+    [
+      "FunctionCall",
+      65.048
+    ],
+    [
+      "GLES2::ReadPixels",
+      25.609
+    ],
+    [
+      "ImplementationBase::WaitForCmd",
+      23.281
+    ],
+    [
+      "CommandBufferHelper::Finish",
+      23.277
+    ],
+    [
+      "CommandBufferProxyImpl::WaitForGetOffset",
+      23.162
+    ],
+    [
+      "MajorGC",
+      17.253
+    ],
+    [
+      "V8.GCFinalizeMC",
+      17.192
+    ],
+    [
+      "V8.GC_MARK_COMPACTOR",
+      17.166
+    ],
+    [
+      "GLES2Implementation::GetProgramiv",
+      13.086
+    ],
+    [
+      "MinorGC",
+      8.71
+    ],
+    [
+      "V8.GCScavenger",
+      8.643
+    ],
+    [
+      "V8.GC_SCAVENGER",
+      8.623
+    ],
+    [
+      "V8.GC_SCAVENGER_SCAVENGE",
+      8.583
+    ],
+    [
+      "V8.GC_SCAVENGER_SCAVENGE_PARALLEL_PHASE",
+      7.658
+    ],
+    [
+      "ImplementationBase::GetBucketContents",
+      7.424
+    ],
+    [
+      "V8.GC_MC_EVACUATE",
+      7.305
+    ],
+    [
+      "HandlePostMessage",
+      6.963
+    ]
+  ],
+  "slowSampledSelfMs": [
+    {
+      "ms": 4517.604004028309,
+      "frame": {
+        "codeType": "other",
+        "functionName": "(idle)",
+        "scriptId": 0
+      }
+    },
+    {
+      "ms": 1634.12099908447,
+      "frame": {
+        "codeType": "other",
+        "functionName": "(program)",
+        "scriptId": 0
+      }
+    },
+    {
+      "ms": 198.48499993896493,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 10687,
+        "functionName": "queueEdgeJoins",
+        "lineNumber": 240,
+        "scriptId": 10,
+        "url": "http://127.0.0.1:5176/assets/main-Bi-fKEYm.js"
+      }
+    },
+    {
+      "ms": 155.84299987792983,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 18346,
+        "functionName": "Z",
+        "lineNumber": 189,
+        "scriptId": 10,
+        "url": "http://127.0.0.1:5176/assets/main-Bi-fKEYm.js"
+      }
+    },
+    {
+      "ms": 131.22400000000022,
+      "frame": {
+        "codeType": "JS",
+        "functionName": "",
+        "scriptId": 0
+      }
+    },
+    {
+      "ms": 124.901999938965,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 17266,
+        "functionName": "ns",
+        "lineNumber": 189,
+        "scriptId": 10,
+        "url": "http://127.0.0.1:5176/assets/main-Bi-fKEYm.js"
+      }
+    },
+    {
+      "ms": 111.44899993896496,
+      "frame": {
+        "codeType": "JS",
+        "functionName": "uniformMatrix4fv",
+        "scriptId": 0
+      }
+    },
+    {
+      "ms": 107.65199981689464,
+      "frame": {
+        "codeType": "JS",
+        "functionName": "bindVertexArray",
+        "scriptId": 0
+      }
+    },
+    {
+      "ms": 101.90899987792976,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 17691,
+        "functionName": "rs",
+        "lineNumber": 189,
+        "scriptId": 10,
+        "url": "http://127.0.0.1:5176/assets/main-Bi-fKEYm.js"
+      }
+    },
+    {
+      "ms": 101.40299975585954,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 33627,
+        "functionName": "gt",
+        "lineNumber": 4107,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 98.14499981689457,
+      "frame": {
+        "codeType": "JS",
+        "functionName": "getProgramInfoLog",
+        "scriptId": 0
+      }
+    },
+    {
+      "ms": 82.47499993896486,
+      "frame": {
+        "codeType": "other",
+        "functionName": "(garbage collector)",
+        "scriptId": 0
+      }
+    },
+    {
+      "ms": 73.56299993896484,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 28733,
+        "functionName": "Ql.renderBufferDirect",
+        "lineNumber": 4107,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 63.799000122070254,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 39975,
+        "functionName": "Tt",
+        "lineNumber": 4107,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 63.063,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 33627,
+        "functionName": "gt",
+        "lineNumber": 4107,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 61.777999877929645,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 59847,
+        "functionName": "updateMatrixWorld",
+        "lineNumber": 0,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 56.65899999999997,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 81743,
+        "functionName": "xh",
+        "lineNumber": 582,
+        "scriptId": 10,
+        "url": "http://127.0.0.1:5176/assets/main-Bi-fKEYm.js"
+      }
+    },
+    {
+      "ms": 53.24199999999999,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 1740,
+        "functionName": "Is",
+        "lineNumber": 4005,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 52.89299999999998,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 6021,
+        "functionName": "scheduleAround",
+        "lineNumber": 240,
+        "scriptId": 10,
+        "url": "http://127.0.0.1:5176/assets/main-Bi-fKEYm.js"
+      }
+    },
+    {
+      "ms": 49.222,
+      "frame": {
+        "codeType": "JS",
+        "functionName": "postMessage",
+        "scriptId": 0
+      }
+    },
+    {
+      "ms": 45.28999999999995,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 59847,
+        "functionName": "updateMatrixWorld",
+        "lineNumber": 0,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 44.81400000000001,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 87676,
+        "functionName": "Es",
+        "lineNumber": 669,
+        "scriptId": 10,
+        "url": "http://127.0.0.1:5176/assets/main-Bi-fKEYm.js"
+      }
+    },
+    {
+      "ms": 44.55699987792966,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 3162,
+        "functionName": "Ws",
+        "lineNumber": 4005,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 41.70299987792965,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 59847,
+        "functionName": "updateMatrixWorld",
+        "lineNumber": 0,
+        "scriptId": 12,
+        "url": "http://127.0.0.1:5176/assets/three-B7gxx9yV.js"
+      }
+    },
+    {
+      "ms": 37.346,
+      "frame": {
+        "codeType": "JS",
+        "columnNumber": 10920,
+        "functionName": "publishEdgeJoins",
+        "lineNumber": 240,
+        "scriptId": 10,
+        "url": "http://127.0.0.1:5176/assets/main-Bi-fKEYm.js"
+      }
+    }
+  ],
+  "slowSampledInclusiveMs": [
+    [
+      "(root)",
+      10315.92599987821
+    ],
+    [
+      "(idle)",
+      4517.604004028309
+    ],
+    [
+      "Es",
+      3823.4049968261643
+    ],
+    [
+      "Og.z.render",
+      2034.4809978637775
+    ],
+    [
+      "Ql.render",
+      2031.1229978637773
+    ],
+    [
+      "update",
+      1641.1199990844786
+    ],
+    [
+      "(program)",
+      1634.12099908447
+    ],
+    [
+      "_t",
+      1386.2649988403361
+    ],
+    [
+      "yt",
+      1385.9649988403362
+    ],
+    [
+      "bt",
+      1367.2919988403364
+    ],
+    [
+      "Ql.renderBufferDirect",
+      1325.820998901371
+    ],
+    [
+      "Tt",
+      911.2549995727512
+    ],
+    [
+      "drainBuildQueue",
+      523.4599996948227
+    ],
+    [
+      "publishEdgeJoins",
+      487.67099969482405
+    ],
+    [
+      "Z",
+      422.72699969482437
+    ],
+    [
+      "scheduleAround",
+      406.9669998779292
+    ],
+    [
+      "gt",
+      404.585999389648
+    ],
+    [
+      "queueEdgeJoins",
+      330.4729998779294
+    ],
+    [
+      "setValue",
+      320.6249998168945
+    ],
+    [
+      "",
+      319.89700006103476
+    ],
+    [
+      "s",
+      239.70499957275362
+    ],
+    [
+      "Ws",
+      229.8479997558593
+    ],
+    [
+      "advanceAssembly",
+      208.7509999389652
+    ],
+    [
+      "Qh",
+      207.7389999389652
+    ],
+    [
+      "buildRegionalRoadSteps",
+      207.7389999389652
+    ]
+  ]
+}
