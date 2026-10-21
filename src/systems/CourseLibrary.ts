@@ -1,3 +1,6 @@
+import { generateLegacyMission, legacyGeneratedRecordId, legacyTerrainTheme } from './LegacyMissionGenerator'
+import type { MissionTheme } from '../world/TerrainProfile'
+import type { MissionRouteModifier } from './Mission'
 import { normalizeWorldSeed } from '../core/WorldSeed'
 import { generatedThemeForProfile } from '../world/TerrainProfile'
 import { generateMission } from './MissionGenerator'
@@ -14,6 +17,12 @@ interface CourseDefinitionShape {
   detail: string
   seed: number | null
   profile: MissionRouteProfile | null
+  /** Existing terrain recipe, separate from the gameplay profile. */
+  terrainTheme?: MissionTheme
+  /** Original fixed-seed scoring modifier retained when the world moves. */
+  missionModifier?: MissionRouteModifier
+  /** Objective-selection seed retained independently of the flight seed. */
+  contractSeed?: number
   /** Optional deterministic weather override for authored challenge worlds. */
   weather?: WeatherId
   /** Optional deterministic weather target that begins a visible front transition. */
@@ -910,7 +919,7 @@ function monthlyOpsSafeTimestamp(nowMs: number): number {
 }
 
 /** Resolve a catalog entry for this launch, expanding the rotating Ops entries. */
-export function resolveCourseDefinition(
+function resolveOriginalCourseDefinition(
   course: CourseDefinition,
   nowMs = Date.now(),
 ): CourseDefinition {
@@ -958,6 +967,24 @@ export function resolveCourseDefinition(
   }
 }
 
+/** Approved migration activation. Contract catalog activation follows in Part C. */
+export function isLegacyGeneratedCourse(course: CourseDefinition): boolean {
+  if (course.id === 'random' || course.profile === 'free') return false
+  return course.terrainTheme !== undefined ||
+    ((course.daily || course.weekly || course.monthly || !course.contractCatalog) &&
+      legacyTerrainTheme({ ...course, profile: course.profile ?? 'sweep' }) !== null)
+}
+
+/** Keep catalog identity settings distinct from the per-flight world seed. */
+export function resolveCourseDefinition(course: CourseDefinition, nowMs = Date.now()): CourseDefinition {
+  if (course.terrainTheme) return course
+  const original = resolveOriginalCourseDefinition(course, nowMs)
+  if (!isLegacyGeneratedCourse(original)) return original
+  const adapted = generateLegacyMission(original, original.seed!)!
+  return { ...original, seed: original.daily || original.weekly || original.monthly ? original.seed : null,
+    terrainTheme: adapted.spec.theme, missionModifier: adapted.modifier, contractSeed: adapted.contractSeed }
+}
+
 /** Existing weather fields and runway-relative wind, resolved once for a seeded sortie. */
 function resolveWeatherApproach(course: CourseDefinition): CourseDefinition {
   const seed = course.seed ?? 619
@@ -968,7 +995,14 @@ function resolveWeatherApproach(course: CourseDefinition): CourseDefinition {
 
 /** Keep this featured mission's explicit seed replay in the existing selection/record family. */
 export function resolveCourseReplaySeed(course: CourseDefinition, seed: number | null): CourseDefinition {
-  if ((course.id !== 'contour-circuit' && course.id !== 'weather-approach' && !generatedThemeForProfile(course.profile)) || seed === null || (generatedThemeForProfile(course.profile) ? normalizeWorldSeed(seed) === null : !Number.isSafeInteger(seed))) return course
+  const resolved = isLegacyGeneratedCourse(course) ? resolveCourseDefinition(course) : course
+  if (seed === null || normalizeWorldSeed(seed) === null) return resolved
+  if (resolved.terrainTheme) {
+    if (resolved.daily || resolved.weekly || resolved.monthly) return resolved
+    return { ...resolved, seed }
+  }
+  if ((course.id !== 'contour-circuit' && course.id !== 'weather-approach' && !generatedThemeForProfile(course.profile)) ||
+    (!generatedThemeForProfile(course.profile) && !Number.isSafeInteger(seed))) return course
   const replay = { ...course, seed, detail: `${course.detail} · SEED ${seed}` }
   return course.id === 'weather-approach' ? resolveWeatherApproach(replay) : replay
 }
@@ -989,7 +1023,8 @@ export function courseRunId(course: CourseDefinition, nowMs = Date.now()): strin
       : course.monthly
         ? `:monthly:${monthlyOpsMonthKey(nowMs)}`
         : ''
-  return `${courseSessionBaseId(resolved.seed, resolved.profile)}${courseIdentitySuffix(resolved.id)}${periodSuffix}`
+  const migrated = resolved.terrainTheme ? legacyGeneratedRecordId({ ...resolved, seed: resolved.contractSeed! }, resolved.seed) : null
+  return `${migrated ?? courseSessionBaseId(resolved.seed, resolved.profile)}${migrated ? '' : courseIdentitySuffix(resolved.id)}${periodSuffix}`
 }
 
 /** Keep random sorties bounded while giving explicitly replayed worlds stable identity. */
@@ -1017,7 +1052,10 @@ export function courseSessionId(
   const periodSuffix = period && periodKey
     ? `:${period}:${periodKey}`
     : ''
-  return `${courseSessionBaseId(safeSeed, profile)}${courseIdentitySuffix(selectedCourseId)}${periodSuffix}`
+  const definition = courseDefinitionForId(selectedCourseId)
+  const migrated = isLegacyGeneratedCourse(definition)
+    ? legacyGeneratedRecordId({ ...definition, seed: definition.seed ?? safeSeed, profile }, normalizeWorldSeed(worldSeed) ?? .001) : null
+  return `${migrated ?? courseSessionBaseId(safeSeed, profile)}${migrated ? '' : courseIdentitySuffix(selectedCourseId)}${periodSuffix}`
 }
 
 /** Keep authored records stable while separating the one legacy key collision. */

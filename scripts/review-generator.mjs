@@ -16,6 +16,15 @@ try {
  await browserCdp.detach()
  for (const seed of seeds) {
   const dir = `docs/reviews/generator/${part}/${theme}-${seed}`
+  if (process.env.REVIEW_RESUME === '1') {
+   try {
+    const prior=JSON.parse(await readFile(`${dir}/run.json`,'utf8'))
+    const current=JSON.parse(await readFile('docs/reviews/generator/hooks-build/browser-build.json','utf8'))
+    if(prior.pass && prior.build.buildId===current.buildId && prior.smoke===smoke && prior.capture===capture) {
+     console.log('RETAIN VERIFIED',theme,seed);continue
+    }
+   } catch {}
+  }
   await mkdir(dir,{recursive:true})
   const context = await browser.newContext({viewport:{width:1280,height:720},deviceScaleFactor:1})
   const page=await context.newPage(),errors=[],knownFallback=[],samples=[],pictures=[]
@@ -24,7 +33,7 @@ try {
   page.on('console',m=>{if(m.type()==='error'){if(m.location().url.endsWith('/models/f35.glb'))knownFallback.push(m.text());else errors.push(m.text())}})
   await page.route('**/favicon.ico',r=>r.fulfill({status:204,body:''}))
   await page.addInitScript(()=>{localStorage.clear();localStorage.setItem('blackout.renderQuality','balanced');HTMLElement.prototype.requestFullscreen=async()=>{}})
-  await page.goto(`http://127.0.0.1:5176/?course=${theme}&seed=${seed}`)
+  await page.goto(`http://127.0.0.1:5176/?course=${theme}&seed=${seed}${process.env.REVIEW_QUERY || ''}`)
   await page.waitForFunction(()=>window.__training)
   const buildId=await page.evaluate(()=>window.__training.buildId)
   const build=JSON.parse(await readFile(`docs/reviews/generator/hooks-build/hooks/${buildId}.json`,'utf8'))
@@ -92,7 +101,8 @@ try {
    await cdp.send('IO.close',{handle:stream})
    await writeFile(`${dir}/trace.json.gz`,gzipSync(trace))
   }
-  const pass=errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?(shot||(!capture&&final.next>=1)):final.status==='landed'&&final.phase==='complete'&&final.next===5&&final.resultsOpen)
+  const refillPass=final.nitroRefills.length >= (smoke ? 1 : 5) && final.nitroRefills.every(r=>Math.abs(r.after.fraction-Math.min(1,r.before.fraction+.25))<1e-6)
+  const pass=refillPass&&errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?(shot||(!capture&&final.next>=1)):final.status==='landed'&&final.phase==='complete'&&final.next===5&&final.resultsOpen)
   await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,capture,profile,frameTimes,captureWindows,timingEligible,timingStart,browserInfo,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
   console.log('RESULT',JSON.stringify({theme,seed,part,smoke,timingEligible,pass,metrics}))
   await context.close()

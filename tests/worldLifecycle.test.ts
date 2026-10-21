@@ -35,7 +35,7 @@ describe('world lifecycle boundary', () => {
     const world = new World('low', { seed: 73, profile: 'night', weather: 'fog', timeOfDay: .84 })
     try {
       expect(reseed).toHaveBeenCalledTimes(1)
-      expect(reseed).toHaveBeenCalledWith(73, 'night', 'fog', .84, undefined, undefined)
+      expect(reseed).toHaveBeenCalledWith(73, 'night', 'fog', .84, undefined, undefined, undefined, undefined)
       expect(world.worldSeed).toBe(73)
       expect(world.atmosphere.weather).toBe('fog')
       expect(world.atmosphere.timeOfDay).toBeCloseTo(.84)

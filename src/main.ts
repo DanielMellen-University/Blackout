@@ -491,8 +491,8 @@ export async function boot(): Promise<void> {
         bestScore: record?.bestScore ?? 0,
         badgeCount: record?.badgeCount ?? 0,
         bestPrecisionStreak: record?.bestPrecisionStreak ?? 0,
-        contractLabel: sortieContractLabelForSeed(resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
-        contractDetail: sortieContractDetailForSeed(resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
+        contractLabel: sortieContractLabelForSeed(resolvedCourse.contractSeed ?? resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
+        contractDetail: sortieContractDetailForSeed(resolvedCourse.contractSeed ?? resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
       })
       const difficulty = coursePickerDifficultyForCourse(resolvedCourse)
       const challenge = coursePickerChallengeForCourse({ profile: resolvedCourse.profile })
@@ -760,10 +760,15 @@ export async function boot(): Promise<void> {
   }
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
+  if (replaySeed !== null) {
+    const course = selectedCourse()
+    if (course.daily || course.weekly || course.monthly) replaySeed = course.seed
+  }
   const previewCourse = replaySeed !== null ? selectedCourse() : null
   const world = new World(renderQuality, previewCourse && replaySeed !== null ? {
     seed: replaySeed, profile: previewCourse.profile ?? undefined, weather: previewCourse.weather,
     timeOfDay: previewCourse.timeOfDay, windSide: previewCourse.windSide, weatherShift: previewCourse.weatherShift,
+    terrainTheme: previewCourse.terrainTheme, missionModifier: previewCourse.missionModifier,
   } : undefined)
   let initialReplayPending = replaySeed !== null && !world.lastReseedUsedFallback
   applyWorldQuality = (quality): void => world.setRenderQuality(quality)
@@ -1526,6 +1531,8 @@ export async function boot(): Promise<void> {
     let worldFallback = false
     if (newWorld) {
       const course = selectedCourse()
+      // Resolve a shared period seed again at launch after catalog rollover.
+      if (replaying && (course.daily || course.weekly || course.monthly)) replaySeed = course.seed
       const reusePreview = initialReplayPending && replaying && world.worldSeed === replaySeed &&
         previewCourse?.id === course.id && previewCourse?.profile === course.profile &&
         previewCourse?.weather === course.weather && previewCourse?.timeOfDay === course.timeOfDay &&
@@ -1539,6 +1546,8 @@ export async function boot(): Promise<void> {
           course.timeOfDay,
           course.windSide,
           course.weatherShift,
+          course.terrainTheme,
+          course.missionModifier,
         )
       }
       worldFallback = world.lastReseedUsedFallback
@@ -1547,7 +1556,8 @@ export async function boot(): Promise<void> {
         const seededRandomWorld = replaying && selectedCourseId === 'random'
         activeSortie = courseSession.capture(selectedCourseId, world.worldSeed, world.mission.routeProfile, seededRandomWorld)
         pruneCourseRecords()
-        if (course.id !== 'contour-circuit' && course.id !== 'weather-approach') replaySeed = null
+        // Retries use the captured sortie; New world always chooses a fresh flight seed.
+        replaySeed = null
       }
       if (replaying && !worldFallback) {
         if (titleSeedInput) titleSeedInput.value = ''
@@ -1564,6 +1574,7 @@ export async function boot(): Promise<void> {
         world.spawn.z,
         world.spawn.yaw,
         world.mission.routeProfile,
+        world.mission.routeModifier,
       )
     }
     aircraft.reset(world.spawn)
@@ -1587,7 +1598,7 @@ export async function boot(): Promise<void> {
       activeCourseId,
       world.mission.totalGates,
       world.mission.scoringFocus,
-      world.worldSeed,
+      activeSortie.course.contractSeed ?? world.worldSeed,
       activeSortie.course.contractCatalog === true,
       world.mission.timeAllowanceSec,
     )

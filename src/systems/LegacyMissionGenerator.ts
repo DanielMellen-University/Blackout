@@ -1,3 +1,4 @@
+import { sortieContractLabelForSeed } from './SortieContract'
 import { generateMission, type GeneratedMissionSpec } from './MissionGenerator'
 import type { CourseDefinition } from './CourseLibrary'
 import type { MissionRouteModifier, MissionRouteProfile } from './Mission'
@@ -18,6 +19,7 @@ export const LEGACY_TERRAIN_RECIPES: Partial<Record<MissionRouteProfile, Mission
 }
 
 export const LEGACY_MIGRATION_EXCEPTIONS: Readonly<Record<string, string>> = {
+  'monsoon-run': 'The existing contract is Waterway tour and requires two waterway types, which existing generated recipes cannot provide.',
   'waterway-tour': 'Requires two waterway types. Existing generated recipes disable inland hydrology and Coastal island supplies only ocean. Preserve the existing mission until separately approved work can support it.',
 }
 
@@ -97,6 +99,20 @@ export const LEGACY_MISSION_MODIFIERS: Readonly<Record<string, MissionRouteModif
   'shoreline-run': 'altitude',
 }
 
+/** Periods with unsupported waterway contracts keep their original terrain. */
+export function legacyTerrainTheme(course: CourseDefinition): MissionTheme | null {
+  if (LEGACY_MIGRATION_EXCEPTIONS[course.id] || !course.profile) return null
+  const recipe = LEGACY_TERRAIN_RECIPES[course.profile] ?? null
+  const identitySeed = course.contractSeed ?? course.seed
+  if (!recipe || !course.contractCatalog || identitySeed === null) return recipe
+  const objective = sortieContractLabelForSeed(identitySeed, 5, true)
+  if (objective === 'WATERWAY TOUR') return null
+  if (objective === 'WATER RUN' || objective === 'WATER SKIM') return 'coastal-island-run'
+  if (objective === 'BIOME TOUR' || objective === 'SETTLEMENT TOUR' || objective === 'SCOUT') return 'mountain-valley-run'
+  if (objective === 'RIDGE RUN' && recipe === 'desert-run') return 'mountain-valley-run'
+  return recipe
+}
+
 export interface LegacyGeneratedMission {
   /** Original identity, objectives, weather and contract-selection seed. */
   mission: CourseDefinition
@@ -107,16 +123,22 @@ export interface LegacyGeneratedMission {
 
 /** Pure adapter. Activation belongs to the later catalog migration parts. */
 export function generateLegacyMission(course: CourseDefinition, flightSeed: number): LegacyGeneratedMission | null {
-  if (LEGACY_MIGRATION_EXCEPTIONS[course.id] || !course.profile || course.seed === null) return null
-  const theme = LEGACY_TERRAIN_RECIPES[course.profile]
+  const identitySeed = course.contractSeed ?? course.seed
+  if (!course.profile || identitySeed === null) return null
+  const theme = legacyTerrainTheme(course)
   if (!theme) return null
+  const spec = generateLegacyTerrain(flightSeed, theme)
+  return { mission: { ...course }, spec, modifier: LEGACY_MISSION_MODIFIERS[course.id], contractSeed: identitySeed }
+}
+
+/** Reuse precisely the existing recipe, with migrated landscape/route identity. */
+export function generateLegacyTerrain(flightSeed: number, theme: MissionTheme): GeneratedMissionSpec {
   const base = generateMission(flightSeed, theme)
   // Separate every migrated route and landscape from both its old records and
   // the four existing theme records. Flight physics retains the b20 revision.
-  const spec = { ...base, terrain: { ...base.terrain,
+  return { ...base, terrain: { ...base.terrain,
     landscapeRevision: base.terrain.landscapeRevision + 100,
     routeRevision: base.terrain.routeRevision + 100 } }
-  return { mission: { ...course }, spec, modifier: LEGACY_MISSION_MODIFIERS[course.id], contractSeed: course.seed }
 }
 
 /** Use the existing bounded score/history/ghost record family. */

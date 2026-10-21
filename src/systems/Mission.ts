@@ -1,5 +1,5 @@
 import { generateMission } from './MissionGenerator'
-import { generatedThemeForProfile } from '../world/TerrainProfile'
+import { getTerrainProfile, generatedThemeForProfile } from '../world/TerrainProfile'
 import {
   AdditiveBlending,
   BufferGeometry,
@@ -405,12 +405,14 @@ export function buildMissionRoute(
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
 
-  const generatedTheme = generatedThemeForProfile(safeProfile)
+  const activeTerrain = getTerrainProfile()
+  const migrated = activeTerrain && activeTerrain.landscapeRevision >= 100
+  const generatedTheme = generatedThemeForProfile(safeProfile) ?? (migrated ? activeTerrain.theme : null)
   const wideCorridor = generatedTheme === 'coastal-island-run' || generatedTheme === 'volcanic-run'
   const corridorOffsets = wideCorridor ? [-52, 0, 52] : ROUTE_CORRIDOR_OFFSETS
   if (generatedTheme) points = generateMission(getWorldSeed(), generatedTheme).course.map(point => ({ ...point }))
 
-  if (safeProfile === 'contour') {
+  if (safeProfile === 'contour' && !migrated) {
     // Five bounded choices reuse the existing orbit and gate corridor. Only
     // this new profile adapts its centreline to the generated ground relief.
     // Keep departure aligned with the runway and the same five-gate pool.
@@ -432,7 +434,7 @@ export function buildMissionRoute(
     })
   }
 
-  if (safeProfile === 'thermal') {
+  if (safeProfile === 'thermal' && !migrated) {
     const anchor = points[2]!
     // Filter before ranking: the nearest pocket can be behind the usable climb
     // corridor while another of the same nine candidates is reachable ahead.

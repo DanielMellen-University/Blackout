@@ -1,3 +1,6 @@
+import { generateLegacyTerrain } from '../systems/LegacyMissionGenerator'
+import { routeModifierForSpawn, type MissionRouteModifier } from '../systems/Mission'
+import type { MissionTheme } from './TerrainProfile'
 import { generateMission } from '../systems/MissionGenerator'
 import { generatedThemeForProfile, getTerrainProfile, setTerrainProfile } from './TerrainProfile'
 import {
@@ -73,6 +76,8 @@ export interface InitialWorld {
   timeOfDay?: number
   windSide?: WindSide
   weatherShift?: WeatherId
+  terrainTheme?: MissionTheme
+  missionModifier?: MissionRouteModifier
 }
 
 export interface WeatherEffectState {
@@ -241,7 +246,7 @@ export class World {
     this.setRenderQuality(quality)
     if (initial) {
       try {
-        this.reseed(initial.seed, initial.profile, initial.weather, initial.timeOfDay, initial.windSide, initial.weatherShift)
+        this.reseed(initial.seed, initial.profile, initial.weather, initial.timeOfDay, initial.windSide, initial.weatherShift, initial.terrainTheme, initial.missionModifier)
       } catch {
         // Retain a playable random fallback when the requested seed has no
         // valid runway, without paying for that fallback on successful boots.
@@ -333,6 +338,8 @@ export class World {
     requestedTimeOfDay?: number,
     requestedWindSide?: WindSide,
     requestedWeatherShift?: WeatherId,
+    requestedTerrainTheme?: MissionTheme,
+    requestedModifier?: MissionRouteModifier,
   ): number {
     if (this.disposed) return this.seed
     this.reseedFallback = false
@@ -376,8 +383,19 @@ export class World {
       for (let attempt = 0; attempt < (requestedSeed === undefined ? 8 : 1); attempt++) {
         const nextSeed = requestedSeed ?? randomizeWorldSeed()
         setWorldSeed(nextSeed)
-        const theme = generatedThemeForProfile(requestedProfile)
-        const generated = theme ? generateMission(nextSeed, theme) : null
+        const theme = requestedTerrainTheme ?? generatedThemeForProfile(requestedProfile)
+        let modifier = requestedModifier
+        if (requestedTerrainTheme && modifier === undefined) {
+          // Rotating Ops keeps the original period's scoring focus even though
+          // its generated airfield moves. Resolve the original natural spawn.
+          setTerrainProfile(null); clearOpsPad()
+          const originalPad = findPlayableSpawn()
+          if (!originalPad) throw new Error('Original period airfield unavailable')
+          modifier = routeModifierForSpawn(originalPad.x - Math.sin(originalPad.yaw) * 45,
+            originalPad.z - Math.cos(originalPad.yaw) * 45, originalPad.yaw, requestedProfile)
+        }
+        const generated = requestedTerrainTheme ? generateLegacyTerrain(nextSeed, requestedTerrainTheme)
+          : theme ? generateMission(nextSeed, theme) : null
         setTerrainProfile(generated?.terrain ?? null)
         clearOpsPad()
         // A first-ever boot must remain recoverable even if a future terrain
@@ -425,7 +443,7 @@ export class World {
         this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
         setAirfieldWind(this.runway, initialWeather.windX, initialWeather.windZ)
         setAirfieldPapi(this.runway, this.spawn.x, this.spawn.y, this.spawn.z, this.atmosphere.daylight)
-        this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw, this.missionProfile, undefined, this.spawn.biome)
+        this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw, this.missionProfile, modifier, this.spawn.biome)
         this.committed = true
         return this.seed
       }
