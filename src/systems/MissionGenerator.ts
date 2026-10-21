@@ -5,7 +5,7 @@ export interface GeneratedPoint { x: number; y: number; z: number }
 export interface GeneratedMissionSpec {
   seed: number
   theme: MissionTheme
-  profile: 'generated-desert' | 'generated-valley' | 'generated-coastal' | 'generated-volcanic'
+  profile: 'generated-desert' | 'generated-valley' | 'generated-coastal' | 'generated-volcanic' | 'generated-waterway'
   terrain: TerrainProfile
   start: GeneratedPoint & { yaw: number }
   landingRunway: GeneratedPoint & { yaw: number; length: number; width: number }
@@ -44,6 +44,10 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
     terrain.baseHeight = 240; terrain.relief = 2600
     terrain.landscapeRevision = 35; terrain.routeRevision = 38; terrain.yaw *= Math.PI * 2 / .7
   }
+  if (theme === 'waterway-run') {
+    terrain.landscapeRevision = 36; terrain.routeRevision = 39
+    terrain.relief = 1250; terrain.dry = false; terrain.yaw *= Math.PI * 2 / .7
+  }
   const start = { x: terrain.originX, y: terrain.baseHeight, z: terrain.originZ, yaw: terrain.yaw }
   const spread = 1350 + random() * 350, length = 3000 + random() * 600
   let offsets: readonly (readonly [number, number])[] = [[0, 1800], [spread, length], [spread, -300], [0, -2600], [0, -1400]]
@@ -73,12 +77,16 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
     heights = [140 + random() * 40, 135 + random() * 85, 115 + random() * 75,
       130 + random() * 30, 105 + random() * 30]
   }
+  if (theme === 'waterway-run') {
+    offsets = [[1000, 1800], [2100, 3300], [1250, -200], [0, -2900], [0, -1450]]
+    heights = [145, 160, 140, 145, 115].map(h => h + random() * 15)
+  }
   const course = offsets.map(([right, forward], index) => ({
     x: start.x + Math.cos(start.yaw) * right + Math.sin(start.yaw) * forward,
     y: start.y + heights[index]!,
     z: start.z - Math.sin(start.yaw) * right + Math.cos(start.yaw) * forward,
   }))
-  return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : theme === 'coastal-island-run' ? 'generated-coastal' : theme === 'volcanic-run' ? 'generated-volcanic' : 'generated-valley', terrain, start: { ...start, x: start.x - Math.sin(start.yaw) * 45, y: start.y + flightConfig.gearHeight, z: start.z - Math.cos(start.yaw) * 45 },
+  return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : theme === 'coastal-island-run' ? 'generated-coastal' : theme === 'volcanic-run' ? 'generated-volcanic' : theme === 'waterway-run' ? 'generated-waterway' : 'generated-valley', terrain, start: { ...start, x: start.x - Math.sin(start.yaw) * 45, y: start.y + flightConfig.gearHeight, z: start.z - Math.cos(start.yaw) * 45 },
     landingRunway: { ...start, length: 120, width: 18 }, course,
     goals: { gates: 5, landingRequired: true, scoring: 'existing-medals', referenceSpeed: 150 } }
 }

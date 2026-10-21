@@ -133,6 +133,11 @@ export const COURSE_LIBRARY = [
     seed: null, profile: 'generated-volcanic', weather: 'clear', timeOfDay: .44,
   },
   {
+    id: 'waterway-run', label: 'Waterway',
+    detail: 'Fly five gates along inland river valleys and lake channels, then return to your generated runway and land for a medal.',
+    seed: null, profile: 'generated-waterway', weather: 'clear', timeOfDay: .48,
+  },
+  {
     id: 'free-flight',
     label: 'Free flight',
     detail: 'Explore freely. Land and take off again whenever you like.',

@@ -1,3 +1,4 @@
+import { waterwayDrainage } from './WaterwayTerrain'
 import { getTerrainProfile } from './TerrainProfile'
 import { fbm, getWorldSeed, smoothstep, valueNoise } from './noise'
 import { regionalDrainageSteps } from './RegionalDrainage'
@@ -64,10 +65,16 @@ const dryCatchment: Catchment = { basins: [], landmarks: [], reaches: [], bins: 
 let seed = Number.NaN
 const cache = new Map<string, Catchment>()
 let riverBoundsQueryToken = 0
+let cachedProfile = getTerrainProfile()
+function ensureProfile(): void {
+  const profile = getTerrainProfile()
+  if (profile !== cachedProfile) { cache.clear(); cachedProfile = profile }
+}
 function ensureCatchmentSeed(expected: number): void {
   if (getWorldSeed() !== expected) throw new Error('World seed changed during hydrology preparation')
   // A failed world search can temporarily visit another seed and restore this
   // one before a suspended builder resumes. Never reuse that other seed's cache.
+  ensureProfile()
   if (seed !== expected) { cache.clear(); seed = expected }
 }
 
@@ -137,6 +144,7 @@ export function basinDistance(b: Basin, x: number, z: number): number {
 }
 
 function catchment(cx: number, cz: number): Catchment {
+  ensureProfile()
   if (getTerrainProfile()?.dry) return dryCatchment
   cx = Number.isFinite(cx) ? Math.trunc(cx) : 0
   cz = Number.isFinite(cz) ? Math.trunc(cz) : 0
@@ -156,7 +164,10 @@ function catchment(cx: number, cz: number): Catchment {
 function* buildCatchmentSteps(cx: number, cz: number): Generator<HydrologyBuildPhase, Catchment, void> {
   if (getTerrainProfile()?.dry) return dryCatchment
   const buildSeed = getWorldSeed()
-  const data = yield* regionalDrainageSteps(cx, cz)
+  const profile = getTerrainProfile()
+  const generated = profile?.theme === 'waterway-run' ? waterwayDrainage(profile) : null
+  const data = generated ? { ...generated, queryReaches: generated.reaches, landmarks: generated.basins }
+    : yield* regionalDrainageSteps(cx, cz)
   ensureCatchmentSeed(buildSeed)
   const bins: Reach[][] = Array.from({ length: BINS * BINS }, () => [])
   const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
@@ -179,6 +190,7 @@ function* buildCatchmentSteps(cx: number, cz: number): Generator<HydrologyBuildP
 
 /** Read the existing cache without allocating a preparation iterator. */
 export function hydrologyPreparedAt(x: number, z: number): boolean {
+  ensureProfile()
   if (getTerrainProfile()?.dry) return true
   return seed === getWorldSeed() && cache.has(`${Math.floor(x / CATCHMENT_SIZE)},${Math.floor(z / CATCHMENT_SIZE)}`)
 }

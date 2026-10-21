@@ -171,6 +171,15 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
       out.ridge = out.highlands; out.glacial = 0
       out.volcanic = 1; out.caldera = caldera
     }
+    if (profile.theme === 'waterway-run') {
+      const bend = Math.sin(forward / 2800 + profile.phase) * 180
+      const wall = smoothstep(2700, 5400, Math.abs(right - bend))
+      out.height = profile.baseHeight + runwayBlend * fbm(right / 1300, forward / 1700, 2) * 14
+        + wall * profile.relief * (.75 + fbm(right / 1800, forward / 2200, 3) * .5)
+      out.moisture = .48; out.temperature = .55; out.dry = .2; out.cold = 0
+      out.highlands = wall; out.foothills = wall; out.ridge = wall; out.glacial = 0
+      out.alpineValley = 1 - wall; out.alluvial = 1 - wall
+    }
     return out
   }
   const wx = x + (fbm(x / 11000, z / 11000, 2) - .5) * 2200

@@ -19,7 +19,7 @@ describe('approved seeded mission generator', () => {
     expect(generateMission(seed)).toEqual(generateMission(seed))
   })
   it('has exactly the delivered approved themes, varies seeds, and separates the theme route and world identities', () => {
-    expect(MISSION_THEMES).toEqual(['desert-run', 'mountain-valley-run', 'coastal-island-run', 'volcanic-run'])
+    expect(MISSION_THEMES).toEqual(['desert-run', 'mountain-valley-run', 'coastal-island-run', 'volcanic-run', 'waterway-run'])
     expect(generateMission(42)).not.toEqual(generateMission(73))
     expect(generateMission(42, 'desert-run')).not.toEqual(generateMission(42, 'mountain-valley-run'))
     expect(generateMission(42).terrain.landscapeRevision).toBeGreaterThan(29)
@@ -44,11 +44,13 @@ it('reshapes the shared geography paths and clears back to the original world', 
       const point = spec.course[1]!
       const sample = sampleGeography(point.x, point.z)
       expect(sample.height).toBe(sampleGeographyHeight(point.x, point.z))
-      expect(theme === 'coastal-island-run' ? Math.max(0, sample.height) : sample.height).toBe(sampleGeographySurfaceHeight(point.x, point.z))
-      if (theme !== 'coastal-island-run') expect(sample.height).toBeGreaterThan(spec.start.y)
+      expect(Math.max(sample.waterLevel, sample.height)).toBe(sampleGeographySurfaceHeight(point.x, point.z))
+      if (theme !== 'coastal-island-run' && theme !== 'waterway-run') expect(sample.height).toBeGreaterThan(spec.start.y)
       else expect(sample.height).toBeLessThan(spec.course[1]!.y - 120)
-      expect(waterLandmarks(0, 0)).toHaveLength(0)
-      expect(riverReaches(0, 0)).toHaveLength(0)
+      if (theme !== 'waterway-run') {
+        expect(waterLandmarks(0, 0)).toHaveLength(0)
+        expect(riverReaches(0, 0)).toHaveLength(0)
+      }
       setTerrainProfile({ ...spec.terrain })
       expect(sampleGeography(point.x, point.z)).toEqual(sample)
     }

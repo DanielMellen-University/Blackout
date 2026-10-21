@@ -24,7 +24,7 @@ export function coastField(x: number, z: number): number {
     }
     return field
   }
-  if (profile?.dry) return 1
+  if (profile?.dry || profile?.theme === 'waterway-run') return 1
   const wx = x + (valueNoise(x / 19000 + 711, z / 19000 - 93) - .5) * 9000
   const wz = z + (valueNoise(x / 19000 - 207, z / 19000 + 431) - .5) * 9000
   // Regional embayments plus smaller headlands/islands, never basin ellipses.
