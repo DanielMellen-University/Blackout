@@ -12,6 +12,7 @@ const digest=v=>createHash('sha256').update(v).digest('hex')
 const hashes=Object.fromEntries(await Promise.all(files.map(async f=>[f,digest(await readFile(f))])))
 const hookHash=digest(await readFile('scripts/browser-generator.js'))
 const profiles={'desert-run':'generated-desert','mountain-valley-run':'generated-valley','coastal-island-run':'generated-coastal','generated-volcanic-run':'generated-volcanic'}
+const revisions={'desert-run':'l33:q36','mountain-valley-run':'l33:q36','coastal-island-run':'l34:q37','generated-volcanic-run':'l35:q38'}
 const rows=[]
 for(const theme of themes)for(const seed of seeds){
  const receipt=`docs/reviews/generator/${part}/${theme}-${seed}/run.json`
@@ -19,10 +20,16 @@ for(const theme of themes)for(const seed of seeds){
  assert.equal(r.pass,true,receipt);assert.deepEqual(r.errors,[]);assert.equal(f.course,theme);assert.equal(f.seed,seed)
  assert.ok(f.recordId.startsWith(`seed:${seed}:${profiles[theme]}:r32:l`),`${receipt}: profile/record identity`)
  assert.match(f.recordId,/:l\d+:q\d+$/)
+ assert.equal(f.recordId,`seed:${seed}:${profiles[theme]}:r32:${revisions[theme]}`)
  assert.equal(r.build.production,true);assert.equal(r.build.minified,true);assert.equal(r.build.hookSha256,hookHash)
  assert.deepEqual(Object.keys(r.build.sourceHashes).sort(),files.sort())
  for(const [file,hash]of Object.entries(hashes))if(file!=='src/core/Version.ts')assert.equal(r.build.sourceHashes[file],hash,`${receipt}: runtime drift ${file}`)
  if(timing){
+  if(part==='polish-proof'){
+   assert.ok(r.timingStart?.boundary.includes('launch panel hides'))
+   assert.equal(r.timingStart.state.playing,true);assert.equal(r.timingStart.state.seconds,0)
+   assert.equal(r.timingStart.state.paused,false)
+  }
   const m=assertCaptureFreeTiming(r)
   for(const key of Object.keys(m))assert.equal(r.metrics[key],m[key],`${receipt}: metrics ${key}`)
   assert.ok(m.max<=100.1,`${receipt}: interval ${m.max}`)
@@ -46,7 +53,7 @@ for(const theme of themes)for(const seed of seeds){
  const m=r.metrics
  rows.push({theme,seed,seconds:f.seconds,score:f.result?.totalScore,medal:f.result?.medal,fps:m.fps,p95:m.p95,over50:m.over50,over100:m.over100,max:m.max,heapPeakMB:Math.max(...r.samples.map(s=>s.heapMB)),coverageMisses,recordId:f.recordId,receipt})
 }
-const method=timing?'Sequential complete production flights, controls-only pilot, fixed chase camera, capture OFF, profiler OFF, native RAF and full rendering cadence. Balanced, 1280x720, device scale 1, ordinary adaptive resolution. First ten RAF intervals omitted as in 10.977; every raw interval is retained. No tests, builds or other review browser overlap timing. Heap is sampled main-thread JS heap, not total browser or GPU memory.':'Separate visual sessions, excluded from timing acceptance. Production rendering and controls-only pilot; chase/cockpit stills at gate one. Same viewport and quality as timing.'
+const method=timing?'Sequential complete production flights, controls-only pilot, fixed chase camera, capture OFF, profiler OFF, native RAF and full rendering cadence. Balanced, 1280x720, device scale 1, ordinary adaptive resolution. Timing starts after the ordinary launch panel hides, immediately before the controls-only pilot starts. First ten RAF intervals omitted as in 10.977; every raw interval is retained. No tests, builds or other review browser overlap timing. Heap is sampled main-thread JS heap, not total browser or GPU memory.':'Separate visual sessions, excluded from timing acceptance. Production rendering and controls-only pilot; chase/cockpit stills at gate one. Same viewport and quality as timing.'
 await writeFile(`docs/reviews/generator/${part}-summary.json`,JSON.stringify({pass:true,method,sourceHashes:hashes,hookHash,rows},null,2)+'\n')
 const table=['| Theme | Seed | Flight s | Medal | FPS | p95 ms | >50 ms | >100 ms | Max ms | Heap MB |','| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |',...rows.map(r=>`| ${r.theme} | ${r.seed} | ${r.seconds.toFixed(1)} | ${r.medal||'visual'} | ${r.fps.toFixed(1)} | ${r.p95.toFixed(1)} | ${r.over50} | ${r.over100} | ${r.max.toFixed(1)} | ${r.heapPeakMB.toFixed(1)} |`)].join('\n')
 await writeFile(`docs/reviews/generator/${part}-results.md`,method+'\n\n'+table+'\n')

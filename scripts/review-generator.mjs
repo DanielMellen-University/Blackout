@@ -37,6 +37,7 @@ try {
   await page.locator('#btn-play').click()
   await page.locator('#startup-screen').waitFor({state:'hidden'})
   await page.waitForFunction(()=>window.__training.state().playing)
+  const timingStart = await page.evaluate(()=>({at:performance.now(),boundary:'After the ordinary launch panel hides, immediately before starting the controls-only pilot and RAF observer.',state:window.__training.state()}))
   await page.evaluate(()=>{
    performance.mark('review-flight-start'); window.__training.start()
    window.__reviewFrames=[]; window.__reviewFrameTimes=[]; window.__reviewCaptures=[]; let prior=performance.now()
@@ -92,7 +93,7 @@ try {
    await writeFile(`${dir}/trace.json.gz`,gzipSync(trace))
   }
   const pass=errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?(shot||(!capture&&final.next>=1)):final.status==='landed'&&final.phase==='complete'&&final.next===5&&final.resultsOpen)
-  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,capture,profile,frameTimes,captureWindows,timingEligible,browserInfo,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
+  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,capture,profile,frameTimes,captureWindows,timingEligible,timingStart,browserInfo,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
   console.log('RESULT',JSON.stringify({theme,seed,part,smoke,timingEligible,pass,metrics}))
   await context.close()
   if(!pass)throw Error(`Failed ${theme} ${seed}`)
