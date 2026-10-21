@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.989**. Previous roadmap chunk: **10.988**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.990**. Previous roadmap chunk: **10.989**.
 
-Recent changes from **10.989**. Reduce existing generated-mission frame spikes by copying unchanged seam cores directly and preparing retained terrain fade shader variants before launch. Preserve behavior, visuals, b20 physics, b21 nitro, the 10.978 presentation fix, collision, water and budgets. No new feature or theme is approved; further themes and features need separate approval. See docs/reviews/generator/frame-spikes-10.989.md.
+Recent changes from **10.990**. Verify the approved small migrated-mission frame-spike pass on matched Waterway Tour and Coastal Run seeds with capture-free completion flights, native frame intervals and sampled heap. Preserve all gameplay, visuals, physics, nitro, the 10.978 presentation fix and budgets. Timing is variable and a sustained spike-count reduction remains unproven. This closes only the Oct 21 option C pass; further themes and features need separate approval. See docs/reviews/generator/frame-spikes-10.990.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

@@ -6,7 +6,9 @@ import assert from 'node:assert/strict'
 import {assertCaptureFreeTiming} from './lib/review-frame-metrics.mjs'
 const root='docs/reviews/generator',part=process.argv[2]||'frame-spikes-after-a'
 const rows=[]
-for(const cohort of ['frame-spikes-before',part])for(const [mission,seed]of [['waterway-tour',1337],['coastal-run',42]]){
+const cases=['frame-spikes-before',part].flatMap(cohort=>[['waterway-tour',1337],['coastal-run',42]].map(([mission,seed])=>({cohort,mission,seed})))
+if(part==='frame-spikes-proof-b')cases.push({cohort:'frame-spikes-proof-b-repeat',mission:'coastal-run',seed:42})
+for(const {cohort,mission,seed}of cases){
  const path=`${root}/${cohort}/${mission}-${seed}/run.json`,r=JSON.parse(await readFile(path)),f=r.final
  assert.equal(r.pass,true);assert.deepEqual(r.errors,[]);assert.equal(f.seed,seed);assert.equal(f.course,mission)
  assert.equal(f.status,'landed');assert.equal(f.phase,'complete');assert.equal(f.next,5);assert.equal(f.resultsOpen,true);assert.equal(f.result.medal,'gold')
@@ -25,4 +27,4 @@ for(const cohort of ['frame-spikes-before',part])for(const [mission,seed]of [['w
  rows.push({cohort,mission,seed,seconds:f.seconds,medal:f.result.medal,...metrics,heapPeakMB:peak,buildId:r.build.buildId})
 }
 await writeFile(`${root}/frame-spikes-verification/${part}-audit.json`,JSON.stringify({pass:true,rows},null,2)+'\n')
-for(const r of rows)console.log(`| ${r.mission} | ${r.seed} | ${r.cohort==='frame-spikes-before'?'Before':part==='frame-spikes-proof-b'?'Proof B':'After A'} | ${r.fps.toFixed(1)} | ${r.p95.toFixed(1)} | ${r.over50} | ${r.over100} | ${r.max.toFixed(1)} | ${r.heapPeakMB.toFixed(1)} |`)
+for(const r of rows)console.log(`| ${r.mission} | ${r.seed} | ${r.cohort==='frame-spikes-before'?'Before':r.cohort.endsWith('-repeat')?'Proof B repeat':part==='frame-spikes-proof-b'?'Proof B':'After A'} | ${r.fps.toFixed(1)} | ${r.p95.toFixed(1)} | ${r.over50} | ${r.over100} | ${r.max.toFixed(1)} | ${r.heapPeakMB.toFixed(1)} |`)
