@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.981**. Previous roadmap chunk: **10.980**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.982**. Previous roadmap chunk: **10.981**.
 
-Recent changes from **10.981**. Verify twelve capture-free gold flights across all four polished generator themes on seeds 42, 1337 and 9001: every gate, nitro refill and runway landing passes. Maximum frame intervals are 50.1-83.4 ms with none over 100 ms; sampled heap peaks at 165.4 MB. Recheck older missions without polish. Step 3 remains started; further themes and features require separate approval. See docs/reviews/generator/proof-10.981.md.
+Recent changes from **10.982**. Add a pure legacy mission generator adapter and the full catalog terrain mapping, retaining mission identity and separating route and landscape revisions. Catalog launches are unchanged in Part A. Step 3 remains started; any further theme or feature needs separate approval. See docs/reviews/generator/legacy-migration-10.982.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
