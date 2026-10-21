@@ -349,6 +349,7 @@ export class World {
     const previousTerrainProfile = getTerrainProfile()
     const previousSeed = this.seed
     const previousProfile = this.missionProfile
+    const previousModifier = this.mission.routeModifier
     const previousPad = getOpsPad()
     const previousSpawn = { ...this.spawn }
     const previousWeather = this.atmosphere.weather
@@ -460,6 +461,7 @@ export class World {
         this.restoreCommittedWorld(
           previousSeed,
           previousProfile,
+          previousModifier,
           previousPad,
           previousSpawn,
           previousWeather,
@@ -485,6 +487,7 @@ export class World {
   private restoreCommittedWorld(
     seed: number,
     profile: MissionRouteProfile | undefined,
+    modifier: MissionRouteModifier,
     pad: { x: number; z: number; y: number; yaw?: number } | null,
     spawn: SpawnPose,
     weather: WeatherId,
@@ -539,7 +542,7 @@ export class World {
       setAirfieldWind(this.runway, restoredWeather.windX, restoredWeather.windZ)
       setAirfieldPapi(this.runway, spawn.x, spawn.y, spawn.z, this.atmosphere.daylight)
     } catch { /* atmosphere will reapply on its next update */ }
-    try { this.mission.start(spawn.x, spawn.y, spawn.z, spawn.yaw, profile, undefined, spawn.biome) } catch { /* mission can be started by the next reset */ }
+    try { this.mission.start(spawn.x, spawn.y, spawn.z, spawn.yaw, profile, modifier, spawn.biome) } catch { /* mission can be started by the next reset */ }
   }
 
   /** True if a world-space point overlaps hangar, tower, or shack. */

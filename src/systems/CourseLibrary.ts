@@ -967,12 +967,11 @@ function resolveOriginalCourseDefinition(
   }
 }
 
-/** Approved migration activation. Contract catalog activation follows in Part C. */
+/** Approved existing-mission migration, excluding unsupported terrain objectives. */
 export function isLegacyGeneratedCourse(course: CourseDefinition): boolean {
   if (course.id === 'random' || course.profile === 'free') return false
   return course.terrainTheme !== undefined ||
-    ((course.daily || course.weekly || course.monthly || !course.contractCatalog) &&
-      legacyTerrainTheme({ ...course, profile: course.profile ?? 'sweep' }) !== null)
+    legacyTerrainTheme({ ...course, profile: course.profile ?? 'sweep' }) !== null
 }
 
 /** Keep catalog identity settings distinct from the per-flight world seed. */
@@ -993,7 +992,7 @@ function resolveWeatherApproach(course: CourseDefinition): CourseDefinition {
   return { ...course, weather, windSide: seed % 2 === 0 ? 'left' : 'right' }
 }
 
-/** Keep this featured mission's explicit seed replay in the existing selection/record family. */
+/** Keep explicit seed replay in the existing selection and bounded record family. */
 export function resolveCourseReplaySeed(course: CourseDefinition, seed: number | null): CourseDefinition {
   const resolved = isLegacyGeneratedCourse(course) ? resolveCourseDefinition(course) : course
   if (seed === null || normalizeWorldSeed(seed) === null) return resolved

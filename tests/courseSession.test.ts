@@ -110,7 +110,7 @@ describe('course session lifetime', () => {
   it('preserves authored, custom random, bounded random and free-flight identities', () => {
     const session = new CourseSession(utc('2026-10-06T12:00:00'))
     expect(session.capture('training-orbit', 1, 'orbit').recordId).toBe('seed:1:generated-desert:r32:l133:q136:mission:training-orbit')
-    expect(session.capture('clean-circuit-run', 9, 'desert').recordId).toBe('seed:9:desert:r32:clean-circuit')
+    expect(session.capture('clean-circuit-run', 9, 'desert').recordId).toBe('seed:9:generated-desert:r32:l133:q136:mission:clean-circuit-run')
     expect(session.capture('random', 99, 'ridge', true).recordId).toBe('seed:99:ridge:r32:custom')
     expect(session.capture('random', 99, 'ridge').recordId).toBe(session.capture('random', 100, 'orbit').recordId)
     expect(session.capture('free-flight', 99, 'free').recordId).toBe('free-flight:r32')

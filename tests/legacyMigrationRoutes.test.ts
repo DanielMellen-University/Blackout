@@ -51,7 +51,7 @@ for (const course of COURSE_LIBRARY.filter(c => c.seed !== null && !LEGACY_MIGRA
   })
 }
 it('captures new flight seeds without changing fixed weather, identity, contract or scoring focus',()=>{
-  for(const definition of COURSE_LIBRARY.filter(c=>c.seed!==null&&!c.contractCatalog)) {
+  for(const definition of COURSE_LIBRARY.filter(c=>c.seed!==null&&!LEGACY_MIGRATION_EXCEPTIONS[c.id])) {
     const first=resolveCourseReplaySeed(resolveCourseDefinition(definition),42)
     const second=resolveCourseReplaySeed(resolveCourseDefinition(definition),1337)
     expect(first.seed).toBe(42);expect(second.seed).toBe(1337)
@@ -64,12 +64,13 @@ it('uses the existing bounded manifest for migrated mission score and ghost sibl
   const data=new Map<string,string>(),storage={getItem:(k:string)=>data.get(k)??null,setItem:(k:string,v:string)=>{data.set(k,v)},removeItem:(k:string)=>{data.delete(k)}}
   data.set('blackout.ghost.seed:1:orbit:r32','historical')
   for(let seed=1;seed<=14;seed++) {
-    const id=courseSessionId('training-orbit',seed,'orbit')
+    const id=courseSessionId(seed%2?'training-orbit':'clean-circuit-run',seed,seed%2?'orbit':'desert')
     data.set(`blackout.ghost.${id}`,'ghost');data.set(`blackout.history.${id}`,'history')
     touchSeededRandomCourseRecord(storage,id,seed)
   }
   expect(JSON.parse(data.get(SEEDED_RANDOM_RECORDS_STORAGE_KEY)!)).toHaveLength(12)
   expect(data.has(`blackout.ghost.${courseSessionId('training-orbit',1,'orbit')}`)).toBe(false)
+  expect(data.has(`blackout.ghost.${courseSessionId('clean-circuit-run',2,'desert')}`)).toBe(false)
   expect(data.get('blackout.ghost.seed:1:orbit:r32')).toBe('historical')
 })
 

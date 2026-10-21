@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { obstacleSweepDistance, World } from '../src/world/World'
 import { TerrainSystem } from '../src/world/TerrainSystem'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
+import { generateLegacyTerrain } from '../src/systems/LegacyMissionGenerator'
+import { routeModifierForSpawn } from '../src/systems/Mission'
+import { getTerrainProfile } from '../src/world/TerrainProfile'
 
 describe('world lifecycle boundary', () => {
   it('resolves landing guidance from the resident runway rather than the spawn pose', () => {
@@ -340,6 +343,27 @@ describe('world lifecycle boundary', () => {
     expect(Number.isFinite(world.spawn.z)).toBe(true)
     expect(world.terrain.streamingStats.pending + world.terrain.streamingStats.loaded).toBeGreaterThan(0)
     world.dispose()
+  }, 60_000)
+
+  it('retains migrated scoring and terrain after a failed replacement rebuild', () => {
+    const spec = generateLegacyTerrain(42, 'desert-run')
+    const naturalModifier = routeModifierForSpawn(spec.start.x, spec.start.z, spec.start.yaw, 'orbit')
+    const modifier = naturalModifier === 'altitude' ? 'tempo' : 'altitude'
+    const world = new World('low', { seed: 42, profile: 'orbit', weather: 'clear',
+      terrainTheme: 'desert-run', missionModifier: modifier })
+    const terrain = getTerrainProfile(), spawn = { ...world.spawn }, focus = world.mission.scoringFocus
+    const clear = vi.spyOn(world.terrain, 'clearAll').mockImplementationOnce(() => {
+      throw new Error('synthetic migrated replacement failure')
+    })
+    try {
+      expect(world.reseed(1337, 'ridge', undefined, undefined, undefined, undefined, 'mountain-valley-run', 'steady')).toBe(42)
+      expect(world.lastReseedUsedFallback).toBe(true)
+      expect(world.spawn).toEqual(spawn)
+      expect(getTerrainProfile()).toEqual(terrain)
+      expect(world.mission.routeProfile).toBe('orbit')
+      expect(world.mission.routeModifier).toBe(modifier)
+      expect(world.mission.scoringFocus).toBe(focus)
+    } finally { clear.mockRestore(); world.dispose() }
   }, 60_000)
 
   it('can start a curated run with a deterministic weather override', () => {

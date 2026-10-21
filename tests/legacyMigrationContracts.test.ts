@@ -12,6 +12,17 @@ import { settlementAnchorCells, settlementForCell } from '../src/world/Settlemen
 import { AirTrafficSystem } from '../src/world/AirTrafficSystem'
 
 afterEach(()=>{setTerrainProfile(null);clearOpsPad()})
+it('activates exactly the 42 supported contracts and preserves both original-world exceptions',()=>{
+ const catalog=COURSE_LIBRARY.filter(c=>c.contractCatalog&&c.seed!==null)
+ expect(catalog).toHaveLength(44)
+ expect(catalog.filter(c=>resolveCourseDefinition(c).terrainTheme)).toHaveLength(42)
+ for(const c of catalog){
+  const resolved=resolveCourseDefinition(c)
+  if(LEGACY_MIGRATION_EXCEPTIONS[c.id])expect(resolved).toEqual(c)
+  else {expect(resolved.seed).toBeNull();expect(resolved.contractSeed).toBe(c.seed)}
+ }
+})
+
 for(const course of COURSE_LIBRARY.filter(c=>c.seed!==null&&c.contractCatalog&&!LEGACY_MIGRATION_EXCEPTIONS[c.id])) {
  it.each([42,1337,9001])(`${course.id} retains its objective and bounded score on generated seed %s`,seed=>{
   const adapted=generateLegacyMission(course,seed)!,{spec}=adapted,pad=spec.landingRunway,t=spec.terrain

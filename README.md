@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.983**. Previous roadmap chunk: **10.982**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.984**. Previous roadmap chunk: **10.983**.
 
-Recent changes from **10.983**. Move the rotating Ops entries and 28 authored runs onto the existing generator recipes while retaining mission identity, contracts, weather, scoring and replay. Keep shared period seeds and separate migrated route and landscape records. Step 3 remains started; any further theme or feature needs separate approval. Verify 93 smoke flights and twelve gold landings. See docs/reviews/generator/legacy-migration-10.983.md.
+Recent changes from **10.984**. Move 42 supported contract catalog missions onto the existing generator while retaining every objective, weather setting, scoring focus and replay identity. Preserve monsoon-run, waterway-tour and unsupported rotating Waterway tour periods on their original worlds. Fix migrated scoring restoration after a failed rebuild. Step 3 remains started; any further theme or feature needs separate approval. Verify 126 smoke flights and twelve gold landings. See docs/reviews/generator/legacy-migration-10.984.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

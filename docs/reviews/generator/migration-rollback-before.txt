@@ -1,0 +1,30 @@
+
+ RUN  v5.0.0 /home/daniel/Documents/GitHub/Blackout
+
+ ❯ tests/worldLifecycle.test.ts (22 tests | 1 failed | 21 skipped) 326ms
+   ❯ world lifecycle boundary (22)
+     × retains migrated scoring and terrain after a failed replacement rebuild 325ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/worldLifecycle.test.ts > world lifecycle boundary > retains migrated scoring and terrain after a failed replacement rebuild
+AssertionError: expected 'steady' to be 'altitude' // Object.is equality
+
+Expected: "altitude"
+Received: "steady"
+
+ ❯ tests/worldLifecycle.test.ts:364:43
+    362|       expect(getTerrainProfile()).toEqual(terrain)
+    363|       expect(world.mission.routeProfile).toBe('orbit')
+    364|       expect(world.mission.routeModifier).toBe(modifier)
+       |                                           ^
+    365|       expect(world.mission.scoringFocus).toBe(focus)
+    366|     } finally { clear.mockRestore(); world.dispose() }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 21 skipped (22)
+   Start at  02:10:55
+   Duration  1.03s (transform 52%, tests 35%, import 12%)

@@ -1,6 +1,6 @@
-// Approved catalog migration review. Sequential native-cadence browser flights.
+// Approved catalog migration review. Isolated smoke jobs, sequential timing flights.
 import { createServer } from 'vite'
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 const stage=process.env.MIGRATION_STAGE || 'b'
 const mode=process.env.MIGRATION_MODE || 'smoke'
@@ -32,12 +32,25 @@ try {
 const part=`migration-${stage}-${mode}`
 await mkdir(`docs/reviews/generator/${part}`,{recursive:true})
 await writeFile(`docs/reviews/generator/${part}/jobs.json`,JSON.stringify(jobs,null,2)+'\n')
-for(const [index,job]of jobs.entries()) {
- if(process.env.MIGRATION_COURSES&&!process.env.MIGRATION_COURSES.split(',').includes(job.course))continue
- console.log(`JOB ${index+1}/${jobs.length}`,JSON.stringify(job))
- const result=spawnSync(process.execPath,['scripts/review-generator.mjs'],{stdio:'inherit',env:{...process.env,
-  REVIEW_PART:part,REVIEW_COURSE:job.course,REVIEW_SEEDS:job.seeds,REVIEW_QUERY:job.query,
-  REVIEW_CAPTURE:mode==='smoke'?'1':'0',REVIEW_SMOKE:mode==='smoke'?'1':'0',REVIEW_PROFILE:'0',REVIEW_RESUME:'1',
- }})
- if(result.error||result.status!==0)throw result.error||Error(`Migration flight failed: ${job.course}`)
+const concurrency = mode === 'full' ? 1 : Math.max(1, Math.min(2, Math.trunc(Number(process.env.MIGRATION_CONCURRENCY) || 1)))
+await writeFile(`docs/reviews/generator/${part}/execution.json`,JSON.stringify({mode,browserConcurrency:concurrency,timingEligible:mode==='full'},null,2)+'\n')
+let next=0, failure
+async function worker(){
+ while(!failure && next<jobs.length){
+  const index=next++,job=jobs[index]
+  if(process.env.MIGRATION_COURSES&&!process.env.MIGRATION_COURSES.split(',').includes(job.course))continue
+  console.log(`JOB ${index+1}/${jobs.length}`,JSON.stringify(job))
+  try {
+   await new Promise((resolve,reject)=>{
+    const child=spawn(process.execPath,['scripts/review-generator.mjs'],{stdio:'inherit',env:{...process.env,
+     REVIEW_PART:part,REVIEW_COURSE:job.course,REVIEW_SEEDS:job.seeds,REVIEW_QUERY:job.query,
+     REVIEW_CAPTURE:mode==='smoke'?'1':'0',REVIEW_SMOKE:mode==='smoke'?'1':'0',REVIEW_PROFILE:'0',REVIEW_RESUME:'1',
+    }})
+    child.once('error',reject)
+    child.once('exit',code=>code===0?resolve():reject(Error(`Migration flight failed: ${job.course}`)))
+   })
+  }catch(error){failure=error}
+ }
 }
+await Promise.all(Array.from({length:concurrency},worker))
+if(failure)throw failure
