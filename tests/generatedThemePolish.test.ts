@@ -8,7 +8,7 @@ import { setWorldSeed } from '../src/world/noise'
 import { setOpsPad, clearOpsPad, sampleTerrainSurfaceHeightFast } from '../src/world/terrainSample'
 
 afterEach(()=>{setTerrainProfile(null);clearOpsPad()})
-const themes: MissionTheme[]=['desert-run','mountain-valley-run']
+const themes: MissionTheme[]=['desert-run','mountain-valley-run','coastal-island-run','volcanic-run']
 const tuningSeeds=[73,808,2026]
 const local=(spec:ReturnType<typeof generateMission>,point:{x:number;z:number})=>{
  const t=spec.terrain,dx=point.x-t.originX,dz=point.z-t.originZ
@@ -20,8 +20,8 @@ for(const theme of themes){
   const shapes=specs.map(s=>s.course.map(p=>({...local(s,p),height:p.y-s.terrain.baseHeight})))
   expect(Math.max(...specs.map(s=>s.start.yaw))-Math.min(...specs.map(s=>s.start.yaw))).toBeGreaterThan(4)
   const widths=shapes.map(s=>Math.abs(s[1]!.right))
-  expect(Math.max(...widths)-Math.min(...widths)).toBeGreaterThan(theme === 'mountain-valley-run' ? 450 : 650)
-  expect(new Set(shapes.map(s=>Math.sign(s[1]!.right))).size).toBe(2)
+  expect(Math.max(...widths)-Math.min(...widths)).toBeGreaterThan(theme === 'mountain-valley-run' ? 450 : theme === 'volcanic-run' ? 400 : 650)
+  if(theme === 'desert-run' || theme === 'mountain-valley-run')expect(new Set(shapes.map(s=>Math.sign(s[1]!.right))).size).toBe(2)
   expect(new Set(shapes.map(s=>s.map(p=>Math.round(p.height)).join(','))).size).toBeGreaterThan(15)
   for(const shape of shapes){expect(Math.abs(shape[3]!.right)).toBeLessThan(.001);expect(Math.abs(shape[4]!.right)).toBeLessThan(.001);expect(shape[4]!.forward).toBeGreaterThan(shape[3]!.forward+900)}
  })

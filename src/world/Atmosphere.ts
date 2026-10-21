@@ -830,10 +830,15 @@ export class Atmosphere {
       _horizon.lerp(_c2, dayFactor * .3)
       _c.lerp(_c2, dayFactor * .08)
     }
+    if (getTerrainProfile()?.theme === 'coastal-island-run') {
+      _c2.setHex(0x9dc6cd)
+      _horizon.lerp(_c2, dayFactor * .35)
+      _c.lerp(_c2, dayFactor * .08)
+    }
     if (getTerrainProfile()?.theme === 'volcanic-run') {
-      _c2.setHex(0x91877e)
-      _horizon.lerp(_c2, dayFactor * .72)
-      _c.lerp(_c2, dayFactor * .32)
+      _c2.setHex(0x8e8d98)
+      _horizon.lerp(_c2, dayFactor * .76)
+      _c.lerp(_c2, dayFactor * .34)
     }
     // Haze / snow sky pull
     _c2.setHex(w.snow > 0.3 ? 0x9aabbc : 0x6a7888)
@@ -902,6 +907,7 @@ export class Atmosphere {
     if (elev < 0.12) _c2.lerp(COL_SUN_LOW, 1 - sunUp)
     if (getTerrainProfile()?.theme === 'desert-run') _c2.lerp(_hemiGround.setHex(0xffdbab), dayFactor * .12)
     if (getTerrainProfile()?.theme === 'mountain-valley-run') _c2.lerp(_hemiGround.setHex(0xe8f3ff), dayFactor * .1)
+    if (getTerrainProfile()?.theme === 'volcanic-run') _c2.lerp(_hemiGround.setHex(0xe1d9cb), dayFactor * .13)
     this.sun.color.copy(_c2)
     this.sun.intensity =
       (0.25 + dayFactor * 1.55) * sunUp * clearMul * w.sunMul

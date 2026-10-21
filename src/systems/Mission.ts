@@ -406,6 +406,8 @@ export function buildMissionRoute(
   }))
 
   const generatedTheme = generatedThemeForProfile(safeProfile)
+  const wideCorridor = generatedTheme === 'coastal-island-run' || generatedTheme === 'volcanic-run'
+  const corridorOffsets = wideCorridor ? [-52, 0, 52] : ROUTE_CORRIDOR_OFFSETS
   if (generatedTheme) points = generateMission(getWorldSeed(), generatedTheme).course.map(point => ({ ...point }))
 
   if (safeProfile === 'contour') {
@@ -476,16 +478,19 @@ export function buildMissionRoute(
       const z = previousZ + (point.z - previousZ) * t
       // Probe the centre and both wing sides. This catches a ridge that the
       // straight gate line misses while keeping the route build bounded.
-      for (const lateral of ROUTE_CORRIDOR_OFFSETS) {
-        const corridorX = x + rightX * lateral
-        const corridorZ = z + rightZ * lateral
+      for (const lateral of corridorOffsets) {
+        // These coast/cone circuits can cross the runway axis at wide angles.
+        // Probe their actual wing direction, retaining the same three probes.
+        const corridorX = x + (wideCorridor ? dz / Math.max(1, legLength) : rightX) * lateral
+        const corridorZ = z + (wideCorridor ? -dx / Math.max(1, legLength) : rightZ) * lateral
         // Route clearance only needs the resolved contact height. Keep the
         // full climate object out of this bounded launch-time hot path.
         const ground = sampleTerrainSurfaceHeightFast(corridorX, corridorZ)
         if (Number.isFinite(ground)) {
           // A small departure reserve covers interpolation between the
           // existing fixed probes without changing their count or width.
-          const needed = ground + missionLegClearance(i, t * legLength, legLength) + (i === 0 ? 2 : 0)
+          const clearance = missionLegClearance(i, t * legLength, legLength)
+          const needed = ground + clearance + (i === 0 ? 2 : 0) + (wideCorridor ? clearance / ROUTE_CLEARANCE : 0)
           const endpointY = (needed - previousY * (1 - t)) / t
           requiredY = Math.max(requiredY, endpointY)
         }

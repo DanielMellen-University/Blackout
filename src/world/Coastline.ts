@@ -17,7 +17,9 @@ export function coastField(x: number, z: number): number {
       const rx = island === 0 ? 2900 : island === 1 ? 2300 : 1750
       const rz = island === 0 ? 2900 : island === 1 ? 1850 : 2350
       const u = (right - cx) / rx, v = (forward - cz) / rz
-      const outline = 1 + Math.sin(Math.atan2(v, u) * 3 + profile.phase + island) * .075
+      const angle = Math.atan2(v, u)
+      const outline = 1 + Math.sin(angle * 3 + profile.phase + island) * .065
+        + Math.sin(angle * 7 - profile.phase * 1.3 + island) * .025
       field = Math.max(field, (outline - Math.hypot(u, v)) * .2)
     }
     return field

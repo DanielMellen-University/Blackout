@@ -154,11 +154,14 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
         const cx = cone === 0 ? -2200 : cone === 1 ? 3300 : -2700
         const cz = cone === 0 ? 3200 : cone === 1 ? 4500 : -3400
         const radius = cone === 2 ? 1600 : 1800
-        const distance = Math.hypot(right - cx, forward - cz) / radius
+        const radial = Math.hypot(right - cx, forward - cz) / radius
+        const angle = Math.atan2(forward - cz, right - cx)
+        const distance = radial / (1 + Math.sin(angle * 5 + profile.phase + cone * 3) * .045)
         const flank = 1 - smoothstep(.08, 1, distance)
         const bowl = 1 - smoothstep(.06, .25, distance)
-        const height = profile.relief * (.88 + .12 * Math.sin(profile.phase + cone))
-        uplift = Math.max(uplift, Math.pow(flank, 1.4) * height - bowl * height * .5)
+        const height = profile.relief * (.92 + .1 * Math.sin(profile.phase + cone))
+        const gullies = .94 + .06 * Math.pow(Math.sin(angle * 7 + profile.phase + radial * 2), 2)
+        uplift = Math.max(uplift, Math.pow(flank, 1.4) * height * gullies - bowl * height * .5)
         caldera = Math.max(caldera, bowl)
       }
       const lava = fbm(right / 360 + 81, forward / 470, 3)

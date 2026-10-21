@@ -1,3 +1,4 @@
+import { getTerrainProfile } from './TerrainProfile'
 import { clamp01, getWorldSeed, smoothstep, valueNoise } from './noise'
 import { createClimateSample, sampleGeographyHeight, sampleGeographyInto, sampleGeographySurfaceInto, type GeographySurfaceSample } from './Geography'
 
@@ -944,11 +945,12 @@ export function biomeColorInto(
     col[2] = clamp01(col[2] + cinder * .72)
     const fissureField = valueNoise(x / 980 + 37, z / 980 - 19)
     const calderaBoost = landform?.caldera ?? 0
-    const fissure = smoothstep(.72, .92, fissureField) * (.15 + calderaBoost * .68)
+    const generatedLava = getTerrainProfile()?.theme === 'volcanic-run'
+    const fissure = smoothstep(.72, .92, fissureField) * ((generatedLava ? .28 : .15) + calderaBoost * .68)
     const flowField = valueNoise(x / 920 - 23, z / 920 + 41) * .7 +
       valueNoise(x / 240 + 71, z / 240 - 17) * .3
-    const flow = smoothstep(.58, .82, flowField) * (.12 + calderaBoost * .26)
-    const ember = detailColor(0.48 + ashField * .14, .075 + ashField * .035, .018)
+    const flow = smoothstep(.58, .82, flowField) * ((generatedLava ? .2 : .12) + calderaBoost * .26)
+    const ember = detailColor((generatedLava ? .66 : .48) + ashField * .14, .075 + ashField * .035, .018)
     mixColorInPlace(col, ember, fissure * weight.volcanic)
     const lavaRock = detailColor(.3 + ashField * .1, .055 + ashField * .03, .016)
     mixColorInPlace(col, lavaRock, flow * weight.volcanic)

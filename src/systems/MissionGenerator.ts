@@ -38,11 +38,11 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
   }
   if (theme === 'coastal-island-run') {
     terrain.baseHeight = 55; terrain.relief = 520
-    terrain.landscapeRevision = 31; terrain.routeRevision = 34
+    terrain.landscapeRevision = 34; terrain.routeRevision = 37; terrain.yaw *= Math.PI * 2 / .7
   }
   if (theme === 'volcanic-run') {
     terrain.baseHeight = 240; terrain.relief = 2600
-    terrain.landscapeRevision = 32; terrain.routeRevision = 35
+    terrain.landscapeRevision = 35; terrain.routeRevision = 38; terrain.yaw *= Math.PI * 2 / .7
   }
   const start = { x: terrain.originX, y: terrain.baseHeight, z: terrain.originZ, yaw: terrain.yaw }
   const spread = 1350 + random() * 350, length = 3000 + random() * 600
@@ -59,6 +59,18 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
       [hand * width, outbound], [hand * width * (.45 + random() * .5), -100 + random() * 800],
       [0, -2700 - random() * 650], [0, -1400 - random() * 180]]
     heights = [140 + random() * 40, 145 + random() * 65, 125 + random() * 70,
+      130 + random() * 30, 105 + random() * 30]
+  }
+  if (theme === 'coastal-island-run' || theme === 'volcanic-run') {
+    // Stay in the existing sea channel or low cone corridor, with independently
+    // varied outbound doglegs and a descending final aligned with the runway.
+    const coastal = theme === 'coastal-island-run'
+    const width = (coastal ? 1150 : 1100) + random() * (coastal ? 1000 : 650)
+    offsets = [[(random() - .5) * 420, 1450 + random() * 600],
+      [width, (coastal ? 2350 : 2600) + random() * (coastal ? 1200 : 700)],
+      [width * (.65 + random() * .4), -350 + random() * 1000],
+      [0, -2650 - random() * 650], [0, -1350 - random() * 230]]
+    heights = [140 + random() * 40, 135 + random() * 85, 115 + random() * 75,
       130 + random() * 30, 105 + random() * 30]
   }
   const course = offsets.map(([right, forward], index) => ({

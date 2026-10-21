@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.979**. Previous roadmap chunk: **10.978**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.980**. Previous roadmap chunk: **10.979**.
 
-Recent changes from **10.979**. Polish Desert run and Mountain valley run with seeded headings, mirrored and reshaped courses, varied gate heights, dune and mesa relief, mountain spurs, and warm desert or cool valley light. Verify flat runway approaches, earned gold and three tuning seeds per theme. Revisions 33/36 separate existing bounded records and ghosts. Further themes and features require separate approval. See docs/reviews/generator/polish-10.979.md.
+Recent changes from **10.980**. Polish Coastal island run and Volcanic run with varied seeded courses, coastline detail, broken cone rims and gullies, stronger lava read, sea-air and ash lighting, and verified flat runway approaches. Coastal revisions 34/37 and Volcanic revisions 35/38 separate existing bounded records and ghosts. Further themes and features require separate approval. See docs/reviews/generator/polish-10.980.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

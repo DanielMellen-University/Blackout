@@ -44,7 +44,7 @@ it('reshapes the shared geography paths and clears back to the original world', 
       const point = spec.course[1]!
       const sample = sampleGeography(point.x, point.z)
       expect(sample.height).toBe(sampleGeographyHeight(point.x, point.z))
-      expect(sample.height).toBe(sampleGeographySurfaceHeight(point.x, point.z))
+      expect(theme === 'coastal-island-run' ? Math.max(0, sample.height) : sample.height).toBe(sampleGeographySurfaceHeight(point.x, point.z))
       if (theme !== 'coastal-island-run') expect(sample.height).toBeGreaterThan(spec.start.y)
       else expect(sample.height).toBeLessThan(spec.course[1]!.y - 120)
       expect(waterLandmarks(0, 0)).toHaveLength(0)

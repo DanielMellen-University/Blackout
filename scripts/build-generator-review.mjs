@@ -5,6 +5,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 const hook = await readFile('scripts/browser-generator.js', 'utf8')
+  + (process.env.REVIEW_ADDENDUM ? '\n' + await readFile(process.env.REVIEW_ADDENDUM, 'utf8') : '')
 const hookSha256 = createHash('sha256').update(hook).digest('hex')
 const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', 'src'], { encoding: 'utf8' }).split('\0').filter(Boolean)
 const sourceHashes = Object.fromEntries(await Promise.all(files.map(async file => [file, createHash('sha256').update(await readFile(file)).digest('hex')])))
