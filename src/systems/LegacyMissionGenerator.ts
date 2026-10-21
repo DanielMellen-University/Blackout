@@ -18,10 +18,7 @@ export const LEGACY_TERRAIN_RECIPES: Partial<Record<MissionRouteProfile, Mission
   archipelago: 'coastal-island-run', thermal: 'mountain-valley-run', approach: 'desert-run',
 }
 
-export const LEGACY_MIGRATION_EXCEPTIONS: Readonly<Record<string, string>> = {
-  'monsoon-run': 'The existing contract is Waterway tour and requires two waterway types, which existing generated recipes cannot provide.',
-  'waterway-tour': 'Requires two waterway types. Existing generated recipes disable inland hydrology and Coastal island supplies only ocean. Preserve the existing mission until separately approved work can support it.',
-}
+export const LEGACY_MIGRATION_EXCEPTIONS: Readonly<Record<string, string>> = {}
 
 /** Snapshot of original fixed-seed modifiers, before moving the airfields. */
 export const LEGACY_MISSION_MODIFIERS: Readonly<Record<string, MissionRouteModifier>> = {
@@ -99,14 +96,14 @@ export const LEGACY_MISSION_MODIFIERS: Readonly<Record<string, MissionRouteModif
   'shoreline-run': 'altitude',
 }
 
-/** Periods with unsupported waterway contracts keep their original terrain. */
+/** Preserve period gameplay while choosing terrain that supplies its objective. */
 export function legacyTerrainTheme(course: CourseDefinition): MissionTheme | null {
   if (LEGACY_MIGRATION_EXCEPTIONS[course.id] || !course.profile) return null
   const recipe = LEGACY_TERRAIN_RECIPES[course.profile] ?? null
   const identitySeed = course.contractSeed ?? course.seed
   if (!recipe || !course.contractCatalog || identitySeed === null) return recipe
   const objective = sortieContractLabelForSeed(identitySeed, 5, true)
-  if (objective === 'WATERWAY TOUR') return null
+  if (objective === 'WATERWAY TOUR') return 'waterway-run'
   if (objective === 'WATER RUN' || objective === 'WATER SKIM') return 'coastal-island-run'
   if (objective === 'BIOME TOUR' || objective === 'SETTLEMENT TOUR' || objective === 'SCOUT') return 'mountain-valley-run'
   if (objective === 'RIDGE RUN' && recipe === 'desert-run') return 'mountain-valley-run'
@@ -135,7 +132,7 @@ export function generateLegacyMission(course: CourseDefinition, flightSeed: numb
 export function generateLegacyTerrain(flightSeed: number, theme: MissionTheme): GeneratedMissionSpec {
   const base = generateMission(flightSeed, theme)
   // Separate every migrated route and landscape from both its old records and
-  // the four existing theme records. Flight physics retains the b20 revision.
+  // the five theme records. Flight physics retains the b20 revision.
   return { ...base, terrain: { ...base.terrain,
     landscapeRevision: base.terrain.landscapeRevision + 100,
     routeRevision: base.terrain.routeRevision + 100 } }

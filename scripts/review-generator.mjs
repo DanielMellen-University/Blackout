@@ -7,6 +7,7 @@ const seeds = (process.env.REVIEW_SEEDS || '42').split(',')
 const part = process.env.REVIEW_PART || 'a'
 const capture = process.env.REVIEW_CAPTURE === '1'
 const profile = process.env.REVIEW_PROFILE === '1'
+const visualGate = Math.max(1, Math.min(5, Number(process.env.REVIEW_VISUAL_GATE) || 1))
 const smoke = part === 'a' || process.env.REVIEW_SMOKE === '1'
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/snap/bin/chromium', args: ['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface'] })
 try {
@@ -110,7 +111,7 @@ try {
    final=await page.evaluate(()=>window.__training.state())
    samples.push(Object.fromEntries(['seconds','stage','next','phase','position','velocity','speed','agl','status','onGround','loadFactor','controls','nitro','stream','coverage','lod','heapMB'].map(key=>[key,final[key]])))
    if(Math.floor(final.seconds)%15===0)console.log(theme,seed,final.seconds.toFixed(1),final.stage,final.next,final.status)
-   if(capture && !shot && final.next>=1){
+   if(capture && !shot && final.next>=visualGate){
     await captureWindow('gates',async()=>{
     for(const camera of ['chase','cockpit']){
      await page.evaluate(mode=>window.__training.camera(mode),camera);await page.waitForTimeout(250)
@@ -121,7 +122,7 @@ try {
    if(capture && !approach && final.stage==='approach' && final.agl<30 && final.agl>8){
     await captureWindow('approach',async()=>{await page.evaluate(()=>window.__training.camera('cockpit'));await page.waitForTimeout(200);await captureStill('approach-cockpit.jpg');pictures.push('approach-cockpit.jpg');await page.evaluate(()=>window.__training.camera('chase'));});approach=true
    }
-   if(smoke && (shot || (!capture && final.next>=1))) break
+   if(smoke && (shot || (!capture && final.next>=visualGate))) break
    if(final.resultsOpen || final.status==='crashed')break
   }
   const {frameTimes,captureWindows,heapMB}=await page.evaluate(()=>({frameTimes:window.__reviewFrameTimes,captureWindows:window.__reviewCaptures,heapMB:performance.memory?.usedJSHeapSize/1048576}))

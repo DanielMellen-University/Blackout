@@ -12,6 +12,7 @@ const expectedMissions=new Map()
 const server=await createServer({server:{middlewareMode:true}})
 try {
  const lib=await server.ssrLoadModule('/src/systems/CourseLibrary.ts')
+ const {scoringFocusForModifier}=await server.ssrLoadModule('/src/systems/Mission.ts')
  const {sortieContractLabelForSeed}=await server.ssrLoadModule('/src/systems/SortieContract.ts')
  for(const job of jobs){
   const date=job.period?.includes('-W')?lib.weeklyOpsTimestampForWeekKey(job.period)
@@ -19,7 +20,17 @@ try {
    :job.period?lib.dailyOpsTimestampForDayKey(job.period):Date.now()
   const course=lib.resolveCourseDefinition(lib.courseDefinitionForId(job.course),date)
   const label=sortieContractLabelForSeed(course.contractSeed??course.seed,5,course.contractCatalog===true)
-  expectedMissions.set(job,{course,contractLabel:label?`CONTRACT ${label}`:''})
+  let originalModifier
+  if(job.profile==='waterway-run' && job.period){
+   const {setTerrainProfile}=await server.ssrLoadModule('/src/world/TerrainProfile.ts')
+   const {setWorldSeed}=await server.ssrLoadModule('/src/world/noise.ts')
+   const {clearOpsPad,findPlayableSpawn}=await server.ssrLoadModule('/src/world/terrainSample.ts')
+   const {routeModifierForSpawn}=await server.ssrLoadModule('/src/systems/Mission.ts')
+   setTerrainProfile(null);clearOpsPad();setWorldSeed(course.seed)
+   const pad=findPlayableSpawn();assert.ok(pad)
+   originalModifier=routeModifierForSpawn(pad.x-Math.sin(pad.yaw)*45,pad.z-Math.cos(pad.yaw)*45,pad.yaw,course.profile)
+  }
+  expectedMissions.set(job,{course,contractLabel:label?`CONTRACT ${label}`:'',originalModifier,scoringFocus:scoringFocusForModifier(course.missionModifier??originalModifier)})
  }
 }finally{await server.close()}
 const files=execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z','--','src'],{encoding:'utf8'}).split('\0').filter(Boolean)
@@ -37,8 +48,10 @@ for(const job of jobs)for(const seed of job.seeds.split(',').map(Number)) {
   assert.deepEqual(f.missionSettings[key],expected.course[key],`${receipt}: mission ${key}`)
  assert.equal(f.contract.label,expected.contractLabel,`${receipt}: contract identity`)
  if(expected.course.missionModifier)assert.equal(f.modifier,expected.course.missionModifier)
+ if(expected.originalModifier)assert.equal(f.modifier,expected.originalModifier,`${receipt}: original period scoring modifier`)
  assert.equal(r.build.production,true);assert.equal(r.build.minified,true)
  assert.equal(r.build.hookSha256,hookHash)
+ assert.deepEqual(Object.keys(r.build.sourceHashes).sort(),files.slice().sort(),`${receipt}: source inventory`)
  for(const[file,hash]of Object.entries(hashes))if(file!=='src/core/Version.ts')assert.equal(r.build.sourceHashes[file],hash,`${receipt}: source drift ${file}`)
  assert.equal(f.next>=1,true);assert.equal(f.status==='crashed',false)
  if(r.smoke)assert.ok(f.nitroRefills.length>=1)
@@ -63,6 +76,29 @@ for(const job of jobs)for(const seed of job.seeds.split(',').map(Number)) {
   assert.equal(f.result.gatesCleared,5);assert.equal(f.result.gatesTotal,5);assert.equal(f.resultsOpen,true)
   assert.ok(f.gates.every(g=>g.passed));assert.ok(f.nitroTimeline.some(s=>s.boosting))
   assert.ok(f.contact&&Math.abs(f.contact.localX)<9&&Math.abs(f.contact.localZ)<60)
+ }
+ if(job.profile==='waterway-run'){
+  assert.equal(f.scoringFocus,expected.scoringFocus,`${receipt}: original scoring focus`)
+  assert.equal(f.contract.kind,'waterway-tour',`${receipt}: Waterway contract`)
+  assert.equal(f.contract.complete,true,`${receipt}: river and lake survey`)
+  assert.equal(f.contract.progress,1)
+  if(!r.smoke){
+   assert.equal(f.result.medal,'gold',`${receipt}: earned gold`)
+   assert.equal(f.result.contractScore,2000,`${receipt}: existing maximum contract award`)
+   assert.equal(f.result.contractComplete,true)
+   assert.equal(r.timingEligible,true)
+   assert.equal(r.timingStart.state.seconds,0)
+   assert.equal(r.timingStart.state.playing,true)
+   assert.equal(r.timingStart.state.paused,false)
+   assert.ok(r.timingStart.boundary.includes('launch panel hides'))
+   assert.ok(r.frameTimes[0].start-r.timingStart.at>=0 && r.frameTimes[0].start-r.timingStart.at<250)
+   for(const [i,frame]of r.frameTimes.entries()){
+    assert.ok(Math.abs(frame.end-frame.start-frame.ms)<1e-6)
+    if(i)assert.ok(Math.abs(frame.start-r.frameTimes[i-1].end)<1e-6,`${receipt}: timing gap ${i}`)
+   }
+   assert.ok(r.metrics.max<=100.1,`${receipt}: maximum frame interval ${r.metrics.max}`)
+   assert.ok(Math.max(...r.samples.map(s=>s.heapMB))<200,`${receipt}: sampled heap target`)
+  }
  }
  const m=r.metrics,coverageMisses=r.samples.filter(s=>s.seconds>10&&!s.coverage).length
  assert.equal(coverageMisses,0,receipt)

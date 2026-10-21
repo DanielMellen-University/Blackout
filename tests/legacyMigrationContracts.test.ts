@@ -5,17 +5,17 @@ import { generateLegacyMission, LEGACY_MIGRATION_EXCEPTIONS } from '../src/syste
 import { SortieContractTracker, MAX_CONTRACT_SCORE } from '../src/systems/SortieContract'
 import { setTerrainProfile } from '../src/world/TerrainProfile'
 import { setWorldSeed } from '../src/world/noise'
-import { setOpsPad, clearOpsPad, getOpsPad } from '../src/world/terrainSample'
+import { setOpsPad, clearOpsPad, getOpsPad, waterBodyFromClimate } from '../src/world/terrainSample'
 import { sampleGeography } from '../src/world/Geography'
 import { nearestThermalPocket, thermalLiftIntensity } from '../src/systems/ThermalLift'
 import { settlementAnchorCells, settlementForCell } from '../src/world/SettlementPlan'
 import { AirTrafficSystem } from '../src/world/AirTrafficSystem'
 
 afterEach(()=>{setTerrainProfile(null);clearOpsPad()})
-it('activates exactly the 42 supported contracts and preserves both original-world exceptions',()=>{
+it('activates all 44 contracts without original-world exceptions',()=>{
  const catalog=COURSE_LIBRARY.filter(c=>c.contractCatalog&&c.seed!==null)
  expect(catalog).toHaveLength(44)
- expect(catalog.filter(c=>resolveCourseDefinition(c).terrainTheme)).toHaveLength(42)
+ expect(catalog.filter(c=>resolveCourseDefinition(c).terrainTheme)).toHaveLength(44)
  for(const c of catalog){
   const resolved=resolveCourseDefinition(c)
   if(LEGACY_MIGRATION_EXCEPTIONS[c.id])expect(resolved).toEqual(c)
@@ -47,6 +47,12 @@ for(const course of COURSE_LIBRARY.filter(c=>c.seed!==null&&c.contractCatalog&&!
    throw Error(`No ${kind} for ${course.id} ${seed}`)
   }
   switch(tracker.kind){
+   case 'waterway-tour': {
+    const bodies = spec.course.slice(0, 2).map(p => waterBodyFromClimate(sampleGeography(p.x, p.z)))
+    expect(bodies).toEqual(['river', 'lake'])
+    for (const body of bodies) tracker.recordWaterBody(body, true)
+    break
+   }
    case 'pace': break
    case 'altitude':tracker.recordAltitude(3000);break
    case 'stunt':tracker.recordStunt(2);break

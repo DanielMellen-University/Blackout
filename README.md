@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.986**. Previous roadmap chunk: **10.985**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.987**. Previous roadmap chunk: **10.986**.
 
-Recent changes from **10.986**. Add the Oct 21 approved Waterway theme with inland rivers and a connected lake through the existing hydrology and water surfaces. Preserve the four earlier recipes, Random world, Free flight and existing migrations. Exactly five themes are approved; any further theme or feature requires separate approval. Migration follows in 10.987. See docs/reviews/generator/waterway-10.986.md.
+Recent changes from **10.987**. Migrate monsoon-run, waterway-tour and all rotating Waterway tour periods to the approved Waterway generator theme. Preserve identity, weather, shared period seeds, objectives, scoring and medal logic with separate route and landscape records. All existing missions now use the generator. Exactly five themes are approved; further themes and features need separate approval. See docs/reviews/generator/legacy-migration-10.982.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

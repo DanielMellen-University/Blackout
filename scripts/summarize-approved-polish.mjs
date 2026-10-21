@@ -11,8 +11,8 @@ const files=execFileSync('git',['ls-files','--cached','--others','--exclude-stan
 const digest=v=>createHash('sha256').update(v).digest('hex')
 const hashes=Object.fromEntries(await Promise.all(files.map(async f=>[f,digest(await readFile(f))])))
 const hookHash=digest(await readFile('scripts/browser-generator.js'))
-const profiles={'desert-run':'generated-desert','mountain-valley-run':'generated-valley','coastal-island-run':'generated-coastal','generated-volcanic-run':'generated-volcanic'}
-const revisions={'desert-run':'l33:q36','mountain-valley-run':'l33:q36','coastal-island-run':'l34:q37','generated-volcanic-run':'l35:q38'}
+const profiles={'desert-run':'generated-desert','mountain-valley-run':'generated-valley','coastal-island-run':'generated-coastal','generated-volcanic-run':'generated-volcanic','waterway-run':'generated-waterway'}
+const revisions={'desert-run':'l33:q36','mountain-valley-run':'l33:q36','coastal-island-run':'l34:q37','generated-volcanic-run':'l35:q38','waterway-run':'l36:q39'}
 const rows=[]
 for(const theme of themes)for(const seed of seeds){
  const receipt=`docs/reviews/generator/${part}/${theme}-${seed}/run.json`

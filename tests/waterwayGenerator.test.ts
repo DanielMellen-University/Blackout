@@ -16,7 +16,7 @@ it('preserves the four original specs and sampled landscapes exactly', () => {
     expect(spec.course.map(p => sampleGeography(p.x, p.z))).toEqual(samples)
   }
 })
-it.each([42, 1337, 9001, ...Array.from({ length: 32 }, (_, i) => i + 70)])('has reachable river and lake, a clear course and dry aligned approach on seed %s', seed => {
+it.each([42, 1337, 9001, 31415, ...Array.from({ length: 32 }, (_, i) => i + 70)])('has reachable river and lake, a clear course and dry aligned approach on seed %s', seed => {
   const spec = generateMission(seed, 'waterway-run'), pad = spec.landingRunway
   expect(generateMission(seed, 'waterway-run')).toEqual(spec)
   setWorldSeed(seed); setTerrainProfile(spec.terrain); setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
