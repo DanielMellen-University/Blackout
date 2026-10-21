@@ -142,3 +142,26 @@ it('bounds generated themes in the existing seeded manifest without touching aut
   expect(JSON.parse(data.get(SEEDED_RANDOM_RECORDS_STORAGE_KEY)!)).toHaveLength(SEEDED_RANDOM_RECORD_RETENTION)
   for (const id of protectedIds) expect(data.has(`blackout.history.${id}`)).toBe(true)
 })
+
+it.each(['', ':mission:monsoon-run', ':mission:waterway-tour'])('bounds Waterway sibling records in the existing manifest (%s)', suffix => {
+  const data = new Map<string, string>()
+  const storage: IndexedRecordStorage = {
+    getItem: key => data.get(key) ?? null,
+    setItem: (key, value) => { data.set(key, value) },
+    removeItem: key => { data.delete(key) },
+  }
+  const old = ['seed:54:monsoon:r32', 'seed:54:river:r32', 'seed:42:generated-waterway:r31:l36:q39']
+  for (const id of old) data.set(`blackout.ghost.${id}`, 'retained')
+  const prefixes = ['best', 'streak', 'history', 'badges', 'trace', 'ghost']
+  for (let seed = 1; seed <= SEEDED_RANDOM_RECORD_RETENTION + 2; seed++) {
+    const id = `seed:${seed}.125:generated-waterway:r32:l${suffix ? 136 : 36}:q${suffix ? 139 : 39}${suffix}`
+    for (const prefix of prefixes) data.set(`blackout.${prefix}.${id}`, prefix)
+    touchSeededRandomCourseRecord(storage, id, seed)
+  }
+  const manifest = JSON.parse(data.get(SEEDED_RANDOM_RECORDS_STORAGE_KEY) ?? '[]')
+  expect(manifest).toHaveLength(SEEDED_RANDOM_RECORD_RETENTION)
+  const oldest = `seed:1.125:generated-waterway:r32:l${suffix ? 136 : 36}:q${suffix ? 139 : 39}${suffix}`
+  for (const prefix of prefixes) expect(data.has(`blackout.${prefix}.${oldest}`)).toBe(false)
+  expect(manifest[0].id).toContain('seed:14.125:generated-waterway:')
+  for (const id of old) expect(data.get(`blackout.ghost.${id}`)).toBe('retained')
+})

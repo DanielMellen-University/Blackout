@@ -125,6 +125,7 @@ try {
    if(smoke && (shot || (!capture && final.next>=visualGate))) break
    if(final.resultsOpen || final.status==='crashed')break
   }
+  final.recordRetention=await page.evaluate(()=>JSON.parse(localStorage.getItem('blackout.seededRandomRecords.r32')||'[]'))
   const {frameTimes,captureWindows,heapMB}=await page.evaluate(()=>({frameTimes:window.__reviewFrameTimes,captureWindows:window.__reviewCaptures,heapMB:performance.memory?.usedJSHeapSize/1048576}))
   const metrics={...summarizeFlightFrames(frameTimes),heapMB}
   const timingEligible=!capture&&!profile&&!smoke

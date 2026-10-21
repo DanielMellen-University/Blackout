@@ -6,6 +6,7 @@ import { createServer } from 'vite'
 import { assertCaptureFreeTiming } from './lib/review-frame-metrics.mjs'
 const part=process.env.REVIEW_PART || 'migration-b-full'
 const root=`docs/reviews/generator/${part}`
+const outputPart=process.env.REVIEW_OUTPUT_PART || part
 const jobs=JSON.parse(await readFile(`${root}/jobs.json`,'utf8'))
 const execution=await readFile(`${root}/execution.json`,'utf8').then(JSON.parse).catch(()=>({browserConcurrency:1}))
 const expectedMissions=new Map()
@@ -79,6 +80,7 @@ for(const job of jobs)for(const seed of job.seeds.split(',').map(Number)) {
  }
  if(job.profile==='waterway-run'){
   assert.equal(f.scoringFocus,expected.scoringFocus,`${receipt}: original scoring focus`)
+  if(!job.period){assert.ok(f.recordRetention?.some(entry=>entry.id===f.recordId),`${receipt}: existing bounded record admission`);assert.ok(f.recordRetention.length<=12)}
   assert.equal(f.contract.kind,'waterway-tour',`${receipt}: Waterway contract`)
   assert.equal(f.contract.complete,true,`${receipt}: river and lake survey`)
   assert.equal(f.contract.progress,1)
@@ -107,7 +109,7 @@ for(const job of jobs)for(const seed of job.seeds.split(',').map(Number)) {
   fps:m.fps,p95:m.p95,over50:m.over50,over100:m.over100,max:m.max,heapPeakMB:Math.max(...r.samples.map(s=>s.heapMB)),coverageMisses,recordId:f.recordId,receipt})
 }
 const method=part.endsWith('-full')?'Sequential complete production-mode browser flights. Capture OFF, profiler OFF, fixed chase, balanced 1280x720, scale 1, native RAF, ordinary adaptive resolution. Timing begins after the launch panel hides. Omit only the first ten intervals; retain every remaining interval and strict >50/100 ms counts. No test, build or other browser overlaps timing. Heap is sampled main-thread used JS heap.':'Browser smoke and visual flights through gate one and ordinary nitro refill. Chase/cockpit captures exclude these sessions from timing acceptance. Browser concurrency is recorded in the execution manifest.'
-await writeFile(`docs/reviews/generator/${part}-summary.json`,JSON.stringify({pass:true,method,execution,sourceHashes:hashes,hookHash,rows},null,2)+'\n')
+await writeFile(`docs/reviews/generator/${outputPart}-summary.json`,JSON.stringify({pass:true,method,execution,sourceHashes:hashes,hookHash,rows},null,2)+'\n')
 const table=['| Mission | Profile | Seed | Medal | FPS | p95 ms | >50 ms | >100 ms | Max ms | Heap MB |','| --- | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |',...rows.map(r=>`| ${r.mission} | ${r.profile} | ${r.seed} | ${r.medal||'gate one'} | ${r.fps.toFixed(1)} | ${r.p95.toFixed(1)} | ${r.over50} | ${r.over100} | ${r.max.toFixed(1)} | ${r.heapPeakMB.toFixed(1)} |`)].join('\n')
-await writeFile(`docs/reviews/generator/${part}-results.md`,method+'\n\n'+table+'\n')
+await writeFile(`docs/reviews/generator/${outputPart}-results.md`,method+'\n\n'+table+'\n')
 console.log(JSON.stringify({pass:true,flights:rows.length,notGold:rows.filter(r=>r.medal&&r.medal!=='gold'),max:Math.max(...rows.map(r=>r.max)),heapPeakMB:Math.max(...rows.map(r=>r.heapPeakMB))}))

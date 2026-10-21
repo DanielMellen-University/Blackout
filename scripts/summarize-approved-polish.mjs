@@ -21,6 +21,7 @@ for(const theme of themes)for(const seed of seeds){
  assert.ok(f.recordId.startsWith(`seed:${seed}:${profiles[theme]}:r32:l`),`${receipt}: profile/record identity`)
  assert.match(f.recordId,/:l\d+:q\d+$/)
  assert.equal(f.recordId,`seed:${seed}:${profiles[theme]}:r32:${revisions[theme]}`)
+ assert.ok(f.recordRetention?.some(entry=>entry.id===f.recordId),`${receipt}: existing bounded record admission`)
  assert.equal(r.build.production,true);assert.equal(r.build.minified,true);assert.equal(r.build.hookSha256,hookHash)
  assert.deepEqual(Object.keys(r.build.sourceHashes).sort(),files.sort())
  for(const [file,hash]of Object.entries(hashes))if(file!=='src/core/Version.ts')assert.equal(r.build.sourceHashes[file],hash,`${receipt}: runtime drift ${file}`)

@@ -1,0 +1,53 @@
+
+> blackout@0.12.0 test
+> node --test scripts/review-frame-metrics.test.mjs && vitest run --maxWorkers=4
+
+TAP version 13
+# Subtest: keeps the long flight interval and strict 50/100 ms boundaries
+ok 1 - keeps the long flight interval and strict 50/100 ms boundaries
+  ---
+  duration_ms: 0.677651
+  type: 'test'
+  ...
+# Subtest: rejects captures, profiler, smoke and camera changes as acceptance evidence
+ok 2 - rejects captures, profiler, smoke and camera changes as acceptance evidence
+  ---
+  duration_ms: 0.300993
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 44.662168
+
+ RUN  v5.0.0 /home/daniel/Documents/GitHub/Blackout
+
+ ❯ tests/riverUnion.test.ts (9 tests | 1 failed) 7623ms
+   ❯ unified river surface (9)
+     × joins a generated broad turning trunk without duplicate wet coverage 5286ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/riverUnion.test.ts > unified river surface > joins a generated broad turning trunk without duplicate wet coverage
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/riverUnion.test.ts:101:3
+     99|   })
+    100|
+    101|   it('joins a generated broad turning trunk without duplicate wet cove…
+       |   ^
+    102|     setWorldSeed(1338); waterLandmarks(0, 0); setWorldSeed(1337)
+    103|     const x = -37939.150, z = 17344.774
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 176 passed (177)
+      Tests  1 failed | 2196 passed (2197)
+   Start at  13:38:43
+   Duration  149.25s (tests 95%, import 3%, transform 1%)

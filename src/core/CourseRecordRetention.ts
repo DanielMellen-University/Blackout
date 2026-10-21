@@ -16,7 +16,7 @@ const ROTATING_RECORD_PREFIXES = [
 ] as const
 
 const SEEDED_RANDOM_RECORD_PREFIXES = ROTATING_RECORD_PREFIXES
-const SEEDED_RANDOM_RECORD_ID = new RegExp(`^(?:seed:-?\\d+:[a-z-]+:${FLIGHT_REVISION_TAG}:custom|seed:-?\\d+(?:\\.\\d{1,6})?:generated-(?:desert|valley|coastal|volcanic):${FLIGHT_REVISION_TAG}:l\\d+:q\\d+(?::mission:[a-z-]+)?)$`)
+const SEEDED_RANDOM_RECORD_ID = new RegExp(`^(?:seed:-?\\d+:[a-z-]+:${FLIGHT_REVISION_TAG}:custom|seed:-?\\d+(?:\\.\\d{1,6})?:generated-(?:desert|valley|coastal|volcanic|waterway):${FLIGHT_REVISION_TAG}:l\\d+:q\\d+(?::mission:[a-z-]+)?)$`)
 export const SEEDED_RANDOM_RECORDS_STORAGE_KEY = `blackout.seededRandomRecords.${FLIGHT_REVISION_TAG}`
 /** Keep explicit exploration history useful without allowing one key per seed forever. */
 export const SEEDED_RANDOM_RECORD_RETENTION = 12
