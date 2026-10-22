@@ -97,6 +97,7 @@ import { touchdownKinematics } from './systems/LandingAssessment'
 import { browsingMissionId } from './ui/MissionPickerLayout'
 import {
   courseDefinitionForId,
+  courseGateCountPreview,
   dailyOpsDayKey,
   dailyOpsTimestampForDayKey,
   monthlyOpsMonthKey,
@@ -485,14 +486,17 @@ export async function boot(): Promise<void> {
         runId ?? flightRecordId(course.id === 'free-flight' ? 'free-flight' : 'random-world'))
       const recentRank = recentCourseIds.indexOf(course.id)
       const favoriteRank = favoriteCourseIds.indexOf(course.id)
+      const previewGates = courseGateCountPreview(resolvedCourse)
+      const previewContractSeed = previewGates === 0 ? undefined
+        : resolvedCourse.contractSeed ?? resolvedCourse.seed ?? undefined
       const copy = coursePickerCopy({
         course: resolvedCourse,
         history: record?.history ?? null,
         bestScore: record?.bestScore ?? 0,
         badgeCount: record?.badgeCount ?? 0,
         bestPrecisionStreak: record?.bestPrecisionStreak ?? 0,
-        contractLabel: sortieContractLabelForSeed(resolvedCourse.contractSeed ?? resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
-        contractDetail: sortieContractDetailForSeed(resolvedCourse.contractSeed ?? resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
+        contractLabel: sortieContractLabelForSeed(previewContractSeed, previewGates ?? undefined, resolvedCourse.contractCatalog === true),
+        contractDetail: sortieContractDetailForSeed(previewContractSeed, previewGates, resolvedCourse.contractCatalog === true),
       })
       const difficulty = coursePickerDifficultyForCourse(resolvedCourse)
       const challenge = coursePickerChallengeForCourse({ profile: resolvedCourse.profile })

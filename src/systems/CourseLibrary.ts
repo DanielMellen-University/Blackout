@@ -1,3 +1,4 @@
+import { MIN_MISSION_GATES } from './MissionGates'
 import { generateLegacyMission, legacyGeneratedRecordId, legacyTerrainTheme } from './LegacyMissionGenerator'
 import type { MissionTheme } from '../world/TerrainProfile'
 import type { MissionRouteModifier } from './Mission'
@@ -250,7 +251,7 @@ export const COURSE_LIBRARY = [
   {
     id: 'volcanic-run',
     label: 'Volcanic run',
-    detail: 'Five-gate circuit between volcanic cones and dark lava fields',
+    detail: 'Circuit of 15 to 100 gates between volcanic cones and dark lava fields',
     seed: 8,
     profile: 'volcanic',
   },
@@ -362,7 +363,7 @@ export const COURSE_LIBRARY = [
   {
     id: 'saltflat-run',
     label: 'Desert basin run',
-    detail: 'Five-gate circuit over a dry desert basin',
+    detail: 'Circuit of 15 to 100 gates over a dry desert basin',
     seed: 21,
     profile: 'saltflat',
   },
@@ -977,6 +978,14 @@ export function isLegacyGeneratedCourse(course: CourseDefinition): boolean {
   if (course.id === 'random' || course.profile === 'free') return false
   return course.terrainTheme !== undefined ||
     legacyTerrainTheme({ ...course, profile: course.profile ?? 'sweep' }) !== null
+}
+
+/** A fresh world has no exact count until launch resolves its seed. */
+export function courseGateCountPreview(course: CourseDefinition): number | null {
+  if (course.profile === 'free') return 0
+  if (course.seed === null || course.profile === null) return null
+  const theme = course.terrainTheme ?? generatedThemeForProfile(course.profile) ?? legacyTerrainTheme(course)
+  return theme ? generateMission(course.seed, theme, course.profile === 'orbit').goals.gates : MIN_MISSION_GATES
 }
 
 /** Keep catalog identity settings distinct from the per-flight world seed. */

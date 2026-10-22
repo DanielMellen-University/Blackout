@@ -110,7 +110,7 @@
               <ol class="takeoff-steps">
                 <li><kbd id="title-power-control">Shift / 2</kbd><span><b>Build speed</b>Hold for power. Stay straight until <span data-rotate-speed>80</span> kt.</span></li>
                 <li><kbd id="title-rotate-control">W</kbd><span><b>Lift off</b>At <span data-rotate-speed>80</span> kt, hold gently to climb.</span></li>
-                <li><kbd>AUTO</kbd><span><b>Fly the mission</b>Fly all five gates, then follow BASE to land. Gear is automatic; <kbd id="title-gear-control">G</kbd> overrides it.</span></li>
+                <li><kbd>AUTO</kbd><span><b>Fly the mission</b>Fly every gate, then follow BASE to land. Gear is automatic; <kbd id="title-gear-control">G</kbd> overrides it.</span></li>
               </ol>
               <p class="takeoff-controller">Gamepad: RT / R2 power, left stick up to climb, right stick to turn. Full mappings in Controls.</p>
             </section>
@@ -574,7 +574,7 @@
           </div>
           <div class="hud-row hud-primary-row">
             <span class="label">RUN</span>
-            <span id="hud-mission">GATE 1/5</span>
+            <span id="hud-mission">GATES</span>
           </div>
           <div id="hud-route-risk-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">RISK</span>
@@ -594,9 +594,9 @@
             role="progressbar"
             aria-label="Gate progress"
             aria-valuemin="0"
-            aria-valuemax="5"
+            aria-valuemax="0"
             aria-valuenow="0"
-            aria-valuetext="0 of 5 gates cleared"
+            aria-valuetext="No active gates"
           ></div>
           <div id="hud-gate-misses-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">MISSED</span>

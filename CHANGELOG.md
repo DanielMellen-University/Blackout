@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.997** Finish variable-count picker previews, launch instructions and initial HUD copy. Use actual gate counts for known replay and Ops seeds, defer fresh-world time-target copy until launch, and keep Free flight unscored. This completes the approved b30 gate-count integration without changing live contract or scoring rules. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).
+
 - **10.996** Verify b30 with complete 15-gate and 100-gate production browser flights, all scaled refills, gold runway landings, native frame traces, sampled heap, all-catalog route/controls proofs and the full test suite. Keep the single approved gate-count change and paused exclusions intact. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).
 
 - **10.995** Implement the Oct 22 approved b30 gate-count change: seeded 15 to 100 gate corridors, a reusable 100-gate pool, scaled nitro awards, unchanged score and medal totals, and separate route records. Preserve terrain recipes, flight tuning and paused exclusions. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).

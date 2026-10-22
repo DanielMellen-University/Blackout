@@ -1,3 +1,4 @@
+import { MIN_MISSION_GATES } from './MissionGates'
 /** Small deterministic bonus objectives that give each sortie a second decision. */
 export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour' | 'traffic-watch' | 'traffic-dodge' | 'thermal-surf'
 
@@ -925,7 +926,7 @@ function assignedContract(
 }
 
 /** Preview the deterministic contract on a seeded course without creating tracker state. */
-export function sortieContractLabelForSeed(seed: number | undefined, totalGates = 5, catalog = false): string {
+export function sortieContractLabelForSeed(seed: number | undefined, totalGates = MIN_MISSION_GATES, catalog = false): string {
   if (typeof seed !== 'number' || !Number.isFinite(seed)) return ''
   const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
   const contract = assignedContract(seed, safeGates, catalog)
@@ -933,11 +934,12 @@ export function sortieContractLabelForSeed(seed: number | undefined, totalGates 
 }
 
 /** Preview the deterministic contract instruction without creating tracker state. */
-export function sortieContractDetailForSeed(seed: number | undefined, totalGates = 5, catalog = false): string {
+export function sortieContractDetailForSeed(seed: number | undefined, totalGates: number | null = MIN_MISSION_GATES, catalog = false): string {
   if (typeof seed !== 'number' || !Number.isFinite(seed)) return ''
-  const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
+  const safeGates = totalGates === null ? MIN_MISSION_GATES : Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
   const contract = assignedContract(seed, safeGates, catalog)
   if (!contract) return ''
+  if (totalGates === null && contract.kind === 'pace') return 'TIME TARGET SET AT LAUNCH'
   return contractDetailFor(contract.kind, contractTargetFor(contract, safeGates))
 }
 

@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 10.997. Finish variable-count picker previews, launch instructions and initial HUD copy. Use actual gate counts for known replay and Ops seeds, defer fresh-world time-target copy until launch, and keep Free flight unscored. This completes the approved b30 gate-count integration without changing live contract or scoring rules. See [b30 gate counts](reviews/generator/gate-counts-b30.md).
+
 Chunk 10.996. Verify b30 with complete 15-gate and 100-gate production browser flights, all scaled refills, gold runway landings, native frame traces, sampled heap, all-catalog route/controls proofs and the full test suite. Keep the single approved gate-count change and paused exclusions intact. See [b30 gate counts](reviews/generator/gate-counts-b30.md).
 
 Chunk 10.995. Implement the Oct 22 approved b30 gate-count change: seeded 15 to 100 gate corridors, a reusable 100-gate pool, scaled nitro awards, unchanged score and medal totals, and separate route records. Preserve terrain recipes, flight tuning and paused exclusions. See [b30 gate counts](reviews/generator/gate-counts-b30.md).
@@ -102,7 +104,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **10.996** is current. Previous ship: **10.995**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.997** is current. Previous ship: **10.996**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 

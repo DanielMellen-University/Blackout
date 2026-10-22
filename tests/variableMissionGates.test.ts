@@ -1,3 +1,4 @@
+import { sortieContractDetailForSeed } from '../src/systems/SortieContract'
 import { afterEach, expect, it } from 'vitest'
 import { Scene, type Line } from 'three'
 import { generateMission } from '../src/systems/MissionGenerator'
@@ -8,7 +9,7 @@ import { setOpsPad, clearOpsPad } from '../src/world/terrainSample'
 import { createNitroState, refillNitroAtGate } from '../src/aircraft/NitroSystem'
 import { ChallengeRun } from '../src/systems/ChallengeRun'
 import { legacyFlightRecordLabel } from '../src/core/FlightRevision'
-import { COURSE_LIBRARY, resolveCourseDefinition } from '../src/systems/CourseLibrary'
+import { COURSE_LIBRARY, resolveCourseDefinition, courseDefinitionForId, courseGateCountPreview, resolveCourseReplaySeed } from '../src/systems/CourseLibrary'
 import { auditMissionGeometry } from '../scripts/lib/mission-polish'
 
 afterEach(() => { setTerrainProfile(null); clearOpsPad() })
@@ -107,4 +108,21 @@ it('reuses all 100 gate objects and the populated trace buffer through retries a
     expect(mission.totalGates).toBe(0)
     expect(trace.visible).toBe(false)
   } finally { mission.dispose() }
+})
+
+it('previews the actual replay/period count and avoids a five-gate time target for unresolved worlds', () => {
+  const fresh = resolveCourseDefinition(courseDefinitionForId('speed-run'))
+  expect(courseGateCountPreview(fresh)).toBeNull()
+  expect(sortieContractDetailForSeed(fresh.contractSeed, courseGateCountPreview(fresh), true)).toBe('TIME TARGET SET AT LAUNCH')
+  const replay = resolveCourseReplaySeed(fresh, 67)
+  const count = courseGateCountPreview(replay)!
+  expect(count).toBe(generateMission(67, replay.terrainTheme!).goals.gates)
+  expect(sortieContractDetailForSeed(replay.contractSeed, count, true)).toBe(`LAND UNDER ${53 + count * 3}S`)
+  expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), 6))).toBe(100)
+  expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('training-orbit'), 67))).toBe(15)
+  expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('free-flight'), 6))).toBe(0)
+  for (const id of ['daily-ops', 'weekly-ops', 'monthly-ops']) {
+    const course = resolveCourseDefinition(courseDefinitionForId(id), Date.UTC(2026,9,22))
+    expect(courseGateCountPreview(course)).toBe(generateMission(course.seed!, course.terrainTheme!).goals.gates)
+  }
 })

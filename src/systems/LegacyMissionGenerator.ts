@@ -1,3 +1,4 @@
+import { MIN_MISSION_GATES } from './MissionGates'
 import { sortieContractLabelForSeed } from './SortieContract'
 import { generateMission, type GeneratedMissionSpec } from './MissionGenerator'
 import type { CourseDefinition } from './CourseLibrary'
@@ -102,7 +103,7 @@ export function legacyTerrainTheme(course: CourseDefinition): MissionTheme | nul
   const recipe = LEGACY_TERRAIN_RECIPES[course.profile] ?? null
   const identitySeed = course.contractSeed ?? course.seed
   if (!recipe || !course.contractCatalog || identitySeed === null) return recipe
-  const objective = sortieContractLabelForSeed(identitySeed, 5, true)
+  const objective = sortieContractLabelForSeed(identitySeed, MIN_MISSION_GATES, true)
   if (objective === 'WATERWAY TOUR') return 'waterway-run'
   if (objective === 'WATER RUN' || objective === 'WATER SKIM') return 'coastal-island-run'
   if (objective === 'BIOME TOUR' || objective === 'SETTLEMENT TOUR' || objective === 'SCOUT') return 'mountain-valley-run'
