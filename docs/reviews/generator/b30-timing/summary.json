@@ -1,0 +1,111 @@
+{
+  "pass": true,
+  "method": "Two separate capture-free, profiler-free production-mode browser completion flights at 1280x720 Balanced. Native RAF trace, existing controls-only pilot and ordinary physics/terrain/contact/scoring. No tests or builds overlap either measurement. The same build as the inspected visual flights is used; only Version.ts release metadata changes for 10.996. Different themes and seeds, so this is a bounded stress check, not a causal FPS comparison or long-duration memory certification. Raw JSON gzip retains every interval, source hash, refill and sample. Reproduce using scripts/build-generator-review.mjs and scripts/review-generator.mjs with REVIEW_CAPTURE=0 and the listed course/seed.",
+  "rows": [
+    {
+      "mission": "desert-run",
+      "seed": 67,
+      "gates": 15,
+      "passed": 15,
+      "refills": 15,
+      "score": 102324,
+      "medal": "gold",
+      "timeAllowanceSec": 140.7415999837381,
+      "simulationSeconds": 104.54999999999535,
+      "recordId": "seed:67:generated-desert:r32:l33:q46",
+      "status": "landed",
+      "phase": "complete",
+      "metrics": {
+        "frames": 4516,
+        "fps": 42.87514086800428,
+        "p50": 16.699999999999818,
+        "p95": 50,
+        "max": 133.40000000000146,
+        "over50": 70,
+        "over100": 6,
+        "heapMB": 45.02350616455078
+      },
+      "peakSampledHeapMB": 80.52832221984863,
+      "coverageMissesAfter10Sec": 0,
+      "runtimeErrors": [],
+      "receipt": "docs/reviews/generator/b30-timing/desert-run-67/run.json.gz",
+      "receiptSha256": "f82050fa4392d36cfa01b8c4488f5e5f72c3cb0b2110d58f9f70062cf70eb825",
+      "buildId": "b7e96be6b6890d62f9f136f311d8bbdac0536d27016bdc8e3c9d8de8ea701f79",
+      "sourceDifferenceAtFinalProof": [
+        "src/core/Version.ts"
+      ],
+      "over100Intervals": [
+        {
+          "start": 13271.1,
+          "end": 13387.7,
+          "ms": 116.60000000000036,
+          "sinceLaunchMs": 6940.200000023842
+        },
+        {
+          "start": 14337.8,
+          "end": 14454.4,
+          "ms": 116.60000000000036,
+          "sinceLaunchMs": 8006.900000023841
+        },
+        {
+          "start": 17520.9,
+          "end": 17637.6,
+          "ms": 116.69999999999709,
+          "sinceLaunchMs": 11190.000000023843
+        },
+        {
+          "start": 18620.9,
+          "end": 18754.2,
+          "ms": 133.29999999999927,
+          "sinceLaunchMs": 12290.000000023843
+        },
+        {
+          "start": 19837.5,
+          "end": 19970.9,
+          "ms": 133.40000000000146,
+          "sinceLaunchMs": 13506.600000023842
+        },
+        {
+          "start": 20937.5,
+          "end": 21054.1,
+          "ms": 116.59999999999854,
+          "sinceLaunchMs": 14606.600000023842
+        }
+      ]
+    },
+    {
+      "mission": "mountain-valley-run",
+      "seed": 6,
+      "gates": 100,
+      "passed": 100,
+      "refills": 100,
+      "score": 98386,
+      "medal": "gold",
+      "timeAllowanceSec": 145.67538051723398,
+      "simulationSeconds": 94.93333333332923,
+      "recordId": "seed:6:generated-valley:r32:l33:q46",
+      "status": "landed",
+      "phase": "complete",
+      "metrics": {
+        "frames": 3657,
+        "fps": 38.32148339873951,
+        "p50": 16.70000000001164,
+        "p95": 50,
+        "max": 83.29999999999563,
+        "over50": 123,
+        "over100": 0,
+        "heapMB": 53.58608531951904
+      },
+      "peakSampledHeapMB": 74.25160503387451,
+      "coverageMissesAfter10Sec": 0,
+      "runtimeErrors": [],
+      "receipt": "docs/reviews/generator/b30-timing/mountain-valley-run-6/run.json.gz",
+      "receiptSha256": "e87a47a3dbd9286cb93c124d766cadd56b3578ec8c09a6f176d152a99e80d398",
+      "buildId": "b7e96be6b6890d62f9f136f311d8bbdac0536d27016bdc8e3c9d8de8ea701f79",
+      "sourceDifferenceAtFinalProof": [
+        "src/core/Version.ts"
+      ],
+      "over100Intervals": []
+    }
+  ]
+}

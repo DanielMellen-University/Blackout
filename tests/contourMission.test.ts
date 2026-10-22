@@ -9,7 +9,7 @@ import { FEATURED_MISSION_IDS } from '../src/ui/MissionPickerLayout'
 
 // Use the actual generated runway pad and ground, rather than a flat fixture.
 describe('Contour circuit', () => {
-  it.each([42, 73, 808])('builds a deterministic five-gate corridor on seed %s and leaves existing routes unchanged', seed => {
+  it.each([42, 73, 808])('builds a deterministic 15-gate fallback corridor on seed %s and leaves existing routes unchanged', seed => {
     setWorldSeed(seed); clearOpsPad()
     const pad = findPlayableSpawn()!
     setOpsPad(pad.x, pad.z, pad.y, pad.yaw)

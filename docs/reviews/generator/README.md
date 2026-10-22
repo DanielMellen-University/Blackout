@@ -1,5 +1,8 @@
 # Approved mission generator and five existing themes
 
+Current gate-count decision: Daniel approved 15 to 100 ordered gates on October 22, 2026. See [b30 implementation and proof](gate-counts-b30.md). The five-gate and 25% refill descriptions below document the original builds and receipts.
+
+
 Current approval: Oct 22 option B permits only gate, spawn and theme mismatch polish for the 72 migrated generator missions, followed by proof and docs synchronization. Exactly five themes remain approved: Desert run, Mountain valley run, Coastal island run, Volcanic run and Waterway. The [10.993 polish proof](mission-polish-10.993.md) records the final all-mission findings and verification. River Run now uses the existing inland Waterway recipe; the other 71 fixed mappings retain their recipes. Any further theme, mission, mission type, objective, feature, system, mode or roadmap item requires separate approval. No gameplay overhaul is started. Physics b20, nitro b21, the 10.978 WebGL fix, 10.989 frame-spike fixes, collision, water, budgets and paused exclusions remain preserved.
 
 The records below describe the earlier generator foundation and initial theme deliveries. The later [Waterway proof](proof-10.988.md) closes the 72-mission migration, and the current polish review supersedes stale mission copy and River Run mapping in those historical records.

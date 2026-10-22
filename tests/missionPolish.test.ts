@@ -4,7 +4,7 @@ import { auditMissionGeometry } from '../scripts/lib/mission-polish'
 
 const fixed = COURSE_LIBRARY.filter(c => c.seed !== null)
 it('covers exactly the 72 migrated fixed missions', () => { expect(fixed).toHaveLength(72) })
-for (const course of fixed) it.each([42, 1337, 9001])(`${course.id} seed %s has a safe spawn, clear gate disks and ordered bounded triggers`, seed => {
+for (const course of fixed) it.each([...new Set([42, 1337, 9001, course.seed!])])(`${course.id} seed %s has a safe spawn, clear gate disks and ordered bounded triggers`, seed => {
   const row = auditMissionGeometry(course, seed)
   expect(row.gates).toBeGreaterThanOrEqual(15)
   expect(row.gates).toBeLessThanOrEqual(100)

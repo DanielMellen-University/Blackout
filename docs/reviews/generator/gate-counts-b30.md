@@ -31,4 +31,19 @@ Part 1, 10.995:
 - The initial broad suite had 28 assertions tied to old gate positions/counts and three unrelated five-second test timeouts under default worker contention. Updated affected checks and isolated weather/river/pond regressions pass with two workers. A complete two-worker suite follows in Part 2.
 - Browser visuals use the production-mode review build with the existing external controls-only pilot. No aircraft pose, velocity, gate state, physics, clock or scoring overrides are used. Desert seed 67 has 15 gates; Mountain Valley seed 6 has 100. Chase and cockpit gate stills and raw receipts are under [b30-visual](b30-visual/). These smoke flights verify appearance and counters, not whole-run completion or timing acceptance.
 
-Part 2 will retain full flights and capture-free frame-time evidence.
+## Part 2, 10.996
+
+`npm test -- --maxWorkers=2` passes all 180 files / 2,741 tests, plus both native frame-metric node tests. No timeout is increased. The fixed-mission geometry matrix now includes each mission's own catalog seed as well as 42, 1337 and 9001. Production build, TypeScript and release metadata checks pass with the existing Vite large-chunk advisory.
+
+The repeated [all-catalog controls simulation](b30-simulation/simulation.json) passes 216 cases across all 72 fixed identities, with zero misses and touchdown inside the runway footprint. The [endpoint simulation](b30-extremes/simulation.json) passes another 15 cases across five representative missions, including exactly 15 gates, Valley 100 and Waterway 100. These are 60 Hz controls-only flights using production physics and analytic terrain, without wind or streamed mesh. Browser evidence supplies rendered contact and timing checks.
+
+Both full production-mode browser runs land, earn gold, accept every gate, receive every scaled refill and open the completion panel. Runtime errors and sampled resident-coverage misses after ten seconds are zero. Source hashes match the inspected visual build; only Version.ts release metadata advances. See the [machine summary](b30-timing/summary.json), [15-gate raw receipt](b30-timing/desert-run-67/run.json.gz) and [100-gate raw receipt](b30-timing/mountain-valley-run-6/run.json.gz). Gzip preserves every native frame interval, sample, award and immutable build manifest without expanding the repository with large JSON text.
+
+| Flight | Gates / refills | Medal / score | FPS | p95 / max ms | >50 / >100 ms | Peak sampled heap |
+| --- | ---: | --- | ---: | --- | ---: | ---: |
+| Desert seed 67 | 15 / 15 | Gold / 102,324 | 42.88 | 50.0 / 133.4 | 70 / 6 | 80.5 MB |
+| Valley seed 6 | 100 / 100 | Gold / 98,386 | 38.32 | 50.0 / 83.3 | 123 / 0 | 74.3 MB |
+
+Capture and profiling are off throughout these full flights. No tests, builds or other review browser overlap either measurement. The first ten native intervals are omitted using the existing receipt policy; all later slow intervals are retained. The 100-gate sample has no interval above 100 ms and no return of the earlier large b24-style stall. The 15-gate sample has six 116.6 to 133.4 ms intervals between 6.9 and 14.7 seconds after launch, so it does not meet a strict 100 ms ceiling. Themes and seeds differ, so the FPS and spike counts are not a causal comparison of gate counts. These short runs do not certify long-duration memory or universal stutter-free performance. No heap tuning is made.
+
+A final picker-copy audit found a remaining fixed-five contract preview argument. Its correction follows separately; it does not affect these completed flight or frame measurements.
