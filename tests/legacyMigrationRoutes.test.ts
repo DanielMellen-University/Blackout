@@ -20,7 +20,7 @@ for (const course of COURSE_LIBRARY.filter(c => c.seed !== null && !LEGACY_MIGRA
       expect(mission.routeProfile).toBe(course.profile)
       expect(mission.scoringFocus).toBe(scoringFocusForModifier(adapted.modifier!))
       expect(mission.routeFallbackUsed).toBe(false)
-      expect(mission.totalGates).toBe(5)
+      expect(mission.totalGates).toBe(adapted.spec.goals.gates)
       const route=buildMissionRoute(spec.start.x,spec.start.y,spec.start.z,spec.start.yaw,course.profile!,adapted.modifier)
       let previous=spec.start
       for(const [leg,point] of route.entries()) {
@@ -40,8 +40,8 @@ for (const course of COURSE_LIBRARY.filter(c => c.seed !== null && !LEGACY_MIGRA
       for(const point of route.slice(-2))expect((point.x-pad.x)*Math.cos(pad.yaw)-(point.z-pad.z)*Math.sin(pad.yaw)).toBeCloseTo(0,5)
       const finish=(quality:number,delay:number)=>{
         const run=new ChallengeRun(null)
-        run.reset('migration-proof',5,mission.scoringFocus,adapted.contractSeed,course.contractCatalog,mission.timeAllowanceSec)
-        for(let gate=0;gate<5;gate++){for(let t=0;t<12;t++)run.update(1,150);run.recordGate(quality)}
+        run.reset('migration-proof',mission.totalGates,mission.scoringFocus,adapted.contractSeed,course.contractCatalog,mission.timeAllowanceSec)
+        for(let gate=0;gate<mission.totalGates;gate++){run.update(60/mission.totalGates,150);run.recordGate(quality)}
         for(let t=0;t<45+delay;t++)run.update(1,60)
         return run.finishLanding({verticalSpeed:-1,groundSpeed:30,pitchRad:0,rollRad:0})!
       }
@@ -93,7 +93,7 @@ it('keeps three shared periods per rotating mission deterministic through the ge
     const mission=new MissionSystem(new Scene())
     try{
       mission.start(spec.start.x,spec.start.y,spec.start.z,spec.start.yaw,c.profile!,modifier)
-      expect(mission.totalGates).toBe(5);expect(mission.routeFallbackUsed).toBe(false)
+      expect(mission.totalGates).toBe(spec.goals.gates);expect(mission.routeFallbackUsed).toBe(false)
       expect(mission.scoringFocus).toBe(scoringFocusForModifier(modifier))
       const route=buildMissionRoute(spec.start.x,spec.start.y,spec.start.z,spec.start.yaw,c.profile!,modifier)
       let previous=spec.start

@@ -124,13 +124,13 @@ export function generateLegacyMission(course: CourseDefinition, flightSeed: numb
   if (!course.profile || identitySeed === null) return null
   const theme = legacyTerrainTheme(course)
   if (!theme) return null
-  const spec = generateLegacyTerrain(flightSeed, theme)
+  const spec = generateLegacyTerrain(flightSeed, theme, course.profile === 'orbit')
   return { mission: { ...course }, spec, modifier: LEGACY_MISSION_MODIFIERS[course.id], contractSeed: identitySeed }
 }
 
 /** Reuse precisely the existing recipe, with migrated landscape/route identity. */
-export function generateLegacyTerrain(flightSeed: number, theme: MissionTheme): GeneratedMissionSpec {
-  const base = generateMission(flightSeed, theme)
+export function generateLegacyTerrain(flightSeed: number, theme: MissionTheme, training = false): GeneratedMissionSpec {
+  const base = generateMission(flightSeed, theme, training)
   // Separate every migrated route and landscape from both its old records and
   // the five theme records. Flight physics retains the b20 revision.
   return { ...base, terrain: { ...base.terrain,

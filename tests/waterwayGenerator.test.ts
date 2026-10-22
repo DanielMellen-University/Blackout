@@ -9,9 +9,13 @@ import { buildMissionRoute, missionLegClearance } from '../src/systems/Mission'
 import { coastField } from '../src/world/Coastline'
 
 afterEach(() => { setTerrainProfile(null); clearOpsPad() })
-it('preserves the four original specs and sampled landscapes exactly', () => {
+it('preserves the four original landscapes and separates changed routes', () => {
   for (const { spec, samples } of baseline) {
-    expect(generateMission(spec.seed, spec.theme as MissionTheme)).toEqual(spec)
+    const current = generateMission(spec.seed, spec.theme as MissionTheme)
+    expect(current.terrain).toEqual({ ...spec.terrain, routeRevision: spec.terrain.routeRevision + 10 })
+    expect(current.start).toEqual(spec.start)
+    expect(current.landingRunway).toEqual(spec.landingRunway)
+    expect(current.course).not.toEqual(spec.course)
     setWorldSeed(spec.seed); setTerrainProfile(spec.terrain as Parameters<typeof setTerrainProfile>[0])
     expect(spec.course.map(p => sampleGeography(p.x, p.z))).toEqual(samples)
   }
@@ -21,8 +25,9 @@ it.each([42, 1337, 9001, 31415, ...Array.from({ length: 32 }, (_, i) => i + 70)]
   expect(generateMission(seed, 'waterway-run')).toEqual(spec)
   setWorldSeed(seed); setTerrainProfile(spec.terrain); setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
   expect(spec.terrain.dry).toBe(false)
-  const bodies = spec.course.slice(0, 2).map(p => waterBodyFromClimate(sampleGeography(p.x, p.z)))
-  expect(bodies).toEqual(['river', 'lake'])
+  const bodies = spec.course.map(p => waterBodyFromClimate(sampleGeography(p.x, p.z)))
+  expect(bodies).toContain('river')
+  expect(bodies).toContain('lake')
   const local = (r: number, f: number) => ({ x: pad.x + Math.cos(pad.yaw) * r + Math.sin(pad.yaw) * f,
     z: pad.z - Math.sin(pad.yaw) * r + Math.cos(pad.yaw) * f })
   for (let f = -1400; f < 80; f += 40) {

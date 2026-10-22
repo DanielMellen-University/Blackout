@@ -114,27 +114,27 @@ export const COURSE_LIBRARY = [
   },
   {
     id: 'desert-run', label: 'Desert run',
-    detail: 'A new seeded desert world. Race five low gates through dunes and dry washes, then return to your generated runway and land for a medal.',
+    detail: 'A new seeded desert world. Race 15 to 100 low gates through dunes and dry washes, then return to your generated runway and land for a medal.',
     seed: null, profile: 'generated-desert', weather: 'clear', timeOfDay: .46,
   },
   {
     id: 'mountain-valley-run', label: 'Mountain valley run',
-    detail: 'A new seeded giant valley between immense mountains. Thread five gates along the wide valley floor, then return to your generated runway and land for a medal.',
+    detail: 'A new seeded giant valley between immense mountains. Thread 15 to 100 gates along the wide valley floor, then return to your generated runway and land for a medal.',
     seed: null, profile: 'generated-valley', weather: 'clear', timeOfDay: .5,
   },
   {
     id: 'coastal-island-run', label: 'Coastal island run',
-    detail: 'Follow five gates along beaches and sea cliffs, cross open island channels, then land at your generated coastal runway for a medal.',
+    detail: 'Follow 15 to 100 gates along beaches and sea cliffs, cross open island channels, then land at your generated coastal runway for a medal.',
     seed: null, profile: 'generated-coastal', weather: 'clear', timeOfDay: .48,
   },
   {
     id: 'generated-volcanic-run', label: 'Volcanic run (generated)',
-    detail: 'Thread five gates between giant volcanic cones, dark lava fields and calderas, then land at your generated runway for a medal.',
+    detail: 'Thread 15 to 100 gates between giant volcanic cones, dark lava fields and calderas, then land at your generated runway for a medal.',
     seed: null, profile: 'generated-volcanic', weather: 'clear', timeOfDay: .44,
   },
   {
     id: 'waterway-run', label: 'Waterway',
-    detail: 'Fly five gates along inland river valleys and lake channels, then return to your generated runway and land for a medal.',
+    detail: 'Fly 15 to 100 gates along inland river valleys and lake channels, then return to your generated runway and land for a medal.',
     seed: null, profile: 'generated-waterway', weather: 'clear', timeOfDay: .48,
   },
   {
@@ -183,7 +183,7 @@ export const COURSE_LIBRARY = [
   {
     id: 'contour-circuit',
     label: 'Contour circuit',
-    detail: 'Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best.',
+    detail: 'Follow 15 to 100 terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best.',
     seed: 42,
     profile: 'contour',
     weather: 'clear',

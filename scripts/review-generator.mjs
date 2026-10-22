@@ -7,7 +7,7 @@ const seeds = (process.env.REVIEW_SEEDS || '42').split(',')
 const part = process.env.REVIEW_PART || 'a'
 const capture = process.env.REVIEW_CAPTURE === '1'
 const profile = process.env.REVIEW_PROFILE === '1'
-const visualGate = Math.max(1, Math.min(5, Number(process.env.REVIEW_VISUAL_GATE) || 1))
+const visualGate = Math.max(1, Math.min(100, Number(process.env.REVIEW_VISUAL_GATE) || 1))
 const smoke = part === 'a' || process.env.REVIEW_SMOKE === '1'
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/snap/bin/chromium', args: ['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface'] })
 try {
@@ -137,8 +137,8 @@ try {
    await cdp.send('IO.close',{handle:stream})
    await writeFile(`${dir}/trace.json.gz`,gzipSync(trace))
   }
-  const refillPass=final.nitroRefills.length >= (smoke ? 1 : 5) && final.nitroRefills.every(r=>Math.abs(r.after.fraction-Math.min(1,r.before.fraction+.25))<1e-6)
-  const pass=refillPass&&errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?(shot||(!capture&&final.next>=1)):final.status==='landed'&&final.phase==='complete'&&final.next===5&&final.resultsOpen)
+  const refillPass=final.nitroRefills.length >= (smoke ? 1 : final.total) && final.nitroRefills.every(r=>Math.abs(r.after.fraction-Math.min(1,r.before.fraction+1.25/final.total))<1e-6)
+  const pass=refillPass&&errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?(shot||(!capture&&final.next>=1)):final.status==='landed'&&final.phase==='complete'&&final.next===final.total&&final.resultsOpen)
   await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,capture,profile,frameTimes,captureWindows,captureFences,timingEligible,timingStart,browserInfo,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
   console.log('RESULT',JSON.stringify({theme,seed,part,smoke,timingEligible,pass,metrics}))
   await context.close()

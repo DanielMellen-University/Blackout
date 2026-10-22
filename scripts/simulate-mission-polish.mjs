@@ -52,16 +52,16 @@ try {
    for(let step=0;step<60*360;step++) {
     controls.before(1/60); aircraft.step(1/60,step*1000/60); seconds=(step+1)/60
     const event=mission.update(aircraft.position.x,aircraft.position.y,aircraft.position.z)
-    if(event==='pass'||event==='complete')refillNitroAtGate(aircraft.nitro)
+    if(event==='pass'||event==='complete')refillNitroAtGate(aircraft.nitro, mission.totalGates)
     if(event==='miss')misses++
     touch=collision.check(aircraft)
     if(seconds<=2 && ['crash','ditch'].includes(touch))spawnSafe=false
     if(!aircraft.onGround)airborne=true
-    if(['crash','ditch'].includes(touch)||airborne&&mission.next===5&&aircraft.onGround)break
+    if(['crash','ditch'].includes(touch)||airborne&&mission.next===mission.totalGates&&aircraft.onGround)break
    }
    const dx=aircraft.position.x-pad.x,dz=aircraft.position.z-pad.z
    const localX=dx*Math.cos(pad.yaw)-dz*Math.sin(pad.yaw),localZ=dx*Math.sin(pad.yaw)+dz*Math.cos(pad.yaw)
-   const pass=spawnSafe&&airborne&&mission.next===5&&aircraft.onGround&&!['crash','ditch'].includes(touch)&&Math.abs(localX)<9&&Math.abs(localZ)<60
+   const pass=spawnSafe&&airborne&&mission.next===mission.totalGates&&aircraft.onGround&&!['crash','ditch'].includes(touch)&&Math.abs(localX)<9&&Math.abs(localZ)<60
    const row={mission:course.id,seed,theme:spec.theme,pass,spawnSafe,seconds,gates:mission.next,misses,touch,localX,localZ,position:aircraft.position.toArray(),speed:aircraft.speed}
    rows.push(row); console.log(JSON.stringify(row))
   } finally {aircraft.dispose();mission.dispose();setTerrainProfile(null);clearOpsPad()}

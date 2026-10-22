@@ -1,3 +1,4 @@
+import { MAX_MISSION_GATES, MIN_MISSION_GATES, distributeMissionGates } from './MissionGates'
 import { generateMission } from './MissionGenerator'
 import { getTerrainProfile, generatedThemeForProfile } from '../world/TerrainProfile'
 import {
@@ -6,7 +7,7 @@ import {
   ConeGeometry,
   CylinderGeometry,
   DoubleSide,
-  Float32BufferAttribute,
+  BufferAttribute,
   Group,
   Line,
   LineBasicMaterial,
@@ -46,7 +47,7 @@ interface Gate {
   lastAlong: number
 }
 
-const GATE_COUNT = 5
+const AUTHORED_ANCHOR_COUNT = 5
 const GATE_RADIUS = 38
 const ROUTE_RADIUS = 980
 const ROUTE_RADIUS_VARIATION = 150
@@ -224,7 +225,7 @@ export function validateMissionRoute(
   if (pointCount === 0) {
     return { valid: true, issue: 'empty', pointCount, minClearanceMeters: safeClearance }
   }
-  if (pointCount > GATE_COUNT) {
+  if (pointCount > MAX_MISSION_GATES) {
     return { valid: false, issue: 'too-many-points', pointCount, minClearanceMeters: safeClearance }
   }
   let previousX = Number.NaN
@@ -411,12 +412,12 @@ export function buildMissionRoute(
   const generatedTheme = generatedThemeForProfile(safeProfile) ?? (migrated ? activeTerrain.theme : null)
   const wideCorridor = generatedTheme === 'coastal-island-run' || generatedTheme === 'volcanic-run'
   const corridorOffsets = wideCorridor ? [-52, 0, 52] : ROUTE_CORRIDOR_OFFSETS
-  if (generatedTheme) points = generateMission(getWorldSeed(), generatedTheme).course.map(point => ({ ...point }))
+  if (generatedTheme) points = generateMission(getWorldSeed(), generatedTheme, safeProfile === 'orbit').course.map(point => ({ ...point }))
 
   if (safeProfile === 'contour' && !migrated) {
     // Five bounded choices reuse the existing orbit and gate corridor. Only
     // this new profile adapts its centreline to the generated ground relief.
-    // Keep departure aligned with the runway and the same five-gate pool.
+    // Keep departure aligned with the runway and the bounded gate pool.
     points = points.map((point, index) => {
       const candidates = index === 0 || index >= 3 ? [0] : [-180, 0, 180]
       let best = { ...point, y: Number.POSITIVE_INFINITY }
@@ -462,6 +463,8 @@ export function buildMissionRoute(
     }
   }
 
+  if (!generatedTheme) points = distributeMissionGates(points, MIN_MISSION_GATES)
+
   let previousX = safeSpawnX
   let previousY = safeSpawnY
   let previousZ = safeSpawnZ
@@ -493,9 +496,15 @@ export function buildMissionRoute(
           // A small departure reserve covers interpolation between the
           // existing fixed probes without changing their count or width.
           const clearance = missionLegClearance(i, t * legLength, legLength)
-          const needed = ground + clearance + (i === 0 ? 2 : 0) + (wideCorridor ? clearance / ROUTE_CLEARANCE : 0)
-          const endpointY = (needed - previousY * (1 - t)) / t
-          requiredY = Math.max(requiredY, endpointY)
+          const needed = ground + clearance + 4
+          if (i === 0) {
+            requiredY = Math.max(requiredY, (needed - previousY * (1 - t)) / t)
+          } else {
+            // Both ends clear the entire short leg, avoiding steep endpoint
+            // corrections when many gates share one terrain rise.
+            points[i - 1]!.y = Math.max(points[i - 1]!.y, needed)
+            requiredY = Math.max(requiredY, needed)
+          }
         }
       }
     }
@@ -503,6 +512,18 @@ export function buildMissionRoute(
     previousX = point.x
     previousY = point.y
     previousZ = point.z
+  }
+
+  // Raise neighbouring gates to limit climb/descent to 12 degrees. Raising
+  // preserves the clearance envelope, including every interpolated leg.
+  const slope = Math.tan(12 * Math.PI / 180)
+  for (let i = points.length - 2; i >= 0; i--) {
+    const a = points[i]!, b = points[i + 1]!
+    a.y = Math.max(a.y, b.y - slope * Math.hypot(b.x - a.x, b.z - a.z))
+  }
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!, b = points[i]!
+    b.y = Math.max(b.y, a.y - slope * Math.hypot(b.x - a.x, b.z - a.z))
   }
 
   let priorX = safeSpawnX
@@ -549,7 +570,7 @@ function routeOffsets(
   })
   if (profile === 'weather') {
     // A wider downwind and a long inbound leg provide space to establish the
-    // approach in reduced visibility. Reuse the same five gates and clearance.
+    // approach in reduced visibility. Reuse the authored anchors and clearance.
     const side = 1200 + seedPhase * 120
     return [
       { forward: 1000, right: 0, height: 140 },
@@ -819,9 +840,9 @@ function routeOffsets(
     ].map(shape)
   }
 
-  return Array.from({ length: GATE_COUNT }, (_, i) => {
+  return Array.from({ length: AUTHORED_ANCHOR_COUNT }, (_, i) => {
     const angle = seedPhase * ROUTE_ANGLE_VARIATION +
-      (i / GATE_COUNT) * Math.PI * 2 +
+      (i / AUTHORED_ANCHOR_COUNT) * Math.PI * 2 +
       Math.sin(seedPhase * 2.1 + i * 1.73) * ROUTE_ANGLE_VARIATION
     const radius = ROUTE_RADIUS +
       Math.sin(seedPhase * 1.7 + i * 2.21) * ROUTE_RADIUS_VARIATION
@@ -1112,7 +1133,7 @@ export class MissionSystem {
   private readonly routeTraceGeometry: BufferGeometry
   private readonly routeTraceMaterial: LineBasicMaterial
   private readonly routeTrace: Line
-  private readonly routeTracePositions = new Float32Array(GATE_COUNT * 3)
+  private readonly routeTracePositions = new Float32Array(MAX_MISSION_GATES * 3)
   private routeTraceRequested = true
   private routeFallbackUsedValue = false
   private passFlashStartedAt = 0
@@ -1164,7 +1185,7 @@ export class MissionSystem {
     this.routeTraceGeometry = new BufferGeometry()
     this.routeTraceGeometry.setAttribute(
       'position',
-      new Float32BufferAttribute(this.routeTracePositions, 3),
+      new BufferAttribute(this.routeTracePositions, 3),
     )
     this.routeTraceGeometry.setDrawRange(0, 0)
     this.routeTraceMaterial = new LineBasicMaterial({
@@ -1180,7 +1201,7 @@ export class MissionSystem {
     this.routeTrace.visible = false
     this.root.add(this.routeTrace)
     this.gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
-    for (let i = 0; i < GATE_COUNT; i++) {
+    for (let i = 0; i < MAX_MISSION_GATES; i++) {
       const ring = new Mesh(this.gateGeo, this.waitMat)
       ring.name = `gate_${i}`
       const root = new Group()
@@ -1279,6 +1300,7 @@ export class MissionSystem {
       ? 'FREE FLIGHT / EXPLORE FREELY'
       : [
         `ROUTE ${routeLabel}`,
+        `${route.length} GATES`,
         summary.challengeLabel,
         summary.modifierLabel,
         summary.scoringFocusLabel,

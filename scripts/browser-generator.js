@@ -88,7 +88,7 @@ window.__training={
  state:()=>({seconds:training.seconds,stage:training.stage,waypoint:training.waypoint,target:training.target,events:training.events,
   position:aircraft.position.toArray(),velocity:aircraft.velocity.toArray(),speed:aircraft.speed,agl:aircraft.altitudeAgl,status:aircraft.status,onGround:aircraft.onGround,
   attitude:{...attitudeFromOrientation(aircraft.orientation)},controls:{...aircraft.controls},spawn:{...world.spawn},runway:world.runway.position.toArray(),
-  gates:world.mission.gates.map(g=>({position:g.pos.toArray(),fwd:g.fwd.toArray(),passed:g.passed})),next:world.mission.next,
+  gates:world.mission.gates.map(g=>({position:g.pos.toArray(),fwd:g.fwd.toArray(),passed:g.passed})),next:world.mission.next,total:world.mission.totalGates,
   seed:world.worldSeed,freeStages:training.freeStages||[],contact:training.contact||null,loadFactor:aircraft.loadFactor,engine:{...aircraft.engineState},fuel:aircraft.fuel.fraction,weather:{...world.atmosphere.weatherSnapshot},result:challenge.result,recordId:activeSortie.recordId,impact:aircraft.impact?{point:aircraft.impact.point.toArray(),verticalVelocity:aircraft.impact.verticalVelocity,surface:aircraft.impact.surface}:null,
   course:activeSortie.course.id,phase:challenge.phase,briefing:{visible:flightBriefing.visible,stage:flightBriefing.stage,hint:hudFrame.controlHint},navTarget:hudFrame.navTarget,navGlide:hudFrame.navGlide,resultsOpen:results.open,
   paused:menu.paused,playing,camera:cameras.mode})

@@ -1,3 +1,4 @@
+import { BASELINE_GATE_AWARDS, MAX_MISSION_GATES } from '../systems/MissionGates'
 import { flightConfig as C } from './flightConfig'
 
 export interface NitroState {
@@ -29,8 +30,9 @@ export function updateNitro(state: NitroState, dt: number, requested: boolean): 
   return burning
 }
 /** Called only by an accepted gate crossing, including the final gate. */
-export function refillNitroAtGate(state: NitroState): void {
-  state.fraction = Math.min(1, Math.max(0, state.fraction) + C.nitroGateRefill)
+export function refillNitroAtGate(state: NitroState, totalGates = BASELINE_GATE_AWARDS): void {
+  const count = Number.isFinite(totalGates) ? Math.max(1, Math.min(MAX_MISSION_GATES, totalGates)) : BASELINE_GATE_AWARDS
+  state.fraction = Math.min(1, Math.max(0, state.fraction) + C.nitroGateRefill * BASELINE_GATE_AWARDS / count)
   if (state.fraction >= C.nitroRestartFraction) state.depleted = false
   state.gateRefills += 1
 }

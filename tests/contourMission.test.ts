@@ -17,7 +17,7 @@ describe('Contour circuit', () => {
     try {
       const orbit = buildMissionRoute(x,y,z,pad.yaw,'orbit','steady')
       const route = buildMissionRoute(x,y,z,pad.yaw,'contour','steady')
-      expect(route).toHaveLength(5)
+      expect(route).toHaveLength(15)
       expect(buildMissionRoute(x,y,z,pad.yaw,'contour','steady')).toEqual(route)
       expect(buildMissionRoute(x,y,z,pad.yaw,'orbit','steady')).toEqual(orbit)
       expect(route).not.toEqual(orbit)
@@ -35,7 +35,7 @@ describe('Contour circuit', () => {
       const mission=new MissionSystem(new Scene())
       mission.start(x,y,z,pad.yaw,'contour','steady')
       expect(mission.routeProfile).toBe('contour')
-      expect(mission.totalGates).toBe(5)
+      expect(mission.totalGates).toBe(15)
       expect(mission.routeFallbackUsed).toBe(false)
       expect(mission.timeAllowanceSec).toBeGreaterThan(45)
       mission.dispose()
@@ -45,7 +45,7 @@ describe('Contour circuit', () => {
   it('shows a replay seed record without replacing the featured default or another course', () => {
     const featured=courseDefinitionForId('contour-circuit')
     const replay=resolveCourseReplaySeed(featured,73)
-    expect(courseRunId(replay)).toBe('seed:73:generated-valley:r32:l133:q136:mission:contour-circuit')
+    expect(courseRunId(replay)).toBe('seed:73:generated-valley:r32:l133:q146:mission:contour-circuit')
     expect(replay.detail).toBe(featured.detail)
     expect(featured.seed).toBe(42)
     expect(resolveCourseReplaySeed(featured,null).seed).toBeNull()
@@ -54,13 +54,13 @@ describe('Contour circuit', () => {
     expect(resolveCourseReplaySeed(training,73).seed).toBe(73)
     const active=new CourseSession(Date.now()).capture('contour-circuit',73,'contour')
     expect(active.course.seed).toBe(73)
-    expect(active.recordId).toBe('seed:73:generated-valley:r32:l133:q136:mission:contour-circuit')
+    expect(active.recordId).toBe('seed:73:generated-valley:r32:l133:q146:mission:contour-circuit')
   })
 
   it('is featured and uses the existing per-seed course record identity',()=>{
     expect(FEATURED_MISSION_IDS).toContain('contour-circuit')
     expect(courseDefinitionForId('contour-circuit')).toMatchObject({profile:'contour',seed:42,weather:'clear'})
-    expect(courseSessionId('contour-circuit',42,'contour')).toBe('seed:42:generated-valley:r32:l133:q136:mission:contour-circuit')
-    expect(courseSessionId('contour-circuit',73,'contour')).toBe('seed:73:generated-valley:r32:l133:q136:mission:contour-circuit')
+    expect(courseSessionId('contour-circuit',42,'contour')).toBe('seed:42:generated-valley:r32:l133:q146:mission:contour-circuit')
+    expect(courseSessionId('contour-circuit',73,'contour')).toBe('seed:73:generated-valley:r32:l133:q146:mission:contour-circuit')
   })
 })

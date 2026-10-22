@@ -2,11 +2,11 @@
 
 ## 1. Status and goals
 
-Plan only. Daniel approved this docs-only scope on October 22, 2026 via CoS, b29 option C, narrowed to Part 1. Roadmap step 4 awaits Daniel's choices. No gameplay implementation or first slice is approved. Every overhaul phase and every design choice needs separate approval from Daniel before any code is written. Recommendations below are proposals, not decisions or new approved roadmap items.
+Plan only. Daniel approved this docs-only scope on October 22, 2026 via CoS, b29 option C, narrowed to Part 1. Roadmap step 4 awaits Daniel's choices. The only gameplay implementation approved since this scope is Daniel's direct October 22, 2026 decision for b30: scored missions have a deterministic minimum of 15 and maximum of 100 ordered gates. No other overhaul implementation or first slice is approved. Every overhaul phase and every design choice needs separate approval from Daniel before any code is written. Recommendations below are proposals, not decisions or new approved roadmap items.
 
 Goals proposed for approval:
 
-- Make the existing loop clear: choose a mission, understand its goal, take off, fly five ordered gates, return, land, review the result, and choose a meaningful retry or next mission.
+- Make the existing loop clear: choose a mission, understand its goal, take off, fly 15 to 100 ordered gates, return, land, review the result, and choose a meaningful retry or next mission.
 - Make progression understandable and compatible with generated worlds and bounded existing records.
 - Explain what earns score and medals, including the difference between a gate split and a complete-circuit time.
 - Give briefing, flight and debrief consistent priorities without adding mission types, themes or systems.
@@ -63,7 +63,7 @@ Recommendation: retain weights, medal thresholds, bonus rules and the ceiling fo
 Each item is a candidate design direction requiring separate Daniel approval:
 
 - Briefing: prioritize the existing primary objective, conditions, takeoff controls and one current target. Keep launch explicit and preserve keyboard/gamepad access.
-- Flight: retain five ordered gates, nitro refills, home-runway return and landing completion. Use existing navigation, instruments and guidance. Preserve Free flight's open, unscored loop.
+- Flight: use Daniel's approved 15 to 100 ordered gates (October 22, 2026), nitro refills, home-runway return and landing completion. Use existing navigation, instruments and guidance. Preserve Free flight's open, unscored loop.
 - Debrief: prioritize completion/failure, medal and score comparison, landing feedback, then the current next target; keep detailed existing metrics available. Retain retry and choose-mission actions.
 - Ops rotation: retain captured active/retry identities, deterministic shared periods and historical replay. Resolve countdown wording versus reset semantics before touching either.
 - Records: retain the distinction between best score, fastest complete circuit, gate splits and best-score ghost. Preserve current family bounds and historical compatibility.

@@ -35,7 +35,7 @@ it('retains all existing identities and gameplay settings while correcting copy'
     expect(copy.detail).toContain(sortieContractLabelForSeed(course.seed!, 5, resolved.contractCatalog === true))
     expect(resolveCourseReplaySeed(resolved, 9001).detail).toBe(course.detail)
   }
-  expect(details).toBe(39); expect(names).toBe(10)
+  expect(details).toBe(40); expect(names).toBe(10)
 })
 
 it('retains the Free flight label even when clearing a migrated mission', () => {
@@ -65,11 +65,11 @@ for (const course of COURSE_LIBRARY.filter(c => c.seed !== null)) it.each([42, 1
     expect(mission.routeBriefing).toContain(`ROUTE ${labels[spec.theme]}`)
     expect(mission.routeModifier).toBe(adapted.modifier)
     if (course.id === 'river-run') {
-      expect(spec.course.slice(0, 2).map(p => waterBodyFromClimate(sampleGeography(p.x, p.z)))).toEqual(['river', 'lake'])
-      expect(legacyGeneratedRecordId(course, seed)).toContain(':generated-waterway:r32:l136:q139:mission:river-run')
+      expect(spec.course.map(p => waterBodyFromClimate(sampleGeography(p.x, p.z)))).toEqual(expect.arrayContaining(['river', 'lake']))
+      expect(legacyGeneratedRecordId(course, seed)).toContain(':generated-waterway:r32:l136:q149:mission:river-run')
     } else {
-      // The existing 71 mappings and complete specs retain their geometry.
-      expect(spec.course).toEqual(generateMission(seed, old.resolved.terrainTheme).course)
+      // The existing 71 mappings retain their theme and use the new gate distribution.
+      expect(spec.course).toEqual(generateMission(seed, old.resolved.terrainTheme, course.profile === 'orbit').course)
     }
   } finally { mission.dispose() }
 })

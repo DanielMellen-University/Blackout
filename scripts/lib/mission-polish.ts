@@ -21,7 +21,7 @@ export function auditMissionGeometry(course: CourseDefinition, seed: number) {
   try {
     mission.start(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, course.profile!, adapted.modifier)
     const route = buildMissionRoute(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, course.profile!, adapted.modifier)
-    require(!mission.routeFallbackUsed && route.length === 5, 'route fallback or wrong gate count')
+    require(!mission.routeFallbackUsed && route.length === spec.goals.gates && route.length >= 15 && route.length <= 100, 'route fallback or wrong gate count')
     const radius = missionChallengeForProfile(course.profile!) === 'precision' ? 38 * .78 - 2 : 36
     const halfWidth = ['coastal-island-run', 'volcanic-run'].includes(spec.theme) ? 52 : 34
     // Each cell owns sites in its core. Include adjacent cells so a site whose
@@ -54,7 +54,7 @@ export function auditMissionGeometry(course: CourseDefinition, seed: number) {
       const dx = point.x - previous.x, dz = point.z - previous.z, length = Math.hypot(dx, dz)
       minLeg = Math.min(minLeg, length); maxLeg = Math.max(maxLeg, length)
       maxSlope = Math.max(maxSlope, Math.atan2(Math.abs(point.y - previous.y), length) * 180 / Math.PI)
-      require(length > 900 && length < 6500 && maxSlope < 25, 'unreachable gate spacing or slope')
+      require(length > 60 && length < 6500 && maxSlope < 25, 'unreachable gate spacing or slope')
       require(Math.abs(Math.hypot(point.fwdX, point.fwdZ) - 1) < 1e-9 && dx * point.fwdX + dz * point.fwdZ > 0, 'gate faces wrong direction')
       // The world is unbounded. Bound this proof to the generated circuit's
       // existing local envelope, not an invented world boundary.
@@ -95,7 +95,7 @@ export function auditMissionGeometry(course: CourseDefinition, seed: number) {
       cross(-10, radius + .1)
       require(cross(10, radius + .1) === 'miss' && mission.next === index, 'outside radius accepted')
       require(cross(-10, 0) === 'none' && mission.next === index, 'reverse crossing accepted')
-      require(cross(10, radius - .1) === (index === 4 ? 'complete' : 'pass'), 'inside radius rejected')
+      require(cross(10, radius - .1) === (index === route.length - 1 ? 'complete' : 'pass'), 'inside radius rejected')
       require(mission.next === index + 1, 'gate order')
     }
     return { mission: course.id, seed, theme: spec.theme, gates: gates.length, radius, minMargin, minGateClearance, minLeg, maxLeg, maxSlope, buildings: plans.reduce((count, plan) => count + plan.buildings.length, 0), spawn: 'dry, flat, aligned, stationary', routeLabel: mission.routeSummary.label, briefing: mission.routeBriefing }

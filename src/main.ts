@@ -2336,7 +2336,7 @@ export async function boot(): Promise<void> {
           if (event === 'pass') {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
-            refillNitroAtGate(aircraft.nitro)
+            refillNitroAtGate(aircraft.nitro, world.mission.totalGates)
             const comboEligible = Number.isFinite(quality) && quality >= 0.82
             const comboEvent = comboEligible ? recordComboAction('gate') : null
             if (!comboEligible) combo.break()
@@ -2357,7 +2357,7 @@ export async function boot(): Promise<void> {
           if (event === 'complete') {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
-            refillNitroAtGate(aircraft.nitro)
+            refillNitroAtGate(aircraft.nitro, world.mission.totalGates)
             const comboEligible = Number.isFinite(quality) && quality >= 0.82
             const comboEvent = comboEligible ? recordComboAction('gate') : null
             if (!comboEligible) combo.break()

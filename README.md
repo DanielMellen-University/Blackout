@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.994**. Previous roadmap chunk: **10.993**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.995**. Previous roadmap chunk: **10.994**.
 
-Recent changes from **10.994**. Publish the docs-only roadmap step 4 gameplay overhaul scope, based on the current code, with progression, scoring, mission flow, hard limits, candidate phase costs, risks and A/B/C choices. Plan only, awaiting Daniel's choices; every overhaul phase and design choice needs separate approval from Daniel before any code is written. No implementation is approved. See [the gameplay overhaul scope](docs/gameplay/overhaul-scope.md).
+Recent changes from **10.995**. Implement the Oct 22 approved b30 gate-count change: seeded 15 to 100 gate corridors, a reusable 100-gate pool, scaled nitro awards, unchanged score and medal totals, and separate route records. Preserve terrain recipes, flight tuning and paused exclusions. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -25,7 +25,7 @@ Default keyboard controls:
 
 - W / S pitch, A / D yaw, Q / E roll
 - Shift / Ctrl raise or lower throttle
-- Space afterburner with nitro (12 s reserve, 45 s refill, +25% per gate); B speed brake and wheel brake
+- Space afterburner with nitro (12 s reserve, 45 s refill, 125% total gate refill budget shared across the run); B speed brake and wheel brake
 - G landing gear; V light stability assist (trim resumes two seconds after releasing yaw/roll)
 - C cycles chase, orbit, and unobstructed first person; middle mouse looks around in external views
 - P or Escape pauses; R ends the flight and generates a new world

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.995** Implement the Oct 22 approved b30 gate-count change: seeded 15 to 100 gate corridors, a reusable 100-gate pool, scaled nitro awards, unchanged score and medal totals, and separate route records. Preserve terrain recipes, flight tuning and paused exclusions. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).
+
 - **10.994** Publish the docs-only roadmap step 4 gameplay overhaul scope, based on the current code, with progression, scoring, mission flow, hard limits, candidate phase costs, risks and A/B/C choices. Plan only, awaiting Daniel's choices; every overhaul phase and design choice needs separate approval from Daniel before any code is written. No implementation is approved. See [the gameplay overhaul scope](docs/gameplay/overhaul-scope.md).
 - **10.993** Close the approved 72-mission polish pass with gate, spawn and theme proofs on seeds 42, 1337 and 9001, representative browser completions, sampled heap and a comparison against the retained 10.990 frame-spike evidence. Keep the five-theme inventory, physics, nitro, collision, water, budgets and paused exclusions intact. Any further theme or feature requires separate approval. See docs/reviews/generator/mission-polish-10.993.md.
 - **10.992** Correct migrated-mission presentation using only the five existing themes: move River Run to inland Waterway, correct 39 stale descriptions and ten misleading names, and show the actual terrain recipe in route briefings and HUD labels. Preserve all 72 mission IDs, objectives, weather, scoring and flight tuning. This closes only Part B of the Oct 22 option B polish pass; any further theme or feature requires separate approval. See docs/reviews/generator/mission-polish-10.992.md.

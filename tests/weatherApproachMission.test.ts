@@ -14,10 +14,10 @@ describe('Weather approach', () => {
     expect(course.seed).toBe(seed)
     expect(course.weather).toBe('rain')
     expect(course.windSide).toBe('right')
-    expect(courseRunId(course)).toBe(`seed:${seed}:generated-valley:r32:l133:q136:mission:weather-approach`)
+    expect(courseRunId(course)).toBe(`seed:${seed}:generated-valley:r32:l133:q146:mission:weather-approach`)
     const active = new CourseSession(Date.now()).capture('weather-approach', seed, 'weather')
     expect(active.course).toEqual(course)
-    expect(active.recordId).toBe(`seed:${seed}:generated-valley:r32:l133:q136:mission:weather-approach`)
+    expect(active.recordId).toBe(`seed:${seed}:generated-valley:r32:l133:q146:mission:weather-approach`)
     setWorldSeed(seed); clearOpsPad()
     const pad = findPlayableSpawn()!
     setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
@@ -25,7 +25,7 @@ describe('Weather approach', () => {
     try {
       const old = buildMissionRoute(x,y,z,pad.yaw,'contour','steady')
       const route = buildMissionRoute(x,y,z,pad.yaw,'weather','steady')
-      expect(route).toHaveLength(5)
+      expect(route).toHaveLength(15)
       expect(buildMissionRoute(x,y,z,pad.yaw,'weather','steady')).toEqual(route)
       expect(route).not.toEqual(old)
       expect(buildMissionRoute(x,y,z,pad.yaw,'contour','steady')).toEqual(old)

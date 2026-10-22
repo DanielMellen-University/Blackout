@@ -27,7 +27,7 @@ for(const course of COURSE_LIBRARY.filter(c=>c.seed!==null&&c.contractCatalog&&!
  it.each([42,1337,9001])(`${course.id} retains its objective and bounded score on generated seed %s`,seed=>{
   const adapted=generateLegacyMission(course,seed)!,{spec}=adapted,pad=spec.landingRunway,t=spec.terrain
   setWorldSeed(seed);setTerrainProfile(t);setOpsPad(pad.x,pad.z,pad.y,pad.yaw)
-  const tracker=new SortieContractTracker();tracker.reset(adapted.contractSeed,5,true)
+  const tracker=new SortieContractTracker();tracker.reset(adapted.contractSeed,spec.goals.gates,true)
   const resolved=resolveCourseDefinition(course)
   expect(resolved.contractSeed ?? resolved.seed).toBe(course.seed)
   expect(resolved.weather).toBe(course.weather)
@@ -48,8 +48,8 @@ for(const course of COURSE_LIBRARY.filter(c=>c.seed!==null&&c.contractCatalog&&!
   }
   switch(tracker.kind){
    case 'waterway-tour': {
-    const bodies = spec.course.slice(0, 2).map(p => waterBodyFromClimate(sampleGeography(p.x, p.z)))
-    expect(bodies).toEqual(['river', 'lake'])
+    const bodies = spec.course.map(p => waterBodyFromClimate(sampleGeography(p.x, p.z)))
+    expect(bodies).toEqual(expect.arrayContaining(['river', 'lake']))
     for (const body of bodies) tracker.recordWaterBody(body, true)
     break
    }
@@ -84,7 +84,7 @@ for(const course of COURSE_LIBRARY.filter(c=>c.seed!==null&&c.contractCatalog&&!
    case 'front':again(()=>tracker.recordFront(true,5,true));break
    case 'boost':again(()=>tracker.recordBoost(true,250,5,true));break
    case 'mach':again(()=>tracker.recordMach(400,5,true));break
-   case 'clean':for(let gate=1;gate<=5;gate++)tracker.recordCleanGate(false,gate,5);break
+   case 'clean':for(let gate=1;gate<=spec.goals.gates;gate++)tracker.recordCleanGate(false,gate,spec.goals.gates);break
    case 'level':again(()=>tracker.recordLevelFlight(300,5,true));break
    case 'tour':for(const kind of ['city','village'] as const){const plan=landmark(kind);tracker.recordDestination(1,kind,plan.id)}break
    case 'combo':tracker.recordCombo(3);break

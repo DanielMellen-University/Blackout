@@ -19,11 +19,11 @@ for(const theme of themes){
   const specs=Array.from({length:24},(_,i)=>generateMission(i+11,theme))
   const shapes=specs.map(s=>s.course.map(p=>({...local(s,p),height:p.y-s.terrain.baseHeight})))
   expect(Math.max(...specs.map(s=>s.start.yaw))-Math.min(...specs.map(s=>s.start.yaw))).toBeGreaterThan(4)
-  const widths=shapes.map(s=>Math.abs(s[1]!.right))
+  const widths=shapes.map(s=>Math.max(...s.map(p=>Math.abs(p.right))))
   expect(Math.max(...widths)-Math.min(...widths)).toBeGreaterThan(theme === 'mountain-valley-run' ? 450 : theme === 'volcanic-run' ? 400 : 650)
-  if(theme === 'desert-run' || theme === 'mountain-valley-run')expect(new Set(shapes.map(s=>Math.sign(s[1]!.right))).size).toBe(2)
+  if(theme === 'desert-run' || theme === 'mountain-valley-run')expect(new Set(shapes.map(s=>Math.sign(s[Math.floor(s.length/2)]!.right))).size).toBe(2)
   expect(new Set(shapes.map(s=>s.map(p=>Math.round(p.height)).join(','))).size).toBeGreaterThan(15)
-  for(const shape of shapes){expect(Math.abs(shape[3]!.right)).toBeLessThan(.001);expect(Math.abs(shape[4]!.right)).toBeLessThan(.001);expect(shape[4]!.forward).toBeGreaterThan(shape[3]!.forward+900)}
+  for(const shape of shapes){expect(Math.abs(shape.at(-2)!.right)).toBeLessThan(.001);expect(Math.abs(shape.at(-1)!.right)).toBeLessThan(.001);expect(shape.at(-1)!.forward).toBeGreaterThanOrEqual(shape.at(-2)!.forward+599.99)}
  })
  it.each(tuningSeeds)(`keeps ${theme} runway flat, approach clear, and gold earned on seed %s`,seed=>{
   const spec=generateMission(seed,theme),pad=spec.landingRunway,t=spec.terrain
@@ -47,8 +47,8 @@ for(const theme of themes){
    }
    const finish=(quality:number,delay:number)=>{
     const run=new ChallengeRun(null)
-    run.reset(`polish:${theme}`,5,'balanced',undefined,false,mission.timeAllowanceSec)
-    for(let i=0;i<5;i++){for(let second=0;second<12;second++)run.update(1,150);run.recordGate(quality)}
+    run.reset(`polish:${theme}`,mission.totalGates,'balanced',undefined,false,mission.timeAllowanceSec)
+    for(let i=0;i<mission.totalGates;i++){run.update(60/mission.totalGates,150);run.recordGate(quality)}
     for(let second=0;second<45+delay;second++)run.update(1,60)
     return run.finishLanding({verticalSpeed:-1,groundSpeed:30,pitchRad:0,rollRad:0})!
    }

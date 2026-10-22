@@ -14,7 +14,7 @@ describe('approved seeded mission generator', () => {
       expect(Math.hypot(spec.landingRunway.x - spec.start.x, spec.landingRunway.z - spec.start.z)).toBeCloseTo(45)
       for (const point of [spec.start, spec.landingRunway, ...spec.course])
         for (const axis of ['x', 'y', 'z'] as const) expect(Number.isFinite(point[axis])).toBe(true)
-      for (let i = 1; i < spec.course.length; i++) expect(Math.hypot(spec.course[i]!.x - spec.course[i-1]!.x, spec.course[i]!.z - spec.course[i-1]!.z)).toBeGreaterThan(800)
+      for (let i = 1; i < spec.course.length; i++) expect(Math.hypot(spec.course[i]!.x - spec.course[i-1]!.x, spec.course[i]!.z - spec.course[i-1]!.z)).toBeGreaterThan(80)
     }
     expect(generateMission(seed)).toEqual(generateMission(seed))
   })
@@ -72,12 +72,12 @@ it.each([42, 73, 808])('flies the desert recipe through the existing mission and
   try {
     mission.start(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, spec.profile)
     expect(mission.routeProfile).toBe(spec.profile)
-    expect(mission.totalGates).toBe(5)
+    expect(mission.totalGates).toBe(spec.goals.gates)
     expect(mission.routeFallbackUsed).toBe(false)
     expect(mission.timeAllowanceSec).toBeGreaterThan(80)
     const replay = resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed)
     const record = courseRunId(replay)
-    expect(record).toBe(`seed:${seed}:generated-desert:r32:l33:q36`)
+    expect(record).toBe(`seed:${seed}:generated-desert:r32:l33:q46`)
     expect(courseSessionId('desert-run', seed, spec.profile)).toBe(record)
     for (let x = -12000; x <= 12000; x += 2000) {
       const sample = sampleGeography(spec.terrain.originX + x, spec.terrain.originZ + x)
@@ -113,9 +113,9 @@ it.each([42, 73, 808, 1337, 2026, 9001])('keeps a wide low valley corridor betwe
     mission.start(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, spec.profile)
     expect(mission.routeProfile).toBe('generated-valley')
     expect(mission.routeFallbackUsed).toBe(false)
-    expect(mission.totalGates).toBe(5)
+    expect(mission.totalGates).toBe(spec.goals.gates)
     const replay = resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), seed)
-    expect(courseRunId(replay)).toBe(`seed:${seed}:generated-valley:r32:l33:q36`)
+    expect(courseRunId(replay)).toBe(`seed:${seed}:generated-valley:r32:l33:q46`)
     expect(courseSessionId('mountain-valley-run', seed, spec.profile)).toBe(courseRunId(replay))
     expect(courseRunId(replay)).not.toBe(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed)))
   } finally { mission.dispose(); setTerrainProfile(null); clearOpsPad() }

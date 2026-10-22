@@ -1,3 +1,4 @@
+import { distributeMissionGates } from './MissionGates'
 import { flightConfig } from '../aircraft/flightConfig'
 import { MISSION_THEMES, type MissionTheme, type TerrainProfile } from '../world/TerrainProfile'
 
@@ -13,7 +14,7 @@ export interface GeneratedMissionSpec {
   goals: { gates: number; landingRequired: true; scoring: 'existing-medals'; referenceSpeed: number }
 }
 /** Pure seeded recipe. No mutable world state, clock, random calls or terrain cache. */
-export function generateMission(seed: number, requestedTheme?: MissionTheme): GeneratedMissionSpec {
+export function generateMission(seed: number, requestedTheme?: MissionTheme, training = false): GeneratedMissionSpec {
   if (!Number.isFinite(seed) || !Number.isSafeInteger(Math.round(seed * 1e6))) throw new Error('Invalid mission seed')
   if (requestedTheme !== undefined && !MISSION_THEMES.includes(requestedTheme)) throw new Error('Invalid mission theme')
   const normalized = Math.round(seed * 1e6) / 1e6 || (seed < 0 ? -.001 : .001)
@@ -81,12 +82,44 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme): Ge
     offsets = [[1000, 1800], [2100, 3300], [1250, -200], [0, -2900], [0, -1450]]
     heights = [145, 160, 140, 145, 115].map(h => h + random() * 15)
   }
-  const course = offsets.map(([right, forward], index) => ({
+  // Theme length bands, inclusive, with a separate short training band.
+  const band = training ? [15, 24] : theme === 'desert-run' ? [15, 40]
+    : theme === 'volcanic-run' ? [25, 60] : theme === 'coastal-island-run' ? [35, 75]
+      : theme === 'mountain-valley-run' ? [45, 100] : [55, 100]
+  const gateCount = band[0]! + Math.floor(random() * (band[1]! - band[0]! + 1))
+  // Route-only revision. Keep landscape generation and b20 physics unchanged.
+  terrain.routeRevision += 10
+  // A stadium corridor replaces the two sharp reversals of the old circuit.
+  // Its envelope still comes from each theme's seeded width/reach recipe.
+  const hand = offsets[1]![0] < 0 ? -1 : 1
+  const width = Math.abs(offsets[1]![0]), radius = width / 2
+  const departure = offsets[0]![1], top = offsets[1]![1]
+  const bottom = offsets[3]![1], final = offsets[4]![1]
+  const arcHeight = Math.max(radius, Math.min(top - departure, radius * 1.5))
+  const returnForward = Math.min(bottom + radius, final - 600)
+  const local: { right: number; forward: number; height: number }[] = []
+  for (let i = 0; i <= 64; i++) {
+    const angle = Math.PI * i / 64
+    local.push({ right: hand * radius * (1 - Math.cos(angle)),
+      forward: departure + Math.sin(angle) * arcHeight,
+      height: heights[0]! + (heights[2]! - heights[0]!) * i / 64 })
+  }
+  for (let i = 0; i <= 64; i++) {
+    const angle = Math.PI * i / 64
+    local.push({ right: hand * radius * (1 + Math.cos(angle)),
+      forward: returnForward - Math.sin(angle) * radius,
+      height: heights[3]! })
+  }
+  const anchors = local.map(({ right, forward, height }) => ({
     x: start.x + Math.cos(start.yaw) * right + Math.sin(start.yaw) * forward,
-    y: start.y + heights[index]!,
+    y: start.y + height,
     z: start.z - Math.sin(start.yaw) * right + Math.cos(start.yaw) * forward,
   }))
+  const course = distributeMissionGates(anchors, gateCount - 1, false)
+  // Reserve the final two aligned gates even at the sparsest count.
+  course.push({ x: start.x + Math.sin(start.yaw) * final,
+    y: start.y + heights[4]!, z: start.z + Math.cos(start.yaw) * final })
   return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : theme === 'coastal-island-run' ? 'generated-coastal' : theme === 'volcanic-run' ? 'generated-volcanic' : theme === 'waterway-run' ? 'generated-waterway' : 'generated-valley', terrain, start: { ...start, x: start.x - Math.sin(start.yaw) * 45, y: start.y + flightConfig.gearHeight, z: start.z - Math.cos(start.yaw) * 45 },
     landingRunway: { ...start, length: 120, width: 18 }, course,
-    goals: { gates: 5, landingRequired: true, scoring: 'existing-medals', referenceSpeed: 150 } }
+    goals: { gates: gateCount, landingRequired: true, scoring: 'existing-medals', referenceSpeed: 150 } }
 }
