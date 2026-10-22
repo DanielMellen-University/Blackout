@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.992**. Previous roadmap chunk: **10.991**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.993**. Previous roadmap chunk: **10.992**.
 
-Recent changes from **10.992**. Correct migrated-mission presentation using only the five existing themes: move River Run to inland Waterway, correct 39 stale descriptions and ten misleading names, and show the actual terrain recipe in route briefings and HUD labels. Preserve all 72 mission IDs, objectives, weather, scoring and flight tuning. This closes only Part B of the Oct 22 option B polish pass; any further theme or feature requires separate approval. See docs/reviews/generator/mission-polish-10.992.md.
+Recent changes from **10.993**. Close the approved 72-mission polish pass with gate, spawn and theme proofs on seeds 42, 1337 and 9001, representative browser completions, sampled heap and a comparison against the retained 10.990 frame-spike evidence. Keep the five-theme inventory, physics, nitro, collision, water, budgets and paused exclusions intact. Any further theme or feature requires separate approval. See docs/reviews/generator/mission-polish-10.993.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

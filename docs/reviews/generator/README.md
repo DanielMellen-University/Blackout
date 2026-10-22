@@ -1,6 +1,8 @@
-# Approved mission generator and four themes
+# Approved mission generator and five existing themes
 
-Approval: Oct 20, step 3 start, generator plus Desert run, Mountain valley run, Coastal island run and Volcanic run. Any further theme, feature, mission type, system or roadmap item requires separate approval. The Oct 20 followup approves stutter repair and polish of these four existing themes only. Older missions stay functional without polish. Physics b20, nitro b21, collision, water implementation, streaming caps and paused exclusions remain preserved.
+Current approval: Oct 22 option B permits only gate, spawn and theme mismatch polish for the 72 migrated generator missions, followed by proof and docs synchronization. Exactly five themes remain approved: Desert run, Mountain valley run, Coastal island run, Volcanic run and Waterway. The [10.993 polish proof](mission-polish-10.993.md) records the final all-mission findings and verification. River Run now uses the existing inland Waterway recipe; the other 71 fixed mappings retain their recipes. Any further theme, mission, mission type, objective, feature, system, mode or roadmap item requires separate approval. No gameplay overhaul is started. Physics b20, nitro b21, the 10.978 WebGL fix, 10.989 frame-spike fixes, collision, water, budgets and paused exclusions remain preserved.
+
+The records below describe the earlier generator foundation and initial theme deliveries. The later [Waterway proof](proof-10.988.md) closes the 72-mission migration, and the current polish review supersedes stale mission copy and River Run mapping in those historical records.
 
 ## Part A, 10.971
 
