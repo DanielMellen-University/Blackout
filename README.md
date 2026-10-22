@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.993**. Previous roadmap chunk: **10.992**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.994**. Previous roadmap chunk: **10.993**.
 
-Recent changes from **10.993**. Close the approved 72-mission polish pass with gate, spawn and theme proofs on seeds 42, 1337 and 9001, representative browser completions, sampled heap and a comparison against the retained 10.990 frame-spike evidence. Keep the five-theme inventory, physics, nitro, collision, water, budgets and paused exclusions intact. Any further theme or feature requires separate approval. See docs/reviews/generator/mission-polish-10.993.md.
+Recent changes from **10.994**. Publish the docs-only roadmap step 4 gameplay overhaul scope, based on the current code, with progression, scoring, mission flow, hard limits, candidate phase costs, risks and A/B/C choices. Plan only, awaiting Daniel's choices; every overhaul phase and design choice needs separate approval from Daniel before any code is written. No implementation is approved. See [the gameplay overhaul scope](docs/gameplay/overhaul-scope.md).
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
