@@ -10,7 +10,7 @@ export const LEGACY_TERRAIN_RECIPES: Partial<Record<MissionRouteProfile, Mission
   orbit: 'desert-run', contour: 'mountain-valley-run', weather: 'mountain-valley-run',
   sweep: 'mountain-valley-run', slalom: 'mountain-valley-run', ridge: 'mountain-valley-run',
   canyon: 'mountain-valley-run', coast: 'coastal-island-run', fjord: 'coastal-island-run',
-  river: 'coastal-island-run', volcanic: 'volcanic-run', desert: 'desert-run',
+  river: 'waterway-run', volcanic: 'volcanic-run', desert: 'desert-run',
   alpine: 'mountain-valley-run', storm: 'mountain-valley-run', night: 'mountain-valley-run',
   timber: 'mountain-valley-run', glacier: 'mountain-valley-run', rainforest: 'mountain-valley-run',
   mesa: 'desert-run', badlands: 'desert-run', saltflat: 'desert-run', savanna: 'desert-run',

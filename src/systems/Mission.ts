@@ -890,6 +890,11 @@ export function summarizeMissionRoute(
     safeCorridorYaw,
   )
   const climbMeters = Math.max(0, maxAltitudeMeters - safeSpawnY)
+  // Migrated gameplay profiles retain their challenge and scoring, but their
+  // landscape label must describe the recipe actually used by this world.
+  const terrain = getTerrainProfile()
+  const labelProfile = terrain && terrain.landscapeRevision >= 100 && safeProfile !== 'free'
+    ? generateMission(getWorldSeed(), terrain.theme).profile : safeProfile
   const difficulty: MissionRouteDifficulty =
     maxTurnDegrees >= 112 || maxSlopeDegrees >= 18 || climbMeters >= 420 || lengthMeters >= 7_200
       ? 'technical'
@@ -898,7 +903,7 @@ export function summarizeMissionRoute(
         : 'relaxed'
   return {
     profile: safeProfile,
-    label: routeProfileLabel(safeProfile),
+    label: routeProfileLabel(labelProfile),
     challenge: missionChallengeForProfile(safeProfile),
     challengeLabel: missionChallengeLabel(missionChallengeForProfile(safeProfile)),
     modifier: safeModifier,
