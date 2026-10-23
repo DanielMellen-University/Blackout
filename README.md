@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.997**. Previous roadmap chunk: **10.996**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.998**. Previous roadmap chunk: **10.997**.
 
-Recent changes from **10.997**. Finish variable-count picker previews, launch instructions and initial HUD copy. Use actual gate counts for known replay and Ops seeds, defer fresh-world time-target copy until launch, and keep Free flight unscored. This completes the approved b30 gate-count integration without changing live contract or scoring rules. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).
+Recent changes from **10.998**. Publish b31's docs-only exploration of three terrain-flying directions, honest prototype costs and open choices. Supersede the rejected 10.994 scope. No gameplay or engine changes; every feature and prototype still needs Daniel's approval. See [fun exploration](docs/gameplay/fun-exploration.md).
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

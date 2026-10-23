@@ -1,3 +1,5 @@
+> Superseded by [fun-exploration.md](fun-exploration.md), b31 / 10.998. Daniel rejected this audit as a plan for fun. Retained for history; its proposals are not the current direction or implementation approval.
+
 # Gameplay overhaul scope, 10.994
 
 ## 1. Status and goals

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.998** Publish b31's docs-only exploration of three terrain-flying directions, honest prototype costs and open choices. Supersede the rejected 10.994 scope. No gameplay or engine changes; every feature and prototype still needs Daniel's approval. See [fun exploration](docs/gameplay/fun-exploration.md).
 - **10.997** Finish variable-count picker previews, launch instructions and initial HUD copy. Use actual gate counts for known replay and Ops seeds, defer fresh-world time-target copy until launch, and keep Free flight unscored. This completes the approved b30 gate-count integration without changing live contract or scoring rules. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).
 
 - **10.996** Verify b30 with complete 15-gate and 100-gate production browser flights, all scaled refills, gold runway landings, native frame traces, sampled heap, all-catalog route/controls proofs and the full test suite. Keep the single approved gate-count change and paused exclusions intact. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).
