@@ -15,7 +15,8 @@
 - Nitro has no speed or acceleration cap while active (5 s drain, 20 s refill, gate top-ups). Speed decays naturally after release. Do not reintroduce a nitro cap.
 - Gates are 50% larger (GATE_SIZE_SCALE 1.5 for ring, tube and trigger radius). Keep visual and trigger sizes scaled together.
 - The featured top row is exactly Free flight, Training orbit and Daily challenge. Do not touch UI unless the user asks.
-- The lines/valley-run gameplay overhaul is on hold. Do not start it or propose options until the user asks.
+- No landings anywhere (Oct 24 2026). No mission, mode, run, contract or medal may require or score a landing. Runs finish in the air. Existing landing code is being removed in approved steps; do not add new landing requirements.
+- The lines/valley-run overhaul is approved for planning only. No overhaul code until the user picks a direction.
 - Every new feature, mission type or roadmap item needs the user's approval first. Fixes to shipped features within approved scope are fine.
 
 ## How to work

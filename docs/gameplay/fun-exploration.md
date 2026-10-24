@@ -72,4 +72,6 @@ It answers the central question fastest: is threading deliberately shaped terrai
 
 ## Limits for every option
 
+**No landings (Daniel, Oct 24 2026).** No overhaul direction may require, grade or score a landing. Every run starts airborne and finishes in the air at the last gate or line end. Runway circuits, approach grading and touchdown scoring are out of scope for all options.
+
 Keep b20 physics, b21 nitro, b24's 10.978 stutter fix and the 10.989 frame-spike fixes. Heap stays about 200 MB; retain existing streaming, worker and draw budgets. Fit terrain to the plane, not a physics retune. Preserve telemetry, instruments, G readout, existing scoring, saves, collision and ordinary navigation/glide guidance. No weapons, combat, multiplayer, Discord integration, parallel world or record systems. Vegetation, flight-warning strips/tones and blackout/redout effects stay excluded. No option assumes a hard-limit relaxation. If a prototype cannot fit these limits, bring Daniel an explicit choice before proceeding.
