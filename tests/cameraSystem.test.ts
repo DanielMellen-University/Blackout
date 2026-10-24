@@ -5,6 +5,7 @@ import {
   cameraBoostOffset,
   cameraBoostOffsetInto,
   cameraBankAngle,
+  stableBank,
   cameraFarForQuality,
   cameraShakeOffset,
   cameraShakeOffsetInto,
@@ -670,4 +671,18 @@ describe('storm buffet camera drive', () => {
     expect(cameras.camera.position).toEqual(before)
     cameras.dispose()
   })
+})
+
+it("keeps the chase bank on one side while rolling through inverted", () => {
+  const cap = 0.62
+  let bank = 0
+  for (let deg = 0; deg <= 265; deg += 5) {
+    const roll = Math.atan2(Math.sin(deg * Math.PI / 180), Math.cos(deg * Math.PI / 180))
+    const next = stableBank(roll, bank, cap)
+    expect(Math.abs(next - bank)).toBeLessThan(cap + 1e-9)
+    if (deg > 90 && deg < 270) expect(Math.sign(next)).toBe(1)
+    bank = next
+  }
+  expect(stableBank(-2.5, -0.62, cap)).toBeCloseTo(-0.62)
+  expect(stableBank(0.3, 0.5, cap)).toBeCloseTo(0.3)
 })

@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.006**. Previous roadmap chunk: **11.005**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.007**. Previous roadmap chunk: **11.006**.
 
-Recent changes from **11.006**. Stop villages and cities flickering: keep a settlement visible through one-frame terrain coverage gaps during LOD swaps, and add hysteresis to the detail radius.
+Recent changes from **11.007**. Fix the third-person camera snapping when rolling with Q and E through inverted: the capped chase bank now holds its side instead of flipping in one frame.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

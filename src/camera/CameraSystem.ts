@@ -659,7 +659,7 @@ export class CameraSystem {
 
     const targetBank = this.reducedMotion || !this.cameraEffectsEnabled || this.mode === 'orbit'
       ? 0
-      : cameraBankAngle(aircraft.displayOrientation, MAX_EXTERNAL_BANK)
+      : stableBank(cameraBankAngle(aircraft.displayOrientation, Math.PI), this.externalBank, MAX_EXTERNAL_BANK)
     this.externalBank = snap || dt <= 0
       ? targetBank
       : MathUtils.damp(this.externalBank, targetBank, EXTERNAL_BANK_STIFFNESS, dt)
@@ -943,6 +943,16 @@ export function cameraRelativeBearing(
   _bearingInverse.copy(cameraOrientation).invert()
   _bearingDelta.applyQuaternion(_bearingInverse)
   return Math.atan2(_bearingDelta.x, -_bearingDelta.z)
+}
+
+/** Cap a full roll for the chase view without flipping sides. Rolling with
+ * Q/E through inverted wraps atan2 at pi; a plain clamp then jumped the bank
+ * from +cap to -cap in one frame. Past 90 degrees, hold the current side. */
+export function stableBank(roll: number, previous: number, maxBank = MAX_EXTERNAL_BANK): number {
+  if (!Number.isFinite(roll)) return 0
+  const cap = Math.max(0, maxBank)
+  if (Math.abs(roll) > Math.PI / 2 && previous !== 0 && Math.sign(previous) !== Math.sign(roll)) return Math.sign(previous) * cap
+  return MathUtils.clamp(roll, -cap, cap)
 }
 
 /** Small external-view bank derived from the airframe roll, capped for readability. */

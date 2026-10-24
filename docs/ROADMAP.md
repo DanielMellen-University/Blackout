@@ -1,5 +1,6 @@
 # Roadmap
 
+Chunk 11.007. Fix the third-person camera snapping when rolling with Q and E through inverted: the capped chase bank now holds its side instead of flipping in one frame.
 Chunk 11.006. Stop villages and cities flickering: keep a settlement visible through one-frame terrain coverage gaps during LOD swaps, and add hysteresis to the detail radius.
 Chunk 11.005. b36: enlarge normal and precision gates by 50%, including the ring, tube, pass flash and swept crossing radius.
 Chunk 11.004. b36: lengthen and brighten the dry flame, double nitro thrust, use 5 s drain and 20 s refill, and remove nitro speed and acceleration caps. Excess speed decays naturally after release; retain count-scaled gate top-ups.
@@ -114,7 +115,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.006** is current. Previous ship: **11.005**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.007** is current. Previous ship: **11.006**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 

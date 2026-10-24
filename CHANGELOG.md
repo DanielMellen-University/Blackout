@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.007** Fix the third-person camera snapping when rolling with Q and E through inverted: the capped chase bank now holds its side instead of flipping in one frame.
 - **11.006** Stop villages and cities flickering: keep a settlement visible through one-frame terrain coverage gaps during LOD swaps, and add hysteresis to the detail radius.
 - **11.005** b36: enlarge normal and precision gates by 50%, including the ring, tube, pass flash and swept crossing radius.
 - **11.004** b36: lengthen and brighten the dry flame, double nitro thrust, use 5 s drain and 20 s refill, and remove nitro speed and acceleration caps. Excess speed decays naturally after release; retain count-scaled gate top-ups.
