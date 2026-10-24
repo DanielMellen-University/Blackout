@@ -28,6 +28,20 @@ Status: direction **A+C picked** by Daniel on Oct 24 2026 (wide lines plus score
 
 8 to 20 gates, 0.8 to 2.5 km apart, routed through valleys and over ridges with real height changes. Score is time plus bonuses for flying low, close to terrain and carrying speed. Phases M0, M1, M4 and M5 in full, M2 light, M3 optional. Estimated about 20 to 30% of the weekly limit in total.
 
+## Week 2 daily slices (approved Oct 24 2026)
+
+Daniel approved this list on Oct 24 2026, without the in-flight bonus readout. It runs after week 1 (landing removal, ROADMAP item 6). If a slice fails, it is retried the next weekday and the rest shift by a day.
+
+| Day | Slice |
+|---|---|
+| Mon Nov 2 | M0 spec in this doc, plus 8 to 20 gates spaced 0.8 to 2.5 km apart on the current routes |
+| Tue Nov 3 | M1 routes follow the terrain: through valleys and over ridges with real height changes |
+| Wed Nov 4 | Every gated run starts in the air, lined up on gate 1. Free flight keeps its runway start (ROADMAP item 10, folded in) |
+| Thu Nov 5 | M4 scoring: time plus bonuses for flying low, close to terrain and carrying speed. New record revision, old records kept separately |
+| Fri Nov 6 | Proof flights only: headless flights and screenshots on each theme. No UI change |
+
+No in-flight bonus readout. The bonuses count but show only in the existing final results. After week 2, each next slice (M2 corridors, M3 rocks and arches, M5 moving all 72 missions) needs Daniel's OK first.
+
 ## Phases after landing removal
 
 Rough usage is share of the weekly Codex limit at gpt-6.1-sol high. Each phase is split into daily slices of about 3 to 5% and each phase needs Daniel's OK.
