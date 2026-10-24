@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.001**. Previous roadmap chunk: **11.000**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.002**. Previous roadmap chunk: **11.001**.
 
-Recent changes from **11.001**. Restore the three featured missions and list Contour circuit, Weather approach and Perfect Line (prototype) under All courses.
+Recent changes from **11.002**. Restore the featured cards to their pre-promotion layout and styling.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
