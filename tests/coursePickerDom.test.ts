@@ -115,13 +115,21 @@ beforeEach(() => {
 afterEach(() => { picker.dispose(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('course picker interaction', () => {
-  it('keeps exactly the original three featured cards and all three restored entries in All courses', () => {
+  it('keeps Perfect Line out of All courses by default', () => {
+    expect(perfectLinePickerItem(vi.fn())).toBeNull()
+    expect(perfectLinePickerItem(vi.fn(), '?dev=other')).toBeNull()
+    const prototype = perfectLinePickerItem(vi.fn())
+    picker.setItems([...missionItems, ...(prototype ? [prototype] : [])], 'training-orbit')
+    expect(element('.course-picker-grid').querySelector('[data-course-id="perfect-line"]')).toBeNull()
+  })
+
+  it('keeps the original three featured cards and enables Perfect Line only with the dev param', () => {
     const activate = vi.fn(), onChange = vi.fn(), onFavorite = vi.fn()
     picker.onChange(onChange); picker.onFavorite(onFavorite)
     picker.setItems([...missionItems,
       { id: 'contour-circuit', label: 'Contour circuit', detail: '', meta: '', stats: '' },
       { id: 'weather-approach', label: 'Weather approach', detail: '', meta: '', stats: '' },
-      perfectLinePickerItem(activate),
+      perfectLinePickerItem(activate, '?dev=perfect-line')!,
     ], 'training-orbit')
     expect(element('.course-picker-featured').children.map(node => node.textContent.replace(/Resets in .*/, '')))
       .toEqual(['Free flightExplore freely', 'Training orbitLearn the basics', 'Daily challengeNew mission daily'])

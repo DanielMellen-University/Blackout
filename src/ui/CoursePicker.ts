@@ -88,7 +88,8 @@ export interface CoursePickerItem {
   repeatable?: boolean
 }
 
-export function perfectLinePickerItem(activate: () => void): CoursePickerItem {
+export function perfectLinePickerItem(activate: () => void, search = ''): CoursePickerItem | null {
+  if (new URLSearchParams(search).get('dev') !== 'perfect-line') return null
   return { id: 'perfect-line', label: 'Perfect Line (prototype)', detail: '', meta: '', stats: '', activate }
 }
 

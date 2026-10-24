@@ -565,9 +565,13 @@ export async function boot(): Promise<void> {
       }
     })
     const perfectLineButton = document.getElementById('btn-perfect-line')
+    const perfectLineItem = perfectLinePickerItem(() => perfectLineButton?.click(), replayParams?.toString())
+    if (perfectLineButton) perfectLineButton.hidden = !perfectLineItem
+    const perfectLineDescription = document.getElementById('perfect-line-description')
+    if (perfectLineDescription) perfectLineDescription.hidden = !perfectLineItem
     for (const picker of coursePickers) {
-      picker.setItems(picker === coursePickers[0] && perfectLineButton
-        ? [...items, perfectLinePickerItem(() => perfectLineButton.click())] : items, selectedCourseId)
+      picker.setItems(picker === coursePickers[0] && perfectLineButton && perfectLineItem
+        ? [...items, perfectLineItem] : items, selectedCourseId)
     }
   }
   const rememberRecentCourse = (id: CourseId): void => {
@@ -1781,6 +1785,7 @@ export async function boot(): Promise<void> {
   }
 
   uiListeners.add(document.getElementById('btn-perfect-line'), 'click', () => {
+    if (replayParams?.get('dev') !== 'perfect-line') return
     perfectLineActive = true
     startGame()
   })

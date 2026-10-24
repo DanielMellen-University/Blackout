@@ -6,6 +6,11 @@ const css = ['../src/style.css', '../src/ui/settingsDeck.css']
   .map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n')
 
 describe('unified flight deck contracts', () => {
+  it('hides the Perfect Line title button before startup', () => {
+    expect(html).toMatch(/<button[^>]*id="btn-perfect-line"[^>]* hidden[^>]*>/)
+    expect(html).toMatch(/<p[^>]*id="perfect-line-description"[^>]* hidden[^>]*>/)
+  })
+
   it('uses mission terminology in launch, settings, and results', () => {
     expect(html).not.toMatch(/\bsorties?\b/i)
     expect(html).toContain('Select a mission')

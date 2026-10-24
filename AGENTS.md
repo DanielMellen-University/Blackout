@@ -7,6 +7,8 @@
 - Keep these exclusions in the roadmap and do not list the removed systems as shipped features or future work. Terrain biomes, ground color/relief, settlements, weather, and water are separate systems and remain in scope.
 - The entire flight-warning strip is removed: stall, go-around, flare, gear, obstacle, fuel, overspeed, pull-up, and low-altitude alerts, along with its alert tones, evaluator/probes, and styling. Do not reintroduce this category without an explicit user request. Preserve instruments, altitude telemetry, flight physics, terrain/obstacle collision detection, and ordinary navigation/glide guidance.
 
+- Keep prototypes, tests, debug and dev-only features out of player-facing UI; testing access must use a dev-only URL param or flag that is off by default.
+
 ## Verification and delivery
 
 - Preserve unrelated local changes. Pull `origin/main` before each work session.
