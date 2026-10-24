@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or
 
 Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.009**. Previous roadmap chunk: **11.008**.
 
-Recent changes from **11.008**. Third-person camera now follows Q and E roll rigidly like first person, removing the stabilizer lag and bank cap that caused the jerk.
+Recent changes from **11.009**. Camera views open behind and a bit above the jet on every switch, and the middle view sits a little further back.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
