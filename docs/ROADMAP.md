@@ -346,6 +346,16 @@ Every new feature, mission type, system or ROADMAP item needs Daniel's approval 
    Free flight and the ability to touch down on runways stay; nothing requires them.
 7. **Lines and valley-run overhaul: ON HOLD, no direction picked.** Directions: A) tight canyon runs, beat your time; B) terrain slalom scoring near-misses; C) branching canyons with route choice. Phases: P0 docs spec, P1 terrain corridor carving, P2 3D modelling (rock meshes, gate model, arches), P3 airborne start and finish with timer and retry, P4 proof. Every phase needs separate approval and must follow the no-landings rule. See [fun exploration](gameplay/fun-exploration.md).
 
+**Further out (proposed Oct 24, each needs Daniel's approval before work starts):**
+
+8. **Time-based results after landing removal.** With every run finishing in the air, medals, records and ghosts key on finish time, gates and nitro use only. Separate a new record revision so older landing-era records stay intact.
+9. **Airborne starts.** Every gated run starts in the air on the line to gate 1 instead of a runway takeoff, matching Perfect Line. Free flight keeps its runway start.
+10. **Known performance debt.** Fix the seed-1337 synchronous hydrology look-ahead stall and re-verify the 10.989 frame-spike numbers. No budget changes.
+11. **Course readability.** Clearer next-gate line-up on tight sections using the existing gate model and HUD, no new UI elements unless approved.
+12. **Release v0.13.0.** After 6 and 8 land: version bump, README, CHANGELOG, screenshots and a tagged release.
+
+**Daily slices.** Once Daniel approves a schedule, a daily Codex run (gpt-6.1-sol, high) may take one small, already-approved roadmap slice per day, verify it with targeted tests plus headless screenshots it checks itself, and push one commit. It never picks a slice that is not approved, never changes camera views, never adds dev features to player UI and never adds landings.
+
 Approved batch plan:
 
 - **b18:** Rewrite this roadmap and ship the parked weather-challenge approach mission as is, after CI repair. Verify it without redesign or polish. Preserve flight physics throughout this batch.
