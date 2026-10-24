@@ -1729,8 +1729,17 @@ export class SettlementSystem {
       const distanceSquared = dx * dx + dz * dz
       const loadRadius = LOAD_RADIUS + plan.radius
       const detailRadius = this.detailRadius + plan.radius
-      root.visible = distanceSquared < loadRadius * loadRadius && !root.userData.foundationsPending && this.hasTerrainSupport(plan)
-      detail.visible = distanceSquared < detailRadius * detailRadius
+      const inRange = distanceSquared < loadRadius * loadRadius && !root.userData.foundationsPending
+      // Latch terrain support: resident-tree LOD swaps can briefly report no
+      // coverage, which hid whole villages for a frame (visible flicker).
+      // A real unload persists, so hide only after support stays missing.
+      if (!inRange) { root.userData.terrainSupported = false; root.userData.supportMisses = 0 }
+      else if (this.hasTerrainSupport(plan)) { root.userData.terrainSupported = true; root.userData.supportMisses = 0 }
+      else if (root.userData.terrainSupported && ++root.userData.supportMisses > 20) root.userData.terrainSupported = false
+      root.visible = inRange && root.userData.terrainSupported === true
+      // Hysteresis so detail does not thrash at the radius edge.
+      const detailEdge = detail.visible ? detailRadius + 40 : detailRadius
+      detail.visible = distanceSquared < detailEdge * detailEdge
     }
     for (const connection of this.connections.values()) {
       connection.root.visible = roadDistanceSquared(x, z, connection.road) < this.roadDetailRadius * this.roadDetailRadius

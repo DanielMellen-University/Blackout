@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.005**. Previous roadmap chunk: **11.004**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.006**. Previous roadmap chunk: **11.005**.
 
-Recent changes from **11.005**. b36: enlarge normal and precision gates by 50%, including the ring, tube, pass flash and swept crossing radius.
+Recent changes from **11.006**. Stop villages and cities flickering: keep a settlement visible through one-frame terrain coverage gaps during LOD swaps, and add hysteresis to the detail radius.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

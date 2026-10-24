@@ -556,7 +556,14 @@ it('waits for terrain across the settlement footprint while retaining collision 
     // A covered LOD change may change height, but must not hide a ready root.
     height.mockImplementation(() => 99); system.update(p.x, p.z)
     expect(loaded.root.visible).toBe(true)
+    // One-frame coverage gaps during LOD swaps must not flicker the root.
     height.mockImplementation(() => null); system.update(p.x, p.z)
+    expect(loaded.root.visible).toBe(true)
+    height.mockImplementation(() => 100); system.update(p.x, p.z)
+    expect(loaded.root.visible).toBe(true)
+    // A real unload persists and hides the root.
+    height.mockImplementation(() => null)
+    for (let i = 0; i < 30; i++) system.update(p.x, p.z)
     expect(loaded.root.visible).toBe(false)
     expect(JSON.stringify(p)).toBe(original)
   } finally { system.dispose() }
