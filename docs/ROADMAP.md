@@ -344,21 +344,11 @@ Every new feature, mission type, system or ROADMAP item needs Daniel's approval 
    5. Progression: remove landing quality from rank tiers and retire the Landing Ace and Approach Ace badges.
    6. UI text: remove landing lines from results, course cards, the Best landing sort, touchdown-based flight style labels and briefing copy.
    Free flight and the ability to touch down on runways stay; nothing requires them.
-7. **Lines and valley-run overhaul: ON HOLD, no direction picked.** Directions: A) tight canyon runs, beat your time; B) terrain slalom scoring near-misses; C) branching canyons with route choice. Phases: P0 docs spec, P1 terrain corridor carving, P2 3D modelling (rock meshes, gate model, arches), P3 airborne start and finish with timer and retry, P4 proof. Every phase needs separate approval and must follow the no-landings rule. See [fun exploration](gameplay/fun-exploration.md).
+7. **Lines and valley-run overhaul: folded into the mission overhaul (item 8).**
 
 **Further out (proposed Oct 24, each needs Daniel's approval before work starts):**
 
-8. **Mission redesign: TOP future phase, direction not picked.** Daniel, Oct 24: the missions are not fun and the gates are too close together. What is wrong, from the code:
-   - Every generated mission is the same shape: one flat stadium oval (out, around, back) a few kilometres across, with only the size and hand varying by theme. It is not routed through terrain at all.
-   - Gate spacing is tight. 15 to 100 gates are spread evenly along a loop of roughly 6 to 9 km, so the longer valley and waterway runs put gates around 80 to 200 m apart. At cruise that is under a second per gate: constant twitch corrections, no flow, no space to use nitro.
-   - Gate heights barely change (about 105 to 225 m above the start), so there is almost no climbing, diving or terrain use.
-   - Every run ends by flying back to the runway and landing, which the no-landings rule removes.
-   - Scoring rewards gates and time plus landing extras, with nothing for flying low, close to terrain or carrying speed.
-   Direction options:
-   - **A. Fewer gates, real lines:** 8 to 20 gates spaced 0.8 to 2.5 km apart, placed through valleys, saddles and along ridges with real height changes. Airborne start and finish. Smallest change to the generator.
-   - **B. Point-to-point journeys:** one-way runs from A to B across a theme (coast to volcano, along a river), wide gates as waypoints a few km apart, finish in the air at the destination. Pairs with the canyon overhaul (item 7).
-   - **C. Gates as checkpoints, score the flying:** wide-spaced checkpoints with free routing between them, scored on time plus low-altitude and near-terrain bonuses. Most fun potential, most scoring work.
-   All options follow the no-landings rule, keep 15 to 100 gates only if Daniel still wants that range (A and C would replace it), and tie into item 6 and item 7.
+8. **Mission overhaul: TOP future phase, PLANNED, direction not picked.** Daniel, Oct 24: the missions are not fun and the gates are too close together. Full plan with problems, goals, options A (wide lines), B (canyon journeys), C (checkpoints plus flying score), phases M0 to M5 and usage: [mission overhaul roadmap](gameplay/mission-overhaul.md). Starts after item 6. No code until Daniel picks.
 9. **Time-based results after landing removal.** With every run finishing in the air, medals, records and ghosts key on finish time, gates and nitro use only. Separate a new record revision so older landing-era records stay intact.
 10. **Airborne starts.** Every gated run starts in the air on the line to gate 1 instead of a runway takeoff, matching Perfect Line. Free flight keeps its runway start.
 11. **Known performance debt.** Fix the seed-1337 synchronous hydrology look-ahead stall and re-verify the 10.989 frame-spike numbers. No budget changes.
