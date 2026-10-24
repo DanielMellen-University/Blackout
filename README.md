@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.004**. Previous roadmap chunk: **11.003**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.005**. Previous roadmap chunk: **11.004**.
 
-Recent changes from **11.004**. b36: lengthen and brighten the dry flame, double nitro thrust, use 5 s drain and 20 s refill, and remove nitro speed and acceleration caps. Excess speed decays naturally after release; retain count-scaled gate top-ups.
+Recent changes from **11.005**. b36: enlarge normal and precision gates by 50%, including the ring, tube, pass flash and swept crossing radius.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

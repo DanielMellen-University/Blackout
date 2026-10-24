@@ -50,6 +50,7 @@ interface Gate {
 
 const AUTHORED_ANCHOR_COUNT = 5
 const GATE_RADIUS = 38
+const GATE_SIZE_SCALE = 1.5
 const ROUTE_RADIUS = 980
 const ROUTE_RADIUS_VARIATION = 150
 const ROUTE_ANGLE_VARIATION = 0.12
@@ -1203,7 +1204,7 @@ export class MissionSystem {
     this.routeTrace.frustumCulled = false
     this.routeTrace.visible = false
     this.root.add(this.routeTrace)
-    this.gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
+    this.gateGeo = new TorusGeometry(GATE_RADIUS * GATE_SIZE_SCALE, 1.15 * GATE_SIZE_SCALE, 10, 36)
     for (let i = 0; i < MAX_MISSION_GATES; i++) {
       const ring = new Mesh(this.gateGeo, this.waitMat)
       ring.name = `gate_${i}`
@@ -1215,7 +1216,7 @@ export class MissionSystem {
         root,
         pos: new Vector3(),
         fwd: new Vector3(),
-        radius: GATE_RADIUS - 2,
+        radius: (GATE_RADIUS - 2) * GATE_SIZE_SCALE,
         passed: false,
         lastAlong: 0,
       })
@@ -1317,7 +1318,7 @@ export class MissionSystem {
       const point = route[i]!
       const gate = this.gatePool[i]!
       const fwd = gate.fwd.set(point.fwdX, 0, point.fwdZ).normalize()
-      gate.radius = summary.challenge === 'precision' ? GATE_RADIUS * 0.78 - 2 : GATE_RADIUS - 2
+      gate.radius = (summary.challenge === 'precision' ? GATE_RADIUS * 0.78 - 2 : GATE_RADIUS - 2) * GATE_SIZE_SCALE
       const ring = gate.root.children[0] as Mesh
       // Torus lies in XY; stand it up and face along fwd
       ring.rotation.y = Math.atan2(fwd.x, fwd.z)
