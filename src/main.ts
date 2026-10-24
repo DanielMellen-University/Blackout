@@ -1,3 +1,4 @@
+import { PERFECT_LINE_SEED, PERFECT_LINE_SPEED } from './world/PerfectLine'
 import { FLIGHT_REVISION_TAG, flightRecordId, legacyFlightRecordLabel } from './core/FlightRevision'
 import { warmupShadowVariants } from './core/RendererWarmup'
 import {
@@ -1322,6 +1323,10 @@ export async function boot(): Promise<void> {
   }
   window.addEventListener('beforeunload', disposeRuntime, { once: true })
 
+  let perfectLineActive = false
+  let perfectLineElapsed = 0
+  let perfectLineFinished = false
+  const perfectLineStatus = document.getElementById('perfect-line-status')
   let playing = false
   let ghostVisible = initialGhostVisible
   let cameraPreference = initialCameraMode
@@ -1533,7 +1538,9 @@ export async function boot(): Promise<void> {
     results.hide()
     const replaying = replaySeed !== null
     let worldFallback = false
-    if (newWorld) {
+    if (perfectLineActive && (newWorld || world.mission.routeProfile !== 'perfect-line')) {
+      world.reseed(PERFECT_LINE_SEED, 'perfect-line', 'clear', .4, undefined, undefined, undefined, 'steady')
+    } else if (newWorld) {
       const course = selectedCourse()
       // Resolve a shared period seed again at launch after catalog rollover.
       if (replaying && (course.daily || course.weekly || course.monthly)) replaySeed = course.seed
@@ -1582,6 +1589,14 @@ export async function boot(): Promise<void> {
       )
     }
     aircraft.reset(world.spawn)
+    if (perfectLineActive) {
+      aircraft.velocity.set(0, 0, PERFECT_LINE_SPEED)
+      aircraft.controls.gearDown = false
+      aircraft.controls.throttle = .5
+      aircraft.snapDisplay()
+      perfectLineElapsed = 0
+      perfectLineFinished = false
+    }
     _stableHeading = world.spawn.yaw
     supersonic.reset(aircraft.speed)
     cameras.setMode(flightReview ? 'chase' : cameraPreference, aircraft)
@@ -1595,10 +1610,10 @@ export async function boot(): Promise<void> {
     combo.reset()
     altitudeMilestones.reset()
     input.clearQueued()
-    input.resetFlightControls(0)
+    input.resetFlightControls(perfectLineActive ? .5 : 0)
     const activeCourseId = courseId()
-    touchSeededRandomCourseRecord(qualityStorage, activeCourseId)
-    challenge.reset(
+    if (!perfectLineActive) touchSeededRandomCourseRecord(qualityStorage, activeCourseId)
+    if (!perfectLineActive) challenge.reset(
       activeCourseId,
       world.mission.totalGates,
       world.mission.scoringFocus,
@@ -1606,9 +1621,9 @@ export async function boot(): Promise<void> {
       activeSortie.course.contractCatalog === true,
       world.mission.timeAllowanceSec,
     )
-    ghost.reset(activeCourseId)
-    ghost.setVisible(playing && ghostVisible && activeSortie.course.profile !== 'free')
-    if (activeSortie.course.profile !== 'free') challenge.recordBiome(world.spawn.biome)
+    if (!perfectLineActive) ghost.reset(activeCourseId)
+    ghost.setVisible(!perfectLineActive && playing && ghostVisible && activeSortie.course.profile !== 'free')
+    if (!perfectLineActive && activeSortie.course.profile !== 'free') challenge.recordBiome(world.spawn.biome)
     terrainRegion = terrainRegionLabel(world.spawn.biome)
     banner = null
     crashMessage = 'CRASH - press R'
@@ -1637,7 +1652,7 @@ export async function boot(): Promise<void> {
     prevFuelHomeCue = null
     flightBriefing.reset(briefing, activeSortie.course.id === 'training-orbit')
     time.reset()
-    if (briefing) {
+    if (briefing && !perfectLineActive) {
       const resetLabel = worldFallback
         ? 'WORLD REBUILD FAILED / CURRENT WORLD RETAINED'
         : newWorld
@@ -1731,8 +1746,10 @@ export async function boot(): Promise<void> {
     if (playing) return
     void showStartupScreen(1500)
     refreshOpsCatalog()
-    rememberRecentCourse(selectedCourseId)
-    writeSelectedCourseId(qualityStorage, selectedCourseId)
+    if (!perfectLineActive) {
+      rememberRecentCourse(selectedCourseId)
+      writeSelectedCourseId(qualityStorage, selectedCourseId)
+    }
     playing = true
     // Review workload must not depend on a previously saved camera mode.
     cameras.setMode(flightReview ? 'chase' : cameraPreference, aircraft)
@@ -1758,7 +1775,15 @@ export async function boot(): Promise<void> {
     syncInputContext()
   }
 
+  uiListeners.add(document.getElementById('btn-perfect-line'), 'click', () => {
+    perfectLineActive = true
+    startGame()
+  })
+
   const quitToTitle = (): void => {
+    const leavingLine = perfectLineActive
+    perfectLineActive = false
+    if (perfectLineStatus) perfectLineStatus.hidden = true
     playing = false
     world.setSettlementsVisible(false)
     world.setTrafficVisible(false)
@@ -1771,7 +1796,7 @@ export async function boot(): Promise<void> {
       overlay.hidden = true
       overlay.classList.add('overlay-hidden')
     }
-    resetFlight(false)
+    resetFlight(leavingLine)
     cameras.setMode('chase', aircraft)
     cameras.setTitleFraming(aircraft)
     input.clearKeys()
@@ -1881,6 +1906,14 @@ export async function boot(): Promise<void> {
       return
     }
     if (menu.open) return
+    if (perfectLineActive && playing && e.code === 'KeyR') {
+      e.preventDefault()
+      e.stopPropagation()
+      input.release('KeyR')
+      resetFlight(false)
+      syncInputContext()
+      return
+    }
     if ((results.open || crashCinematic.active) && playing) {
       if (e.code === 'KeyR') {
         e.preventDefault()
@@ -1897,6 +1930,7 @@ export async function boot(): Promise<void> {
       }
       return
     }
+    if (e.target instanceof HTMLElement && e.target.closest('#btn-perfect-line')) return
     if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
       if (e.code === 'Space') e.preventDefault()
       startGame()
@@ -1967,7 +2001,7 @@ export async function boot(): Promise<void> {
   const tick = (nowMs: number): void => {
     if (disposed) return
     requestAnimationFrame(tick)
-    const freeFlight = activeSortie.course.profile === 'free'
+    const freeFlight = perfectLineActive || activeSortie.course.profile === 'free'
     const countdownMask = (!playing || menu.open) && !document.hidden
       ? (titleCoursePickerRoot?.closest('[hidden]') ? 0 : 1)
         | (menuCoursePickerRoot?.closest('[hidden]') ? 0 : 2)
@@ -2105,7 +2139,7 @@ export async function boot(): Promise<void> {
           )
         })
       }
-      if (input.consumeReset()) resetFlight(true, true)
+      if (input.consumeReset()) resetFlight(!perfectLineActive, !perfectLineActive)
       if (input.consumeAudioToggle()) {
         audioMuted = !audioMuted
         if (audioMuted) audio.silence()
@@ -2178,6 +2212,17 @@ export async function boot(): Promise<void> {
         }
 
         const touch = collision.check(aircraft)
+        if (perfectLineActive && !perfectLineFinished && aircraft.status !== 'crashed') {
+          perfectLineElapsed += dt
+          if (touch !== 'crash' && touch !== 'ditch') {
+            const event = world.mission.update(aircraft.position.x, aircraft.position.y, aircraft.position.z, nowMs)
+            if (event === 'pass' || event === 'complete') {
+              refillNitroAtGate(aircraft.nitro, world.mission.totalGates)
+              audio.playCue(event === 'complete' ? 'complete' : 'gate')
+            }
+            if (event === 'complete') perfectLineFinished = true
+          }
+        }
         if (aircraft.status !== 'crashed') {
           const alt = aircraft.altitudeAgl
           terrainClearanceM = alt
@@ -2207,6 +2252,10 @@ export async function boot(): Promise<void> {
             }
             aircraft.crash()
             cameras.beginCrashShot(aircraft)
+            if (perfectLineActive) {
+              audio.playCue('crash')
+              break
+            }
             const crashed = challenge.crashDebrief(
               ditching,
               ditching ? 'WATER CONTACT' : contactFailureLabel(collision.failureReason),
@@ -2240,7 +2289,7 @@ export async function boot(): Promise<void> {
           if (aircraft.onGround && (touch === 'roll' || touch === 'landed')) {
             landingFx.scrub(aircraft.position, aircraft.velocity, dt)
           }
-          if (scoredTouch && wasAirborne && aircraft.status === 'ok') {
+          if (!perfectLineActive && scoredTouch && wasAirborne && aircraft.status === 'ok') {
             aircraft.markLanded()
             wasAirborne = false
             const pose = attitudeFromOrientation(aircraft.orientation)
@@ -2421,7 +2470,7 @@ export async function boot(): Promise<void> {
           }
         }
 
-        challenge.update(
+        if (!perfectLineActive) challenge.update(
           dt,
           aircraft.speed,
           Math.max(0, aircraft.position.y - world.spawn.y),
@@ -2718,7 +2767,7 @@ export async function boot(): Promise<void> {
       const returning = !freeFlight && challenge.phase === 'returning'
       const emergencyReturn = !freeFlight && emergencyReturnActive(engineOut, challenge.phase)
       // A valid Free flight final shares the runway cue and navigation target.
-      const finalApproachGlide = freeFlight || returning || emergencyReturn
+      const finalApproachGlide = !perfectLineActive && (freeFlight || returning || emergencyReturn)
         ? world.landingGlideCue(aircraft.position, pose.heading, aircraft.velocity, aircraft.onGround)
         : null
       const landingNavigation = returning || emergencyReturn || finalApproachGlide !== null
@@ -2953,8 +3002,10 @@ export async function boot(): Promise<void> {
           rollRad: pose.roll,
         })
         : null
-      challenge.recordLandingPreview(landingPreview ?? Number.NaN)
-      challenge.recordApproachPreview(approachPreviewScore)
+      if (!perfectLineActive) {
+        challenge.recordLandingPreview(landingPreview ?? Number.NaN)
+        challenge.recordApproachPreview(approachPreviewScore)
+      }
       hudFrame.landingPreview = landingPreview
       hudFrame.thermalLift = aircraft.thermalLift
       hudFrame.nitro = aircraft.nitro.fraction
@@ -2974,7 +3025,12 @@ export async function boot(): Promise<void> {
       hudFrame.roll = pose.roll
       hudFrame.heading = pose.heading
       hudFrame.audioMuted = audioMuted
+      if (perfectLineStatus) {
+        perfectLineStatus.hidden = !perfectLineActive || !playing
+        if (perfectLineActive) perfectLineStatus.textContent = `PERFECT LINE (PROTOTYPE) | ${perfectLineFinished ? 'FINISH' : aircraft.status === 'crashed' ? 'CRASH' : `GATE ${nav.current}/15`} | ${perfectLineElapsed.toFixed(2)}s | R: instant retry`
+      }
       hudFrame.freeFlight = freeFlight
+      hudFrame.flightModeLabel = perfectLineActive ? 'PERFECT LINE' : undefined
       hudFrame.clock = freeFlight ? '' : challenge.clockLabel
       hudFrame.weather = world.atmosphere.weatherLabel
       hudFrame.worldSeed = world.worldSeed
@@ -3020,8 +3076,8 @@ export async function boot(): Promise<void> {
         aircraft.status === 'ok'
       ) ? ghost.paceDelta(challenge.elapsedSec) : null, ghostVisible)
       hudFrame.missionPhase = challenge.phase
-      hudFrame.missionCurrent = challenge.gatesPassed
-      hudFrame.missionTotal = challenge.totalGates
+      hudFrame.missionCurrent = perfectLineActive ? Math.max(0, nav.current - 1) : challenge.gatesPassed
+      hudFrame.missionTotal = perfectLineActive ? world.mission.totalGates : challenge.totalGates
       hudFrame.missionMisses = challenge.gateMisses
       hudFrame.combo = combo.current
       hudFrame.comboRemaining = combo.remainingSeconds

@@ -1,3 +1,4 @@
+import { buildPerfectLine } from './PerfectLine'
 import { generateLegacyTerrain } from '../systems/LegacyMissionGenerator'
 import { routeModifierForSpawn, type MissionRouteModifier } from '../systems/Mission'
 import type { MissionTheme } from './TerrainProfile'
@@ -366,6 +367,7 @@ export class World {
       setWorldSeed(previousSeed)
       this.seed = previousSeed
       this.missionProfile = previousProfile
+      this.runway.visible = previousProfile !== 'perfect-line'
       this.spawn = previousSpawn
       this.weatherLocked = previousWeatherLocked
       this.weatherCycleLockedValue = previousWeatherCycleLocked
@@ -397,12 +399,15 @@ export class World {
         }
         const generated = requestedTerrainTheme ? generateLegacyTerrain(nextSeed, requestedTerrainTheme)
           : theme ? generateMission(nextSeed, theme) : null
-        setTerrainProfile(generated?.terrain ?? null)
+        const line = requestedProfile === 'perfect-line' ? buildPerfectLine() : null
+        setTerrainProfile(line?.terrain ?? generated?.terrain ?? null)
         clearOpsPad()
         // A first-ever boot must remain recoverable even if a future terrain
         // change makes every natural-pad probe reject. Re-seeds after a world
         // is committed still use the normal rollback path below.
-        const pad: FlatSpawn | null = generated ? { ...generated.landingRunway, biome: theme === 'desert-run' ? 'desert' : theme === 'volcanic-run' ? 'volcanic' : 'plains' } : findPlayableSpawn() ?? (!this.committed && requestedSeed === undefined ? emergencySpawn() : null)
+        // The existing World contract retains its airfield outside this line's
+        // streaming envelope. It is hidden and never a start or finish target.
+        const pad: FlatSpawn | null = line ? { x: -8000, z: -8000, y: 180, yaw: 0, biome: 'mountain' } : generated ? { ...generated.landingRunway, biome: theme === 'desert-run' ? 'desert' : theme === 'volcanic-run' ? 'volcanic' : 'plains' } : findPlayableSpawn() ?? (!this.committed && requestedSeed === undefined ? emergencySpawn() : null)
         if (!pad) continue
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed
@@ -410,6 +415,8 @@ export class World {
         this.weatherLocked = requestedWeather !== undefined && requestedWeatherShift === undefined
         this.weatherCycleLockedValue = requestedWeather !== undefined || requestedWeatherShift !== undefined
         this.applySpawn(pad)
+        this.runway.visible = !line
+        if (line) this.spawn = { ...line.start }
         liveWorldCleared = true
         this.terrain.clearAll()
         this.settlements.clearAll()
@@ -503,6 +510,7 @@ export class World {
     try {
       this.seed = seed
       this.missionProfile = profile
+      this.runway.visible = profile !== 'perfect-line'
       this.spawn = { ...spawn }
       this.weatherLocked = weatherLocked
       this.weatherCycleLockedValue = weatherCycleLocked

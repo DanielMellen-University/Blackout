@@ -1478,6 +1478,7 @@ export class HUD {
   update(opts: {
     /** Sandbox mode hides goals and scoring while retaining flight instruments. */
     freeFlight?: boolean
+    flightModeLabel?: string
     y: number
     /** Vertical velocity in metres per second, positive while climbing. */
     verticalSpeed?: number
@@ -1623,7 +1624,7 @@ export class HUD {
     flightPathY?: number
   }): void {
     if (this.overlayRoot) this.setClass(this.overlayRoot, 'free-flight', opts.freeFlight === true)
-    if (this.flightModeLabel) this.setText(this.flightModeLabel, opts.freeFlight ? 'FREE FLIGHT' : 'BLACKOUT')
+    if (this.flightModeLabel) this.setText(this.flightModeLabel, opts.flightModeLabel ?? (opts.freeFlight ? 'FREE FLIGHT' : 'BLACKOUT'))
     if (this.posEl) {
       const altitude = Number.isFinite(opts.y) ? Math.round(opts.y) : 0
       const altitudeChanged = altitude !== this.altitudeValue

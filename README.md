@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.998**. Previous roadmap chunk: **10.997**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.999**. Previous roadmap chunk: **10.998**.
 
-Recent changes from **10.998**. Publish b31's docs-only exploration of three terrain-flying directions, honest prototype costs and open choices. Supersede the rejected 10.994 scope. No gameplay or engine changes; every feature and prototype still needs Daniel's approval. See [fun exploration](docs/gameplay/fun-exploration.md).
+Recent changes from **10.999**. Implement b32's approved Direction A feel test: one fixed canyon line, 15 existing gates, airborne start and finish, elapsed time and R retry. Keep scored missions, records, physics, budgets and paused exclusions intact. See [fun exploration](docs/gameplay/fun-exploration.md).
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -20,6 +20,8 @@ Open the URL Vite prints. Run `npm test` for the suite and `npm run build` for v
 Run `npm run perf:terrain -- --seed=42 --samples=16` for a CPU geometry profile that closes on completion. Add `--sliced` to report individual work-step costs. It does not measure FPS; see [streaming performance notes](docs/terrain-streaming-performance.md) for scope and recorded samples.
 
 ## Fly
+
+Select **Perfect Line (prototype)** on the title screen for the b32 feel test. Start airborne at 150 m/s, follow 15 gates down the canyon and finish in the air. Press **R** any time to retry immediately. Results are transient and do not affect mission records.
 
 Default keyboard controls:
 

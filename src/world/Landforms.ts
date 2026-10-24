@@ -1,3 +1,4 @@
+import { perfectLineHeight } from './PerfectLine'
 import { getTerrainProfile } from './TerrainProfile'
 import { clamp01, fbm, hash2, smoothstep, valueNoise } from './noise'
 import { coastField, coastalRelief } from './Coastline'
@@ -179,6 +180,10 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
       out.moisture = .48; out.temperature = .55; out.dry = .2; out.cold = 0
       out.highlands = wall; out.foothills = wall; out.ridge = wall; out.glacial = 0
       out.alpineValley = 1 - wall; out.alluvial = 1 - wall
+    }
+    if (profile.perfectLine) {
+      out.height = perfectLineHeight(x, z)
+      out.highlands = .8; out.ridge = .7; out.alpineValley = .8
     }
     return out
   }

@@ -2,6 +2,7 @@
 export const MISSION_THEMES = ['desert-run', 'mountain-valley-run', 'coastal-island-run', 'volcanic-run', 'waterway-run'] as const
 export type MissionTheme = typeof MISSION_THEMES[number]
 export interface TerrainProfile {
+  perfectLine?: boolean
   theme: MissionTheme
   landscapeRevision: number
   routeRevision: number

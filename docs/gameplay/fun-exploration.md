@@ -1,6 +1,6 @@
 # Finding the fun, b31 / 10.998
 
-Exploration only. This replaces the rejected [10.994 scope](overhaul-scope.md). Daniel has not chosen the game yet. Every new feature and any prototype needs his explicit approval before code. This batch builds nothing.
+The original b31 brief was exploration only. This replaces the rejected [10.994 scope](overhaul-scope.md). Daniel has not chosen the game yet. Every new feature and any prototype needs his explicit approval before code. b31 built nothing.
 
 The shared core: **the joy of flying through terrain**. Low and fast through canyons and valleys, around ridgelines, under arches and bridges, choosing near-misses and linking flowing lines. Mastery means reading terrain and knowing when to boost, brake, bank or climb. Terrain is the activity, not scenery beside gates. None of these directions ends with a return to the airfield or a home-runway landing.
 
@@ -25,6 +25,12 @@ Costs are rough Codex effort, not dollar or quota forecasts. A pass includes imp
 **Terrain change:** Replace the runway circuit with a one-way canyon, changing bend radii, ridge saddles and occasional breathing space. Shape terrain and route together. Turns need readable lead-in at b20 speeds, with optional tighter cuts for experts. Later, an arch or bridge could punctuate a memorable section.
 
 **Cheapest feel test:** One fixed seed, a 60 to 90 second shaped corridor, 15 existing gates with unchanged scaled refills, airborne start/finish, elapsed time and immediate same-line retry. No medals, unlocks or saved record changes. Spend five minutes on repeated attempts. **Medium, 2 to 4 Codex passes.** Test whether improving the line feels good before adding courses.
+
+### Approved A prototype, b32 / 10.999
+
+The Oct 23 approval covers only this cheapest feel test. It now exists: choose **Perfect Line (prototype)** on the title screen. Seed 32026 supplies one hand-shaped 11.2 km canyon, changing bend radii, two ridge saddles and breathing spaces. Start airborne at 150 m/s, pass all 15 existing gates in order, then finish in the air. Existing scaled nitro refills apply. The running timer holds the finish time; **R** instantly retries the same line, including after a crash. Escape opens the existing menu to quit. No landing, medals, unlocks, saved times or new save fields. Existing missions keep their scoring and records.
+
+This is a short feel test, not approval for additional courses or systems. Human replay appeal still needs five minutes of flying. Physics, nitro tuning, streaming/worker/draw budgets and paused exclusions remain unchanged.
 
 ## B. Make your own line
 

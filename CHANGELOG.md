@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.999** Implement b32's approved Direction A feel test: one fixed canyon line, 15 existing gates, airborne start and finish, elapsed time and R retry. Keep scored missions, records, physics, budgets and paused exclusions intact.
+
 - **10.998** Publish b31's docs-only exploration of three terrain-flying directions, honest prototype costs and open choices. Supersede the rejected 10.994 scope. No gameplay or engine changes; every feature and prototype still needs Daniel's approval. See [fun exploration](docs/gameplay/fun-exploration.md).
 - **10.997** Finish variable-count picker previews, launch instructions and initial HUD copy. Use actual gate counts for known replay and Ops seeds, defer fresh-world time-target copy until launch, and keep Free flight unscored. This completes the approved b30 gate-count integration without changing live contract or scoring rules. See [b30 gate counts](docs/reviews/generator/gate-counts-b30.md).
 

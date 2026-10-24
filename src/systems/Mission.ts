@@ -1,3 +1,4 @@
+import { buildPerfectLine } from '../world/PerfectLine'
 import { MAX_MISSION_GATES, MIN_MISSION_GATES, distributeMissionGates } from './MissionGates'
 import { generateMission } from './MissionGenerator'
 import { getTerrainProfile, generatedThemeForProfile } from '../world/TerrainProfile'
@@ -72,7 +73,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'weather' | 'generated-desert' | 'generated-valley' | 'generated-coastal' | 'generated-volcanic' | 'generated-waterway' | 'free'
+export type MissionRouteProfile = 'perfect-line' | 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'weather' | 'generated-desert' | 'generated-valley' | 'generated-coastal' | 'generated-volcanic' | 'generated-waterway' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -125,6 +126,7 @@ export interface MissionRouteValidation {
 }
 
 const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
+  'perfect-line': 'PERFECT LINE (PROTOTYPE)',
   'generated-desert': 'DESERT RUN',
   'generated-valley': 'MOUNTAIN VALLEY RUN',
   'generated-coastal': 'COASTAL ISLAND RUN',
@@ -388,6 +390,7 @@ export function buildMissionRoute(
   profile = routeProfileForSpawn(spawnX, spawnZ, spawnYaw),
   modifier = routeModifierForSpawn(spawnX, spawnZ, spawnYaw, profile),
 ): MissionRoutePoint[] {
+  if (profile === 'perfect-line') return buildPerfectLine().course
   const safeSpawnX = finiteOr(spawnX, 0)
   const safeSpawnY = finiteOr(spawnY, 0)
   const safeSpawnZ = finiteOr(spawnZ, 0)
