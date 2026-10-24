@@ -1,6 +1,6 @@
 import type { CourseId } from '../systems/CourseLibrary'
 
-export const FEATURED_MISSION_IDS = ['free-flight', 'training-orbit', 'daily-ops', 'contour-circuit', 'weather-approach'] as const
+export const FEATURED_MISSION_IDS = ['free-flight', 'training-orbit', 'daily-ops'] as const
 export const HIDDEN_MISSION_IDS: readonly string[] = ['weekly-ops', 'monthly-ops']
 
 /** Saved selections are repaired for browsing, never for explicit replay links. */

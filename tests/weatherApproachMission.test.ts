@@ -44,8 +44,8 @@ describe('Weather approach', () => {
     } finally { clearOpsPad() }
   }, 30_000)
 
-  it('is featured and rejects invalid seed pins without changing other courses', () => {
-    expect(FEATURED_MISSION_IDS).toContain('weather-approach')
+  it('uses the course list and rejects invalid seed pins without changing other courses', () => {
+    expect(FEATURED_MISSION_IDS).not.toContain('weather-approach')
     const course = resolveCourseDefinition(courseDefinitionForId('weather-approach'))
     expect(course.weather).toBe('rain')
     expect(resolveCourseReplaySeed(course, NaN)).toBe(course)

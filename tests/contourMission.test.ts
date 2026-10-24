@@ -57,8 +57,8 @@ describe('Contour circuit', () => {
     expect(active.recordId).toBe('seed:73:generated-valley:r32:l133:q146:mission:contour-circuit')
   })
 
-  it('is featured and uses the existing per-seed course record identity',()=>{
-    expect(FEATURED_MISSION_IDS).toContain('contour-circuit')
+  it('uses the course list and existing per-seed course record identity',()=>{
+    expect(FEATURED_MISSION_IDS).not.toContain('contour-circuit')
     expect(courseDefinitionForId('contour-circuit')).toMatchObject({profile:'contour',seed:42,weather:'clear'})
     expect(courseSessionId('contour-circuit',42,'contour')).toBe('seed:42:generated-valley:r32:l133:q146:mission:contour-circuit')
     expect(courseSessionId('contour-circuit',73,'contour')).toBe('seed:73:generated-valley:r32:l133:q146:mission:contour-circuit')

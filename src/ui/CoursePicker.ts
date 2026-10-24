@@ -21,6 +21,8 @@ export interface CoursePickerItem {
   detail: string
   meta: string
   stats: string
+  /** Transient launch entry, outside mission selection and persistence. */
+  activate?: () => void
   category?: Exclude<CoursePickerCategory, 'all'>
   recent?: boolean
   /** Zero-based newest-first position in the bounded Recent list. */
@@ -84,6 +86,10 @@ export interface CoursePickerItem {
   freeFlight?: boolean
   /** Rotating/authored seeds repeat a circuit; fresh random worlds do not. */
   repeatable?: boolean
+}
+
+export function perfectLinePickerItem(activate: () => void): CoursePickerItem {
+  return { id: 'perfect-line', label: 'Perfect Line (prototype)', detail: '', meta: '', stats: '', activate }
 }
 
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
@@ -1038,21 +1044,24 @@ export class CoursePicker {
     button.type = 'button'
     button.className = 'course-option'
     button.dataset.courseId = item.id
-    button.setAttribute('role', 'radio')
+    button.setAttribute('role', item.activate ? 'button' : 'radio')
     const copy = courseCardCopy(item)
     const accessibleLabel = [item.label, copy.meta, copy.record].filter(Boolean).join(', ')
     button.setAttribute('aria-label', accessibleLabel)
     const name = document.createElement('span')
     name.className = 'course-option-name'
     name.textContent = item.label
+    if (item.activate) {
+      button.setAttribute('aria-label', item.label)
+      button.append(name)
+      return button
+    }
     if (FEATURED_MISSION_IDS.some(id => id === item.id)) {
       button.className += ' course-option-featured'
       const subtitle = document.createElement('span')
       subtitle.className = 'course-featured-subtitle'
       subtitle.textContent = item.id === 'free-flight' ? 'Explore freely'
-        : item.id === 'training-orbit' ? 'Learn the basics'
-        : item.id === 'weather-approach' ? 'Land through the weather'
-        : item.id === 'contour-circuit' ? 'Race the terrain' : 'New mission daily'
+        : item.id === 'training-orbit' ? 'Learn the basics' : 'New mission daily'
       button.setAttribute('aria-label', `${item.label}, ${subtitle.textContent}`)
       button.append(name, subtitle)
       if (item.id === 'daily-ops') {
@@ -1076,7 +1085,7 @@ export class CoursePicker {
 
   private createCard(item: CoursePickerItem): HTMLElement {
     const option = this.createOption(item)
-    if (item.id === 'random') return option
+    if (item.id === 'random' || item.activate) return option
     const card = document.createElement('div')
     card.className = 'course-card'
     const star = document.createElement('button')
@@ -1097,7 +1106,7 @@ export class CoursePicker {
     const tabStop = options.find(option => option.dataset.courseId === this.selectedId) ?? options[0]
     for (const option of options) {
       const on = option.dataset.courseId === this.selectedId
-      option.setAttribute('aria-checked', on ? 'true' : 'false')
+      if (option.getAttribute('role') === 'radio') option.setAttribute('aria-checked', on ? 'true' : 'false')
       option.tabIndex = option === tabStop ? 0 : -1
       option.classList.toggle('is-selected', on)
     }
@@ -1130,13 +1139,16 @@ export class CoursePicker {
 
   private select(id: string, persist: boolean): void {
     if (this.disposed || !id) return
+    const action = this.items.find(item => item.id === id)?.activate
     const changed = id !== this.selectedId
-    this.selectedId = id
-    this.syncSelection()
+    if (!action) {
+      this.selectedId = id
+      this.syncSelection()
+    }
     const option = this.list.querySelector<HTMLElement>(`[data-course-id="${cssEscape(id)}"]`)
     option?.focus({ preventScroll: true })
     option?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-    if (persist && changed) this.changeHandler?.(id)
+    if (!action && persist && changed) this.changeHandler?.(id)
   }
 
   private onClick = (event: Event): void => {
@@ -1150,7 +1162,9 @@ export class CoursePicker {
     const option = target.closest('.course-option')
     if (!(option instanceof HTMLElement) || !this.list.contains(option)) return
     const id = option.dataset.courseId
-    if (id) this.select(id, true)
+    const action = this.items.find(item => item.id === id)?.activate
+    if (action) action()
+    else if (id) this.select(id, true)
   }
 
   private onKeyDown = (event: KeyboardEvent): void => {
@@ -1159,7 +1173,7 @@ export class CoursePicker {
     if (!target) return
     if (event.key.toLowerCase() === 'f') {
       event.preventDefault()
-      this.toggleFavorite()
+      if (!this.items.find(item => item.id === target.dataset.courseId)?.activate) this.toggleFavorite()
       return
     }
     const visible = [...this.featuredItems, ...this.visibleGridItems]
@@ -1202,7 +1216,7 @@ export class CoursePicker {
   private toggleFavorite = (id = this.selectedId): void => {
     if (this.disposed) return
     const selected = this.catalogItems.find(item => item.id === id)
-    if (!selected) return
+    if (!selected || selected.activate) return
     selected.favorite = selected.favorite !== true
     this.favoriteHandler?.(selected.id, selected.favorite)
     this.renderList()

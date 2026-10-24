@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.001** Restore the three featured missions and list Contour circuit, Weather approach and Perfect Line (prototype) under All courses.
 - **11.000** Verify b32's approved Perfect Line prototype with 2,744 tests, production controls flights, 15 gate refills, immediate retry and unchanged local storage. The capture-free corridor run finishes airborne in 84.05 seconds, peaks at 100.0 ms per frame and 129.2 MB sampled heap, with no interval over 100 ms. Manual replay feel remains unverified; no scope expansion. See [b32 review](docs/reviews/perfect-line-b32/README.md).
 
 - **10.999** Implement b32's approved Direction A feel test: one fixed canyon line, 15 existing gates, airborne start and finish, elapsed time and R retry. Keep scored missions, records, physics, budgets and paused exclusions intact.

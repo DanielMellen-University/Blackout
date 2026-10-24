@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CoursePicker, coursePickerOwnsGlobalKey, type CoursePickerItem } from '../src/ui/CoursePicker'
+import { CoursePicker, coursePickerOwnsGlobalKey, perfectLinePickerItem, type CoursePickerItem } from '../src/ui/CoursePicker'
 
 /** Minimal native-element test adapter; no browser, layout engine, or world boot. */
 class TestElement {
@@ -115,38 +115,39 @@ beforeEach(() => {
 afterEach(() => { picker.dispose(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('course picker interaction', () => {
-  it('keeps Weather approach fifth and reachable with the full featured row', () => {
+  it('keeps exactly the original three featured cards and all three restored entries in All courses', () => {
+    const activate = vi.fn(), onChange = vi.fn(), onFavorite = vi.fn()
+    picker.onChange(onChange); picker.onFavorite(onFavorite)
     picker.setItems([...missionItems,
       { id: 'contour-circuit', label: 'Contour circuit', detail: '', meta: '', stats: '' },
       { id: 'weather-approach', label: 'Weather approach', detail: '', meta: '', stats: '' },
-    ], 'weather-approach')
-    const featured = element('.course-picker-featured').children
-    expect(featured.map(node => node.dataset.courseId)).toEqual(['free-flight', 'training-orbit', 'daily-ops', 'contour-circuit', 'weather-approach'])
-    expect(featured[4].getAttribute('aria-label')).toContain('Land through the weather')
-    key('ArrowRight', featured[3])
-    expect(documentState.activeElement).toBe(featured[4])
-    key('ArrowDown', featured[4])
-    expect(documentState.activeElement?.dataset.courseId).toBe('ridge')
-    key('ArrowUp', documentState.activeElement!)
-    expect(documentState.activeElement?.dataset.courseId).toBe('contour-circuit')
-    key('ArrowRight', documentState.activeElement!)
-    expect(documentState.activeElement).toBe(featured[4])
+      perfectLinePickerItem(activate),
+    ], 'training-orbit')
+    expect(element('.course-picker-featured').children.map(node => node.textContent.replace(/Resets in .*/, '')))
+      .toEqual(['Free flightExplore freely', 'Training orbitLearn the basics', 'Daily challengeNew mission daily'])
+    expect(element('.course-picker-featured').children.map(node => node.dataset.courseId))
+      .toEqual(['free-flight', 'training-orbit', 'daily-ops'])
+    expect(element('.course-picker-category').children[0].textContent).toBe('All courses (5)')
+    const grid = element('.course-picker-grid')
+    for (const label of ['Contour circuit', 'Weather approach', 'Perfect Line (prototype)']) {
+      expect(grid.querySelectorAll('.course-option-name').map(node => node.textContent)).toContain(label)
+    }
+    const prototype = grid.querySelector<TestElement>('[data-course-id="perfect-line"]')!
+    expect(prototype.getAttribute('aria-label')).toBe('Perfect Line (prototype)')
+    key('End', options()[0])
+    expect(documentState.activeElement).toBe(prototype)
+    expect(picker.value).toBe('training-orbit')
+    key('f', prototype)
+    expect(activate).not.toHaveBeenCalled()
+    expect(onChange).not.toHaveBeenCalled()
+    expect(onFavorite).not.toHaveBeenCalled()
+    element('.course-picker-list').dispatch('click', { target: prototype })
+    expect(activate).toHaveBeenCalledExactlyOnceWith()
+    expect(picker.value).toBe('training-orbit')
+    picker.setFilter('Perfect Line')
+    expect(element('.course-picker-grid').querySelector('[data-course-id="perfect-line"]')).not.toBeNull()
     picker.setFilter('no matches')
-    expect(options().find(node => node.dataset.courseId === 'weather-approach')?.getAttribute('aria-checked')).toBe('true')
-  })
-
-  it('keeps the new Contour mission featured through filtering and keyboard navigation', () => {
-    picker.setItems([...missionItems, { id: 'contour-circuit', label: 'Contour circuit', detail: 'Terrain gates and runway return', meta: '', stats: '' }], 'contour-circuit')
-    const featured = element('.course-picker-featured').children
-    expect(featured.map(node => node.dataset.courseId)).toEqual(['free-flight', 'training-orbit', 'daily-ops', 'contour-circuit'])
-    expect(featured[3].getAttribute('aria-label')).toContain('Race the terrain')
-    key('ArrowDown', featured[3])
-    expect(documentState.activeElement?.dataset.courseId).toBe('ridge')
-    key('ArrowUp', documentState.activeElement!)
-    expect(documentState.activeElement?.dataset.courseId).toBe('contour-circuit')
-    picker.setFilter('no matches')
-    expect(options().some(node => node.dataset.courseId === 'contour-circuit')).toBe(true)
-    expect(featured[3].getAttribute('aria-checked')).toBe('true')
+    expect(options().map(node => node.dataset.courseId)).toEqual(['free-flight', 'training-orbit', 'daily-ops', 'random'])
   })
 
   it('features modes in fixed order, pins Random world, and filters/counts only ordinary missions', () => {

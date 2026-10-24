@@ -342,6 +342,7 @@ export async function boot(): Promise<void> {
     coursePickerOwnsGlobalKey,
     coursePickerFlightLogLabel,
     coursePickerCopy,
+    perfectLinePickerItem,
     readCoursePickerCategory,
     readCoursePickerSort,
     normalizeCoursePickerFilter,
@@ -563,7 +564,11 @@ export async function boot(): Promise<void> {
         repeatable: resolvedCourse.seed !== null,
       }
     })
-    for (const picker of coursePickers) picker.setItems(items, selectedCourseId)
+    const perfectLineButton = document.getElementById('btn-perfect-line')
+    for (const picker of coursePickers) {
+      picker.setItems(picker === coursePickers[0] && perfectLineButton
+        ? [...items, perfectLinePickerItem(() => perfectLineButton.click())] : items, selectedCourseId)
+    }
   }
   const rememberRecentCourse = (id: CourseId): void => {
     const next = rememberCourseId(recentCourseIds, id)
