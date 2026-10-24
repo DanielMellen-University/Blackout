@@ -68,7 +68,7 @@ const MODE_CONFIG: Record<ChaseMode, ModeConfig> = {
     maxDist: 24,
     defaultYaw: 0,
     defaultPitch: 0.2,
-    defaultDistance: 11,
+    defaultDistance: 14,
     followStiffness: 9,
     yawOnly: true,
   },
@@ -79,7 +79,7 @@ const MODE_CONFIG: Record<ChaseMode, ModeConfig> = {
     maxLookLead: 8,
     minDist: 16,
     maxDist: 48,
-    defaultYaw: 0.55,
+    defaultYaw: 0,
     defaultPitch: 0.34,
     defaultDistance: 30,
     followStiffness: 5.5,
@@ -142,6 +142,8 @@ export class CameraSystem {
 
   /** Orbit yaw relative to aircraft heading (chase) or world (orbit). */
   private yaw = 0
+  /** Aircraft heading captured when orbit opens, so yaw 0 starts behind the jet. */
+  private orbitHeading = 0
   private pitch = 0.28
   private distance = 20
 
@@ -299,9 +301,6 @@ export class CameraSystem {
     if (this.disposed) return
     this.crashShot = false
     const leavingCockpit = this.mode === 'cockpit' && mode !== 'cockpit'
-    const externalYaw = this.yaw
-    const externalPitch = this.pitch
-    const externalDistance = this.distance
     this.autoReturnEnabled = this.autoReturnPreference
     this.mode = mode
     this.lookReady = false
@@ -310,14 +309,12 @@ export class CameraSystem {
     if (mode === 'cockpit') {
       this.cockpit.enter(this.camera)
     } else {
-      if (leavingCockpit) {
-        this.cockpit.exit(this.camera)
-        this.applyModeDefaults(mode)
-        this.yaw = externalYaw
-        this.pitch = externalPitch
-        this.distance = externalDistance
-      } else {
-        this.applyModeDefaults(mode)
+      // Every switch opens behind and a bit above the jet. Restoring the old
+      // orbit yaw here used to open the chase view from the side.
+      if (leavingCockpit) this.cockpit.exit(this.camera)
+      this.applyModeDefaults(mode)
+      if (mode === 'orbit' && aircraft && finiteQuaternion(aircraft.displayOrientation)) {
+        this.orbitHeading = headingFromOrientation(aircraft.displayOrientation, this.stableHeading)
       }
     }
 
@@ -606,6 +603,8 @@ export class CameraSystem {
       this.camera.up.copy(_Y_UP).applyQuaternion(aircraft.displayOrientation)
     } else if (cfg.yawOnly) {
       _offsetWorld.applyQuaternion(_headingQuat)
+    } else if (this.mode === 'orbit') {
+      _offsetWorld.applyAxisAngle(_Y_UP, this.orbitHeading)
     }
     // Orbit: leave offset in world spherical space around the pivot
 

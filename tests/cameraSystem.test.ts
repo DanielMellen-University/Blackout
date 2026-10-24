@@ -108,7 +108,7 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
-  it('restores the last external framing after a cockpit toggle', () => {
+  it('opens behind and a bit above the jet after a cockpit toggle', () => {
     const target = {
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
@@ -130,10 +130,13 @@ describe('external camera framing', () => {
     expect(cameras.camera.fov).toBe(74)
     cameras.setMode('chase', aircraft)
 
-    expect(state.yaw).toBeCloseTo(-0.72)
-    expect(state.pitch).toBeCloseTo(0.41)
-    expect(state.distance).toBeCloseTo(27)
+    expect(state.yaw).toBeCloseTo(0)
+    expect(state.pitch).toBeCloseTo(0.2)
+    expect(state.distance).toBeCloseTo(14)
     expect(cameras.camera.fov).toBe(60)
+    cameras.setMode('orbit', aircraft)
+    expect(state.yaw).toBeCloseTo(0)
+    expect(state.pitch).toBeCloseTo(0.34)
     cameras.dispose()
   })
 

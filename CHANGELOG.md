@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.009** Camera views open behind and a bit above the jet on every switch, and the middle view sits a little further back.
 - **11.008** Third-person camera now follows Q and E roll rigidly like first person, removing the stabilizer lag and bank cap that caused the jerk.
 - **11.007** Fix the third-person camera snapping when rolling with Q and E through inverted: the capped chase bank now holds its side instead of flipping in one frame.
 - **11.006** Stop villages and cities flickering: keep a settlement visible through one-frame terrain coverage gaps during LOD swaps, and add hysteresis to the detail radius.
