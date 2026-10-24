@@ -1,6 +1,6 @@
 # Mission overhaul roadmap (Oct 24 2026)
 
-Status: PLANNED. No direction picked. No overhaul code until Daniel picks one. Starts after landing removal (ROADMAP item 6). This replaces the separate lines and valley-run overhaul (old item 7) and builds on [fun exploration](fun-exploration.md).
+Status: direction **A+C picked** by Daniel on Oct 24 2026 (wide lines plus scored flying). Replaces the Oct 22 rule of 15 to 100 gates. B is not used. Code only in approved daily slices. Starts after landing removal (ROADMAP item 6). This replaces the separate lines and valley-run overhaul (old item 7) and builds on [fun exploration](fun-exploration.md).
 
 ## What is wrong now
 
@@ -23,6 +23,10 @@ Status: PLANNED. No direction picked. No overhaul code until Daniel picks one. S
 - **A. Wide lines:** fewer gates (about 8 to 20), 0.8 to 2.5 km apart, routed through valleys and over ridges with real height changes. Replaces the 15 to 100 gate rule.
 - **B. Canyon journeys:** one-way point-to-point runs through carved canyons and valleys, gates as waypoints, finish in the air at the destination. Keeps 15 to 100 gates but spaced over much longer routes.
 - **C. Checkpoints plus flying score:** wide checkpoints with free routing between them, scored on time plus bonuses for flying low and close to terrain. Replaces the 15 to 100 gate rule.
+
+## Picked: A+C
+
+8 to 20 gates, 0.8 to 2.5 km apart, routed through valleys and over ridges with real height changes. Score is time plus bonuses for flying low, close to terrain and carrying speed. Phases M0, M1, M4 and M5 in full, M2 light, M3 optional. Estimated about 20 to 30% of the weekly limit in total.
 
 ## Phases after landing removal
 

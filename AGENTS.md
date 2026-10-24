@@ -16,7 +16,7 @@
 - Gates are 50% larger (GATE_SIZE_SCALE 1.5 for ring, tube and trigger radius). Keep visual and trigger sizes scaled together.
 - The featured top row is exactly Free flight, Training orbit and Daily challenge. Do not touch UI unless the user asks.
 - No landings anywhere (Oct 24 2026). No mission, mode, run, contract or medal may require or score a landing. Runs finish in the air. Existing landing code is being removed in approved steps; do not add new landing requirements.
-- The lines/valley-run overhaul is approved for planning only. No overhaul code until the user picks a direction.
+- Mission overhaul direction is A+C (Oct 24 2026): 8 to 20 gates, 0.8 to 2.5 km apart, routed through valleys and over ridges with real height changes, plus scored flying (bonuses for flying low, close to terrain and carrying speed). This replaces the Oct 22 rule of 15 to 100 gates. Work it only in approved daily slices; see docs/gameplay/mission-overhaul.md.
 - Every new feature, mission type or roadmap item needs the user's approval first. Fixes to shipped features within approved scope are fine.
 
 ## How to work
