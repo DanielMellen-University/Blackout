@@ -7,15 +7,16 @@ export const flightConfig = {
 
   /** Dry thrust (N). */
   maxThrust: 780_000,
-  boostThrustMul: (650 / 340) ** 2,
+  boostThrustMul: 2 * (650 / 340) ** 2,
 
-  /** Normalized reserve; full burst lasts 12 s, passive refill takes 45 s. */
-  nitroDrainPerSecond: 1 / 12,
-  nitroRefillPerSecond: 1 / 45,
+  /** Normalized reserve; full burst lasts 5 s, passive refill takes 20 s. */
+  nitroDrainPerSecond: 1 / 5,
+  nitroRefillPerSecond: 1 / 20,
   nitroGateRefill: 0.25,
   /** Hysteresis prevents empty-edge flicker even with boost held. */
   nitroRestartFraction: 0.15,
   /** Feedback dimensions, scaled by the resolved burner and throttle. */
+  dryPlumeLength: 1.4,
   boostPlumeLength: 3.4,
   boostPlumeWidth: 1.5,
   boostNozzleGlow: 10,
@@ -27,10 +28,11 @@ export const flightConfig = {
   minSpeed: 48,
   /** Level military cruise, m/s (~660 kt). Thrust balances drag here. */
   cruiseSpeed: 340,
-  /** Level afterburner cruise, m/s (~1264 kt). */
-  cruiseSpeedBoost: 650,
-  /** Dive cap, m/s (~1320 kt). Dry and afterburner share it. */
+  /** Natural thrust/drag equilibrium, not a boost speed limit. */
+  cruiseSpeedBoost: 650 * Math.SQRT2,
+  /** Dry dive cap, m/s (~1320 kt). Nitro excess decays through drag. */
   maxSpeed: 680,
+  /** Legacy dev-review speed reference, not a nitro limit. */
   maxSpeedBoost: 680,
   /** Full low-angle lift support, m/s (~132 kt). Stall sink grows below this. */
   liftSpeed: 68,
@@ -38,7 +40,6 @@ export const flightConfig = {
   /** Full military acceleration at low speed, m/s². */
   milAccel: 48,
   maxAccel: 130,
-  maxAccelBoost: 190,
   /** Afterburner cannot light with the throttle effectively closed. */
   afterburnerMinThrottle: 0.05,
   /** Treat the lever as closed below this; idle then bleeds speed instead of holding it. */

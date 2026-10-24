@@ -33,17 +33,17 @@ describe('resolveEngineState', () => {
     expect(out.maxSpeed).toBe(C.maxSpeed)
   })
 
-  it('sets a level equilibrium from the lever instead of a 1543 m/s seek', () => {
+  it('resolves uncapped boost equilibrium without a speed hold', () => {
     const out = createEngineState()
     resolveEngineState({ throttle: 0.5, boost: true }, out)
     expect(out.afterburnerActive).toBe(true)
     expect(out.targetSpeed).toBeCloseTo(Math.sqrt(0.5) * C.cruiseSpeedBoost)
-    expect(out.targetSpeed).toBeLessThan(500)
+    expect(out.targetSpeed).toBeCloseTo(650)
     expect(out.maxSpeed).toBe(C.maxSpeed)
     expect(out.maxSpeed).toBeLessThan(1543)
     expect(C.cruiseSpeed).toBeLessThan(400)
     expect(C.cruiseSpeedBoost).toBeGreaterThan(C.cruiseSpeed)
-    expect(C.cruiseSpeedBoost).toBeLessThan(C.maxSpeed)
+    expect(C.cruiseSpeedBoost).toBeGreaterThan(C.maxSpeed)
   })
 
   it('contains malformed engine controls at a safe idle state', () => {
@@ -73,7 +73,7 @@ describe('resolveEngineState', () => {
     expect(out.afterburnerActive).toBe(true)
     expect(out.afterburnerHeatLocked).toBe(false)
     expect(out.fuelAvailable).toBe(true)
-    expect(out.targetSpeed).toBeCloseTo(Math.sqrt(1) * C.cruiseSpeedBoost)
+    expect(out.targetSpeed).toBeCloseTo(C.cruiseSpeedBoost)
   })
 
   it('ignores an engine-heat lock and keeps the burner lit', () => {

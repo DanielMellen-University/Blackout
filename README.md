@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.003**. Previous roadmap chunk: **11.002**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.004**. Previous roadmap chunk: **11.003**.
 
-Recent changes from **11.003**. Hide Perfect Line from player UI by default; keep testing access behind `?dev=perfect-line`.
+Recent changes from **11.004**. b36: lengthen and brighten the dry flame, double nitro thrust, use 5 s drain and 20 s refill, and remove nitro speed and acceleration caps. Excess speed decays naturally after release; retain count-scaled gate top-ups.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -27,7 +27,7 @@ Default keyboard controls:
 
 - W / S pitch, A / D yaw, Q / E roll
 - Shift / Ctrl raise or lower throttle
-- Space afterburner with nitro (12 s reserve, 45 s refill, 125% total gate refill budget shared across the run); B speed brake and wheel brake
+- Space afterburner with nitro (5 s reserve, 20 s refill, 125% total gate refill budget shared across the run); B speed brake and wheel brake
 - G landing gear; V light stability assist (trim resumes two seconds after releasing yaw/roll)
 - C cycles chase, orbit, and unobstructed first person; middle mouse looks around in external views
 - P or Escape pauses; R ends the flight and generates a new world (Perfect Line: instant same-line retry)

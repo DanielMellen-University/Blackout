@@ -15,7 +15,7 @@ export interface EngineState {
   afterburnerHeatLocked: boolean
   /** Level-flight equilibrium for this lever, m/s. Not a speed hold. */
   targetSpeed: number
-  /** Dive cap in m/s. */
+  /** Dry dive cap in m/s; ignored during nitro and carried overspeed. */
   maxSpeed: number
   /** Thrust acceleration available at this lever, m/s². */
   maxAcceleration: number

@@ -330,7 +330,9 @@ export class FlightModel {
       }
 
       const s3 = velocity.length()
-      if (s3 > vmax) velocity.multiplyScalar(vmax / s3)
+      // Nitro is uncapped. Carry its excess speed through release so drag
+      // sheds it naturally; retain the cap for ordinary dry flight.
+      if (!boost && airspeed <= vmax && s3 > vmax) velocity.multiplyScalar(vmax / s3)
     }
 
     // Rotate off the runway

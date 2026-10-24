@@ -698,15 +698,15 @@ export class Aircraft {
       ab.userData.powerPercent = throttlePower * 100
     }
 
-    // Stretch aft from the nozzle lip. Military power retains a compact hot
-    // exhaust; afterburner grows to a long, wide plume at full engine power.
+    // Stretch aft from the nozzle lip. Dry power has a visible trailing flame;
+    // nitro retains the longer, wider envelope.
     const pulseAnimated = boost && dt > 0 && !this.reducedMotion
     const pulseModeChanged = pulseAnimated !== this.plumePulseAnimatedValue
     this.plumePulseAnimatedValue = pulseAnimated
     const pulse =
       pulseAnimated ? 1 + Math.sin(now * 0.028) * 0.08 : 1
     const len = (
-      0.12 + plumeResponse * (boost ? flightConfig.boostPlumeLength : .35)
+      0.12 + plumeResponse * (boost ? flightConfig.boostPlumeLength : flightConfig.dryPlumeLength)
     ) * pulse
     const fat = boost ? .68 + plumeResponse * (flightConfig.boostPlumeWidth - .68) : .5 + plumeResponse * .16
     if (pulseAnimated || pulseModeChanged || responseChanged ||
@@ -718,11 +718,10 @@ export class Aircraft {
     }
 
     if (responseChanged) {
-      const boostGlow = boost ? 1 : 0.55
       for (const plume of this.plumeMaterials) {
-        if (plume.name === 'abCore') plume.material.opacity = (boost ? 1 : 0.16 + plumeResponse * 0.28) * (boost ? 1 : boostGlow)
-        else if (plume.name === 'abMid') plume.material.opacity = (boost ? 0.82 : 0.08 + plumeResponse * 0.22) * (boost ? 1 : boostGlow)
-        else if (plume.name === 'abOuter') plume.material.opacity = (boost ? 0.42 : 0.03 + plumeResponse * 0.12)
+        if (plume.name === 'abCore') plume.material.opacity = (boost ? 1 : 0.22 + plumeResponse * 0.40)
+        else if (plume.name === 'abMid') plume.material.opacity = (boost ? 0.82 : 0.12 + plumeResponse * 0.33)
+        else if (plume.name === 'abOuter') plume.material.opacity = (boost ? 0.42 : 0.05 + plumeResponse * 0.19)
       }
     }
     if (pulseAnimated || pulseModeChanged || responseChanged) {

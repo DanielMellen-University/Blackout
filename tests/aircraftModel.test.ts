@@ -870,18 +870,24 @@ describe('rebuilt aircraft', () => {
   })
 })
 
-it('keeps cruise exhaust compact at 45 percent power while retaining full afterburner', () => {
+it('shows longer dry exhaust at cruise and full power, with larger nitro', () => {
   const aircraft = new Aircraft()
   try {
     aircraft.position.set(0, 1000, 0)
     aircraft.controls.throttle = .45; aircraft.controls.boost = false; aircraft.step(0)
     const plume = aircraft.mesh.getObjectByName('afterburner')!
     expect(plume.visible).toBe(true)
-    expect(plume.scale.z).toBeLessThan(.35)
+    expect(plume.scale.z).toBeCloseTo(.12 + .45 ** .82 * 1.4)
     expect(plume.scale.x).toBeLessThan(.65)
     const cruiseLength = plume.scale.z
-    aircraft.controls.throttle = 1; aircraft.controls.boost = true; aircraft.step(0)
-    expect(plume.scale.z).toBeGreaterThan(2.8)
-    expect(plume.scale.z).toBeGreaterThan(cruiseLength * 8)
+    aircraft.controls.throttle = 1; aircraft.step(0)
+    expect(plume.scale.z * 3).toBeCloseTo(4.56)
+    expect(plume.scale.z).toBeGreaterThan(cruiseLength)
+    const dryLength = plume.scale.z
+    const core = plume.getObjectByName('abCore') as Mesh
+    expect((core.material as MeshBasicMaterial).opacity).toBeCloseTo(.62)
+    aircraft.controls.boost = true; aircraft.step(0)
+    expect(plume.scale.z * 3).toBeCloseTo(10.56)
+    expect(plume.scale.z).toBeGreaterThan(dryLength * 2)
   } finally { aircraft.dispose() }
 })
