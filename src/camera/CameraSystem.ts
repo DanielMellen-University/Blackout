@@ -597,8 +597,14 @@ export class CameraSystem {
       _headingQuat.setFromAxisAngle(_Y_UP, heading)
     }
 
-    if (cfg.yawOnly) {
-      // Chase-style: rotate offset by heading only (no roll/pitch of the airframe)
+    // Third person is rigid to the airframe like first person: Q/E roll,
+    // pitch and yaw carry the whole rig, so there is no stabilizer lag or
+    // bank cap fighting the input (the old source of the jerk).
+    const rigid = cfg.yawOnly === true && finiteQuaternion(aircraft.displayOrientation)
+    if (rigid) {
+      _offsetWorld.applyQuaternion(aircraft.displayOrientation)
+      this.camera.up.copy(_Y_UP).applyQuaternion(aircraft.displayOrientation)
+    } else if (cfg.yawOnly) {
       _offsetWorld.applyQuaternion(_headingQuat)
     }
     // Orbit: leave offset in world spherical space around the pivot
@@ -606,7 +612,7 @@ export class CameraSystem {
     _desired.copy(_pivot).add(_offsetWorld)
     this.resolveGroundOcclusion(_pivot, _desired, _desired, dt, snap)
 
-    if (snap || dt <= 0) {
+    if (snap || dt <= 0 || rigid) {
       this.camera.position.copy(_desired)
     } else {
       const alpha = 1 - Math.exp(-cfg.followStiffness * dt)
@@ -632,13 +638,13 @@ export class CameraSystem {
     if (cfg.yawOnly) {
       _look.copy(cfg.lookOffset)
       _look.z = MathUtils.lerp(_look.z, flightConfig.boostChaseLookOffsetZ, this.boostFraming)
-      _look.applyQuaternion(_headingQuat)
+      _look.applyQuaternion(rigid ? aircraft.displayOrientation : _headingQuat)
     } else {
       _look.copy(cfg.lookOffset)
     }
     _look.add(aircraft.displayPosition)
 
-    if (cfg.lookLead > 0 && finiteVector3(aircraft.velocity)) {
+    if (!rigid && cfg.lookLead > 0 && finiteVector3(aircraft.velocity)) {
       // Slightly more lead at high speed so framing stays ahead of the jet
       _velLead.copy(aircraft.velocity).multiplyScalar(cfg.lookLead * (1 + juice * 0.4))
       // Prefer horizontal lead so banking does not yank the look target skyward
@@ -647,7 +653,7 @@ export class CameraSystem {
       _look.add(_velLead)
     }
 
-    if (snap || dt <= 0 || !this.lookReady) {
+    if (snap || dt <= 0 || !this.lookReady || rigid) {
       this.lookSmoothed.copy(_look)
       this.lookReady = true
     } else {
@@ -657,7 +663,7 @@ export class CameraSystem {
 
     this.camera.lookAt(this.lookSmoothed)
 
-    const targetBank = this.reducedMotion || !this.cameraEffectsEnabled || this.mode === 'orbit'
+    const targetBank = rigid || this.reducedMotion || !this.cameraEffectsEnabled || this.mode === 'orbit'
       ? 0
       : stableBank(cameraBankAngle(aircraft.displayOrientation, Math.PI), this.externalBank, MAX_EXTERNAL_BANK)
     this.externalBank = snap || dt <= 0

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.008** Third-person camera now follows Q and E roll rigidly like first person, removing the stabilizer lag and bank cap that caused the jerk.
 - **11.007** Fix the third-person camera snapping when rolling with Q and E through inverted: the capped chase bank now holds its side instead of flipping in one frame.
 - **11.006** Stop villages and cities flickering: keep a settlement visible through one-frame terrain coverage gaps during LOD swaps, and add hysteresis to the detail radius.
 - **11.005** b36: enlarge normal and precision gates by 50%, including the ring, tube, pass flash and swept crossing radius.
