@@ -30,6 +30,8 @@ Costs are rough Codex effort, not dollar or quota forecasts. A pass includes imp
 
 The Oct 23 approval covers only this cheapest feel test. It now exists: choose **Perfect Line (prototype)** on the title screen. Seed 32026 supplies one hand-shaped 11.2 km canyon, changing bend radii, two ridge saddles and breathing spaces. Start airborne at 150 m/s, pass all 15 existing gates in order, then finish in the air. Existing scaled nitro refills apply. The running timer holds the finish time; **R** instantly retries the same line, including after a crash. Escape opens the existing menu to quit. No landing, medals, unlocks, saved times or new save fields. Existing missions keep their scoring and records.
 
+The [11.000 verification](../reviews/perfect-line-b32/README.md) completes the prototype batch: production flight 84.05 s, 15 accepted gates/refills, immediate retry, no save writes, peak frame 100.0 ms and sampled heap 129.2 MB.
+
 This is a short feel test, not approval for additional courses or systems. Human replay appeal still needs five minutes of flying. Physics, nitro tuning, streaming/worker/draw budgets and paused exclusions remain unchanged.
 
 ## B. Make your own line

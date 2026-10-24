@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.000** Verify b32's approved Perfect Line prototype with 2,744 tests, production controls flights, 15 gate refills, immediate retry and unchanged local storage. The capture-free corridor run finishes airborne in 84.05 seconds, peaks at 100.0 ms per frame and 129.2 MB sampled heap, with no interval over 100 ms. Manual replay feel remains unverified; no scope expansion. See [b32 review](docs/reviews/perfect-line-b32/README.md).
+
 - **10.999** Implement b32's approved Direction A feel test: one fixed canyon line, 15 existing gates, airborne start and finish, elapsed time and R retry. Keep scored missions, records, physics, budgets and paused exclusions intact.
 
 - **10.998** Publish b31's docs-only exploration of three terrain-flying directions, honest prototype costs and open choices. Supersede the rejected 10.994 scope. No gameplay or engine changes; every feature and prototype still needs Daniel's approval. See [fun exploration](docs/gameplay/fun-exploration.md).

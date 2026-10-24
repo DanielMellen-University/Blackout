@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.999**. Previous roadmap chunk: **10.998**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.000**. Previous roadmap chunk: **10.999**.
 
-Recent changes from **10.999**. Implement b32's approved Direction A feel test: one fixed canyon line, 15 existing gates, airborne start and finish, elapsed time and R retry. Keep scored missions, records, physics, budgets and paused exclusions intact. See [fun exploration](docs/gameplay/fun-exploration.md).
+Recent changes from **11.000**. Verify b32's approved Perfect Line prototype with 2,744 tests, production controls flights, 15 gate refills, immediate retry and unchanged local storage. The capture-free corridor run finishes airborne in 84.05 seconds, peaks at 100.0 ms per frame and 129.2 MB sampled heap, with no interval over 100 ms. Manual replay feel remains unverified; no scope expansion. See [b32 review](docs/reviews/perfect-line-b32/README.md).
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -30,7 +30,7 @@ Default keyboard controls:
 - Space afterburner with nitro (12 s reserve, 45 s refill, 125% total gate refill budget shared across the run); B speed brake and wheel brake
 - G landing gear; V light stability assist (trim resumes two seconds after releasing yaw/roll)
 - C cycles chase, orbit, and unobstructed first person; middle mouse looks around in external views
-- P or Escape pauses; R ends the flight and generates a new world
+- P or Escape pauses; R ends the flight and generates a new world (Perfect Line: instant same-line retry)
 - N cycles weather; T cycles radar targets; X toggles ghost replay
 
 Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in the pause menu. Standard gamepads also support the core flight controls.
