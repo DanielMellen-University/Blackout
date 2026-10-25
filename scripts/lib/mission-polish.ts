@@ -22,7 +22,9 @@ export function auditMissionGeometry(course: CourseDefinition, seed: number) {
     mission.start(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, course.profile!, adapted.modifier)
     const route = buildMissionRoute(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, course.profile!, adapted.modifier)
     require(!mission.routeFallbackUsed && route.length === spec.goals.gates && route.length >= 15 && route.length <= 100, 'route fallback or wrong gate count')
-    const radius = missionChallengeForProfile(course.profile!) === 'precision' ? 38 * .78 - 2 : 36
+    // b36 (11.005) made gates 50% bigger: ring and trigger both scale by 1.5.
+    const radius = (missionChallengeForProfile(course.profile!) === 'precision' ? 38 * .78 - 2 : 36) * 1.5
+    require(mission.gates.every(gate => Math.abs(gate.radius - radius) < 1e-9), 'gate trigger radius drift')
     const halfWidth = ['coastal-island-run', 'volcanic-run'].includes(spec.theme) ? 52 : 34
     // Each cell owns sites in its core. Include adjacent cells so a site whose
     // footprint crosses a cell edge is included even outside the flown cells.

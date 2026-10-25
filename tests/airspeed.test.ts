@@ -12,7 +12,8 @@ it('converts metres per second to true knots without a fake scale', () => {
   expect(displayedKnots(flightConfig.cruiseSpeed)).toBeGreaterThan(600)
   expect(displayedKnots(flightConfig.cruiseSpeed)).toBeLessThan(720)
   expect(displayedKnots(flightConfig.maxSpeed)).toBeLessThan(1400)
-  expect(displayedKnots(flightConfig.maxSpeed)).toBeGreaterThan(displayedKnots(flightConfig.cruiseSpeedBoost))
+  // b36 (11.004): nitro is uncapped, so its thrust/drag equilibrium sits above the dry dive cap.
+  expect(displayedKnots(flightConfig.cruiseSpeedBoost)).toBeGreaterThan(displayedKnots(flightConfig.maxSpeed))
   expect(displayedKnots(-1)).toBe(0)
 })
 
@@ -46,7 +47,8 @@ it('settles military cruise well below 1543 m/s and lets afterburner go faster',
   }
   expect(lit).toBe(true)
   expect(peak).toBeGreaterThan(beforeBoost + 40)
-  expect(peak).toBeLessThan(flightConfig.maxSpeed)
+  // b36 (11.004): nitro is uncapped and carries past the dry dive cap.
+  expect(peak).toBeGreaterThan(flightConfig.maxSpeed)
   expect(peak).toBeLessThan(1543)
 })
 
