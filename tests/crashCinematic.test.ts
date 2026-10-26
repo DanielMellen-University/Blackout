@@ -49,7 +49,12 @@ describe('crash presentation clock', () => {
 
   it('routes land/water separately and freezes flight during the shot', () => {
     const main = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8')
-    const collision = main.slice(main.indexOf("if (touch === 'crash' || touch === 'ditch')"), main.indexOf('const scoredTouch'))
+    // d1 (11.010) removed the scoredTouch landing gate; the crash branch now ends where touchdown effects begin.
+    const collisionStart = main.indexOf("if (touch === 'crash' || touch === 'ditch')")
+    const collisionEnd = main.indexOf("if (touch === 'landed' && wasAirborne)", collisionStart)
+    expect(collisionStart).toBeGreaterThan(-1)
+    expect(collisionEnd).toBeGreaterThan(collisionStart)
+    const collision = main.slice(collisionStart, collisionEnd)
     expect(collision).toContain('crashCinematic.begin([')
     expect(collision).not.toContain('results.show(')
     expect(collision).toMatch(/waterImpactFx.trigger\([\s\S]*?\} else \{\s*crashFx.trigger/)
