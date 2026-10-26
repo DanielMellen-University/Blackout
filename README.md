@@ -1,10 +1,10 @@
 # Blackout
 
-Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
+Browser arcade flight game. Pilot an F-35, take off and fly a gate run to an airborne finish. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.009**. Previous roadmap chunk: **11.008**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.010**. Previous roadmap chunk: **11.009**.
 
-Recent changes from **11.009**. Camera views open behind and a bit above the jet on every switch, and the middle view sits a little further back.
+Recent changes from **11.010**. d1: finish every gated run in the air at the last gate; remove return-to-base navigation and landing preview, and replace landing-related scoring with gate/time points while retaining medal thresholds.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -37,7 +37,7 @@ Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in
 
 Open **Controls** or **Flight manual** from the launch screen or pause menu. Controls follows your configured axis directions and action keys. The manual covers takeoff, handling, instruments, missions, landing, and exploration. Back or Escape returns to launch; when opened during flight, it returns to paused settings. Use **Retry same course** in Pause to restart the current mission, or Enter from results/the crash cinematic.
 
-A mission is one flight attempt, from launch until landing or a crash. Clear the gates, follow the return cue to the airfield, and land to bank your score. After a landing or crash, retry the same course or choose another. Random world and custom seeds let you revisit procedural worlds; Daily challenge offers shared conditions. Records, favorites, and best-run ghosts are saved locally.
+A gated mission is one flight attempt, from launch until the final gate or a crash. Pass the last gate to finish and bank your score in the air. After a finish or crash, retry the same course or choose another. Random world and custom seeds let you revisit procedural worlds; Daily challenge offers shared conditions. Records, favorites, and best-run ghosts are saved locally.
 
 ## Mission picker
 

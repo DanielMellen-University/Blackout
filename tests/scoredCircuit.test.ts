@@ -1,51 +1,49 @@
 import { describe, expect, it } from 'vitest'
 import { ChallengeRun, readCourseHistory } from '../src/systems/ChallengeRun'
 
-const landing = { verticalSpeed: -1, groundSpeed: 30, pitchRad: 0, rollRad: 0 }
 function fixture() {
   const values = new Map<string, string>()
   const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value) }
   return { values, storage }
 }
-function fly(run: ChallengeRun, gateTime: number, returnTime: number, quality = 1) {
+function fly(run: ChallengeRun, gateTime: number, quality = 1) {
   for (let time = 0; time < gateTime; time++) run.update(1, 100)
   run.recordGate(quality)
-  for (let time = 0; time < returnTime; time++) run.update(1, 60)
-  return run.finishLanding(landing)!
+  return run.finishAirborne()!
 }
 
 describe('scored complete circuits', () => {
-  it('compares landing pace against the previous complete circuit, independently of best-score gate splits', () => {
+  it('compares final-gate pace against the previous run, independently of best-score gate splits', () => {
     const { storage } = fixture()
     const run = new ChallengeRun(storage)
     run.reset('seed:scored:orbit', 1)
-    const first = fly(run, 10, 20)
+    const first = fly(run, 10)
     expect(first.gateSplits).toEqual([10])
-    expect(first.bestTimeSec).toBe(30)
+    expect(first.bestTimeSec).toBe(10)
     expect(first.isNewBestTime).toBe(true)
     run.reset('seed:scored:orbit', 1)
-    const second = fly(run, 12, 10, 0.5)
-    expect(second.paceDeltaSec).toBe(-8)
-    expect(second.paceLabel).toBe('AHEAD 8.00S')
-    expect(second.previousBestTimeSec).toBe(30)
+    const second = fly(run, 8, 0.5)
+    expect(second.paceDeltaSec).toBe(-2)
+    expect(second.paceLabel).toBe('AHEAD 2.00S')
+    expect(second.previousBestTimeSec).toBe(10)
     expect(second.isNewBestTime).toBe(true)
     expect(second.isNewBest).toBe(false)
     expect(second.bestGateSplits).toEqual([10])
-    expect(readCourseHistory(storage, 'seed:scored:orbit')?.bestTimeSec).toBe(22)
+    expect(readCourseHistory(storage, 'seed:scored:orbit')?.bestTimeSec).toBe(8)
     run.reset('seed:scored:orbit', 1)
-    const third = fly(run, 9, 15)
-    expect(third.paceDeltaSec).toBe(2)
-    expect(third.paceLabel).toBe('BEHIND 2.00S')
-    expect(third.bestTimeSec).toBe(22)
+    const third = fly(run, 9)
+    expect(third.paceDeltaSec).toBe(1)
+    expect(third.paceLabel).toBe('BEHIND 1.00S')
+    expect(third.bestTimeSec).toBe(8)
     expect(third.isNewBestTime).toBe(false)
   })
 
-  it('allows departure and approach before pace deductions, then retains bronze, silver and gold records across reload', () => {
+  it('allows the route time budget before pace deductions, then retains bronze, silver and gold records across reload', () => {
     const { storage } = fixture()
     for (const [elapsed, medal] of [[190, 'bronze'], [155, 'silver'], [90, 'gold']] as const) {
       const run = new ChallengeRun(storage)
       run.reset('seed:scored:orbit', 1, 'balanced', undefined, false, 90)
-      const result = fly(run, 10, elapsed - 10)
+      const result = fly(run, elapsed)
       expect(result.medal).toBe(medal)
       expect(result.courseBestMedal).toBe(medal)
       expect(result.newMedalRecord).toBe(true)
@@ -58,8 +56,8 @@ describe('scored complete circuits', () => {
   it.each([Number.NaN, Number.POSITIVE_INFINITY, -1])('rejects an invalid time allowance %s', allowance => {
     const run = new ChallengeRun(null)
     run.reset('seed:invalid:orbit', 1, 'balanced', undefined, false, allowance)
-    const result = fly(run, 10, 20)
+    const result = fly(run, 10)
     expect(result.timeAllowanceSec).toBe(0)
-    expect(result.timeScore).toBe(60_400)
+    expect(result.timeScore).toBe(66_800)
   })
 })

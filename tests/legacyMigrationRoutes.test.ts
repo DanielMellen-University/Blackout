@@ -41,9 +41,8 @@ for (const course of COURSE_LIBRARY.filter(c => c.seed !== null && !LEGACY_MIGRA
       const finish=(quality:number,delay:number)=>{
         const run=new ChallengeRun(null)
         run.reset('migration-proof',mission.totalGates,mission.scoringFocus,adapted.contractSeed,course.contractCatalog,mission.timeAllowanceSec)
-        for(let gate=0;gate<mission.totalGates;gate++){run.update(60/mission.totalGates,150);run.recordGate(quality)}
-        for(let t=0;t<45+delay;t++)run.update(1,60)
-        return run.finishLanding({verticalSpeed:-1,groundSpeed:30,pitchRad:0,rollRad:0})!
+        for(let gate=0;gate<mission.totalGates;gate++){run.update((60+delay)/mission.totalGates,150);run.recordGate(quality)}
+        return run.finishAirborne()!
       }
       expect(finish(1,0).medal).toBe('gold')
       expect(finish(.35,120).medal).not.toBe('gold')

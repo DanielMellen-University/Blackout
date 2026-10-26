@@ -28,7 +28,7 @@ describe('course session lifetime', () => {
       run.reset(active.recordId, 1, 'balanced', active.course.seed!, active.course.contractCatalog)
       run.update(1, 30)
       run.recordGate(1)
-      const result = run.finishLanding({ verticalSpeed: -1, groundSpeed: 20, pitchRad: 0, rollRad: 0 })!
+      const result = run.finishAirborne()!
       expect(result.courseId).toBe(active.recordId)
     }
     expect(readCourseHistory(storage, active.recordId)?.completionCount).toBe(2)

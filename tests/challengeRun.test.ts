@@ -6,15 +6,12 @@ import {
   courseMasteryTierLabel,
   courseMasteryNextTierLabel,
   courseMasteryNextTierGoalLabel,
-  deadstickLandingScore,
   altitudeMilestoneScore,
   boundedScore,
   formatPaceDelta,
   formatSplitTrace,
   formatTime,
   fuelEfficiencyScore,
-  landingApproachScore,
-  landingWeatherRisk,
   landingQualityLabel,
   landingQualityForMetrics,
   medalForScore,
@@ -25,8 +22,6 @@ import {
   readBestCourseScore,
   resultMedalClass,
   scoringWeightsForFocus,
-  weatherLandingScore,
-  nightLandingScore,
   masteryBadgesForRun,
   readMasteryBadges,
   repairBestCourseScore,
@@ -45,10 +40,7 @@ import {
   contractStreakBonusForStreak,
   runStreakBonusForStreak,
   MAX_RUN_STREAK_SCORE,
-  MAX_DEADSTICK_SCORE,
   MAX_RUN_STREAK,
-  MAX_WEATHER_SCORE,
-  MAX_NIGHT_SCORE,
   MAX_ALTITUDE_MILESTONE_SCORE,
   MAX_COMPLETION_COUNT,
   MAX_PEAK_ALTITUDE_M,
@@ -102,7 +94,8 @@ describe('ChallengeRun', () => {
       setItem: (key: string, value: string) => values.set(key, value),
     }
     const run = new ChallengeRun(storage)
-    run.reset('seed:score-cap', 1, 'balanced', 42, true)
+    values.set('blackout.history.seed:score-cap', '{"completionCount":9,"bestTimeSec":2,"runStreak":9,"contractStreak":4}')
+    run.reset('seed:score-cap', 1, 'balanced', 1, true)
     run.update(0.1, 8)
     run.recordAltitudeMilestone(6_000)
     run.recordStunt(12)
@@ -112,14 +105,7 @@ describe('ChallengeRun', () => {
       run.recordBiome(biome)
     }
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-      weatherRisk: 1,
-      daylight: 0,
-    }, 0)!
+    const result = run.finishAirborne(1)!
     expect(result.scoreCapped).toBe(true)
     expect(result.totalScore).toBe(MAX_BEST_SCORE)
     expect(readBestCourseScore(storage, 'seed:score-cap')).toBe(MAX_BEST_SCORE)
@@ -141,12 +127,7 @@ describe('ChallengeRun', () => {
       run.reset('seed:run-streak-score', 1)
       run.update(0.1, 8)
       run.recordGate(1)
-      return run.finishLanding({
-        verticalSpeed: -1,
-        groundSpeed: 20,
-        pitchRad: 0,
-        rollRad: 0,
-      })!
+      return run.finishAirborne()!
     }
     const first = land(new ChallengeRun(storage))
     const second = land(new ChallengeRun(storage))
@@ -156,7 +137,7 @@ describe('ChallengeRun', () => {
     expect(second.runStreakScore).toBe(250)
   })
 
-  it('starts the clock on the takeoff roll and scores a completed landing', () => {
+  it('starts the clock on the takeoff roll and scores the final gate airborne', () => {
     const store = new Map<string, string>()
     const run = new ChallengeRun({
       getItem: (key) => store.get(key) ?? null,
@@ -174,16 +155,11 @@ describe('ChallengeRun', () => {
 
     run.recordGate(1)
     run.recordGate(0.5)
-    expect(run.phase).toBe('returning')
+    expect(run.phase).toBe('running')
 
-    const result = run.finishLanding({
-      verticalSpeed: -2,
-      groundSpeed: 28,
-      pitchRad: 0.1,
-      rollRad: 0.05,
-    })
+    const result = run.finishAirborne()
     expect(result).not.toBeNull()
-    expect(result!.gateScore).toBe(15_000)
+    expect(result!.gateScore).toBe(22_500)
     expect(result!.gatesCleared).toBe(2)
     expect(result!.gatesTotal).toBe(2)
     expect(result!.gatesCleared).not.toBe(result!.gateScore)
@@ -227,16 +203,16 @@ describe('ChallengeRun', () => {
     expect(result!.flightDistanceM).toBe(160)
     expect(result!.peakPositiveG).toBe(4.25)
     expect(result!.peakNegativeG).toBe(0)
-    expect(result!.newMasteryBadges).toEqual(['first-flight', 'landing-ace', 'gold-run'])
+    expect(result!.newMasteryBadges).toEqual(['first-flight', 'gold-run'])
     expect(result!.courseMasteryTier).toBe('pilot')
     expect(result!.courseMasteryTierLabel).toBe('PILOT')
     expect(result!.masteryTierPromoted).toBe(true)
     expect(readMasteryBadges({ getItem: (key) => store.get(key) ?? null }, 'seed:1'))
-      .toEqual(['first-flight', 'landing-ace', 'gold-run'])
+      .toEqual(['first-flight', 'gold-run'])
     expect(run.phase).toBe('complete')
   })
 
-  it('keeps an earned score preview separate from touchdown-only payouts', () => {
+  it('keeps an earned score preview separate from finish-only payouts', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:live-score', 2)
     expect(run.currentScorePreview).toBe(0)
@@ -247,7 +223,7 @@ describe('ChallengeRun', () => {
     run.recordCombo(2)
     run.recordDestination('city')
     run.recordBiome('plains')
-    expect(run.currentScorePreview).toBe(13_020)
+    expect(run.currentScorePreview).toBe(18_020)
     expect(run.currentScorePreview).toBeLessThan(MAX_BEST_SCORE)
   })
 
@@ -262,17 +238,12 @@ describe('ChallengeRun', () => {
     expect(run.currentGateQuality).toBeCloseTo((1 + 0.5 + 0.25) / 3)
   })
 
-  it('does not score a landing before the circuit is done', () => {
+  it('does not finish before the final gate', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:1', 2)
     run.recordGate(1)
     expect(
-      run.finishLanding({
-        verticalSpeed: -1,
-        groundSpeed: 20,
-        pitchRad: 0,
-        rollRad: 0,
-      }),
+      run.finishAirborne(),
     ).toBeNull()
   })
 
@@ -292,12 +263,7 @@ describe('ChallengeRun', () => {
     run.update(0.5, 8, 160)
     expect(run.phase).toBe('running')
     expect(run.currentScorePreview).toBe(0)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })
+    const result = run.finishAirborne()
     expect(result).toBeNull()
     expect(run.phase).toBe('running')
     run.update(1, 100, 1_500)
@@ -311,8 +277,8 @@ describe('ChallengeRun', () => {
     run.reset('training-orbit', 1, 'balanced', 42)
     run.update(0.5, 100)
     run.recordGate(1)
-    expect(run.phase).toBe('returning')
-    expect(run.finishLanding({ verticalSpeed: -1, groundSpeed: 20, pitchRad: 0, rollRad: 0 })).not.toBeNull()
+    expect(run.phase).toBe('running')
+    expect(run.finishAirborne()).not.toBeNull()
   })
 
   it('tracks meaningful consecutive precision gate streaks without changing score state', () => {
@@ -324,12 +290,7 @@ describe('ChallengeRun', () => {
     expect(run.gateStreakLabel).toBe('STREAK X2')
     run.recordGate(0.4)
     expect(run.gateStreakLabel).toBe('')
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })
+    const result = run.finishAirborne()
     expect(result?.bestPrecisionStreak).toBe(2)
   })
 
@@ -339,12 +300,7 @@ describe('ChallengeRun', () => {
     run.update(0.1, 8)
     run.recordStunt(2)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.stuntRolls).toBe(2)
     expect(result.stuntScore).toBe(1_500)
     expect(result.totalScore).toBe(
@@ -359,12 +315,7 @@ describe('ChallengeRun', () => {
     run.recordCombo(2)
     run.recordCombo(999)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.bestCombo).toBe(20)
     expect(result.comboScore).toBe(5_700)
     expect(result.totalScore).toBe(
@@ -380,91 +331,41 @@ describe('ChallengeRun', () => {
     expect(fuelEfficiencyScore(99)).toBe(1_000)
   })
 
-  it('rewards a centered, aligned runway approach without rewarding malformed telemetry', () => {
-    expect(landingApproachScore({ baseDistanceM: 0, runwayLateralM: 0, headingErrorRad: 0 })).toBe(500)
-    expect(landingApproachScore({ baseDistanceM: 90, runwayLateralM: 20, headingErrorRad: Math.PI / 6 })).toBeGreaterThan(0)
-    expect(landingApproachScore({ baseDistanceM: 999, runwayLateralM: 0, headingErrorRad: 0 })).toBe(0)
-    expect(landingApproachScore({ baseDistanceM: Number.NaN, runwayLateralM: 0, headingErrorRad: 0 })).toBe(0)
-  })
 
-  it('keeps weather-handling rewards finite and quality-sensitive', () => {
-    expect(landingWeatherRisk({ rain: 0, snow: 0, gust: 0.18 })).toBe(0)
-    expect(landingWeatherRisk({ rain: 0.76, snow: 0, gust: 0.3 })).toBe(0.76)
-    expect(landingWeatherRisk({ rain: Number.NaN, snow: 1, gust: 0 })).toBe(1)
-    expect(weatherLandingScore(1)).toBe(MAX_WEATHER_SCORE)
-    expect(weatherLandingScore(0.8, 0.5)).toBe(200)
-    expect(weatherLandingScore(Number.NaN, 1)).toBe(0)
-    expect(weatherLandingScore(2, -1)).toBe(0)
-  })
 
-  it('includes the weather-handling bonus in a completed touchdown result', () => {
+
+  it('awards no weather-landing bonus at the airborne finish', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:weather-score', 1)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-      weatherRisk: 1,
-    })!
-    expect(result.weatherScore).toBe(MAX_WEATHER_SCORE)
+    const result = run.finishAirborne()!
+    expect(result.weatherScore).toBeUndefined()
     expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.weatherScore!,
+      result.gateScore + result.timeScore + result.landingScore + result.fuelScore!,
     )
   })
 
-  it('keeps night-ops landing rewards finite and quality-sensitive', () => {
-    expect(nightLandingScore(1)).toBe(0)
-    expect(nightLandingScore(0.42)).toBe(0)
-    expect(nightLandingScore(0)).toBe(MAX_NIGHT_SCORE)
-    expect(nightLandingScore(0.21)).toBe(250)
-    expect(nightLandingScore(0, 0.5)).toBe(250)
-    expect(nightLandingScore(Number.NaN, 1)).toBe(0)
-    expect(nightLandingScore(0, Number.NaN)).toBe(0)
-    expect(nightLandingScore(-1, 1)).toBe(0)
-    expect(nightLandingScore(2, -1)).toBe(0)
-  })
 
-  it('includes the night-ops bonus in a completed touchdown result', () => {
+  it('awards no night-landing bonus at the airborne finish', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:night-score', 1)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-      daylight: 0,
-    })!
-    expect(result.nightScore).toBe(MAX_NIGHT_SCORE)
+    const result = run.finishAirborne()!
+    expect(result.nightScore).toBeUndefined()
     expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.nightScore!,
+      result.gateScore + result.timeScore + result.landingScore + result.fuelScore!,
     )
   })
 
-  it('rewards controlled deadstick landings without trusting malformed fuel', () => {
-    expect(deadstickLandingScore(0, 1)).toBe(MAX_DEADSTICK_SCORE)
-    expect(deadstickLandingScore(0, 0.5)).toBe(750)
-    expect(deadstickLandingScore(0.01, 1)).toBe(0)
-    expect(deadstickLandingScore(-1, 1)).toBe(0)
-    expect(deadstickLandingScore(Number.NaN, 1)).toBe(0)
-    expect(deadstickLandingScore(0, Number.NaN)).toBe(0)
-  })
 
-  it('includes the deadstick bonus when an empty tank reaches touchdown', () => {
+  it('awards no deadstick bonus when an empty tank reaches the final gate', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:deadstick', 1)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    }, 0)!
-    expect(result.deadstickScore).toBe(MAX_DEADSTICK_SCORE)
+    const result = run.finishAirborne(0)!
+    expect(result.deadstickScore).toBeUndefined()
     expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.deadstickScore! + (result.fuelScore ?? 0),
+      result.gateScore + result.timeScore + result.landingScore + (result.fuelScore ?? 0),
     )
   })
 
@@ -483,12 +384,7 @@ describe('ChallengeRun', () => {
     run.recordDestination('invalid' as 'city')
     for (let index = 0; index < MAX_DESTINATION_COUNT + 2; index += 1) run.recordDestination('city')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.destinationCount).toBe(MAX_DESTINATION_COUNT)
     expect(result.destinationScore).toBe(MAX_DESTINATION_SCORE)
     expect(result.courseBestDestinationCount).toBe(MAX_DESTINATION_COUNT)
@@ -503,12 +399,7 @@ describe('ChallengeRun', () => {
     retry.update(0.1, 8)
     retry.recordDestination('village')
     retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const retryResult = retry.finishAirborne()!
     expect(retryResult.courseBestDestinationCount).toBe(MAX_DESTINATION_COUNT)
     expect(retryResult.newDestinationRecord).toBe(false)
 
@@ -530,12 +421,7 @@ describe('ChallengeRun', () => {
     run.recordDestination('city', 'cell-1')
     run.recordDestination('village', 'cell-2')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.destinationCount).toBe(2)
     expect(result.destinationScore).toBe(900)
   })
@@ -561,12 +447,7 @@ describe('ChallengeRun', () => {
     ]) run.recordBiome(biome)
     expect(run.biomeCount).toBe(MAX_BIOME_COUNT)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.biomeCount).toBe(MAX_BIOME_COUNT)
     expect(result.biomeScore).toBe(MAX_BIOME_SCORE)
     expect(result.courseBestBiomeCount).toBe(MAX_BIOME_COUNT)
@@ -581,12 +462,7 @@ describe('ChallengeRun', () => {
     retry.update(0.1, 8)
     retry.recordBiome('plains')
     retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const retryResult = retry.finishAirborne()!
     expect(retryResult.courseBestBiomeCount).toBe(MAX_BIOME_COUNT)
     expect(retryResult.newBiomeRecord).toBe(false)
 
@@ -607,7 +483,7 @@ describe('ChallengeRun', () => {
       setItem: (key: string, value: string) => values.set(key, value),
     }
     const run = new ChallengeRun(storage)
-    run.reset('seed:water-survey', 0)
+    run.reset('seed:water-survey', 1)
     expect(run.waterBodyCount).toBe(0)
     run.recordWaterBody('stream')
     expect(run.waterBodyCount).toBe(1)
@@ -623,12 +499,7 @@ describe('ChallengeRun', () => {
     expect(run.waterBodyCount).toBe(MAX_WATER_BODY_COUNT)
     expect(run.consumeWaterBodySurveyCue()).toBe('sea')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.waterBodyCount).toBe(MAX_WATER_BODY_COUNT)
     expect(result.courseBestWaterBodyCount).toBe(MAX_WATER_BODY_COUNT)
     expect(result.newWaterBodyRecord).toBe(true)
@@ -649,16 +520,11 @@ describe('ChallengeRun', () => {
       getItem: (key: string) => values.get(key) ?? null,
       setItem: (key: string, value: string) => values.set(key, value),
     }
-    const complete = (run: ChallengeRun): NonNullable<ReturnType<ChallengeRun['finishLanding']>> => {
+    const complete = (run: ChallengeRun): NonNullable<ReturnType<ChallengeRun['finishAirborne']>> => {
       run.reset('seed:run-streak', 1)
       run.update(0.1, 8)
       run.recordGate(1)
-      return run.finishLanding({
-        verticalSpeed: -1,
-        groundSpeed: 20,
-        pitchRad: 0,
-        rollRad: 0,
-      })!
+      return run.finishAirborne()!
     }
 
     const first = complete(new ChallengeRun(storage))
@@ -709,7 +575,7 @@ describe('ChallengeRun', () => {
     }
   })
 
-  it('assigns and scores a deterministic touchdown contract', () => {
+  it('assigns and scores a deterministic contract at the airborne finish', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:contract', 1, 'balanced', 0, true)
     expect(run.contractLabel).toBe('CONTRACT SPEED RUN')
@@ -718,12 +584,7 @@ describe('ChallengeRun', () => {
     expect(run.contractBriefing).toContain('LAND UNDER')
     run.update(0.1, 8)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('pace')
     expect(result.contractComplete).toBe(true)
     expect(result.contractProgress).toBe(1)
@@ -810,12 +671,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('RADAR RUN')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('target')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -876,12 +732,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('TERRAIN HUGGER')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('low-level')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -911,12 +762,7 @@ describe('ChallengeRun', () => {
     expect(run.consumeContractCompletionCue()).toBe('BIOME TOUR')
     expect(run.consumeContractCompletionCue()).toBeNull()
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('biome')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -933,12 +779,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('STORM RUN')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('weather')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -966,12 +807,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('WATER RUN')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('water')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1000,12 +836,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('RIDGE RUN')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('ridge-run')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1036,12 +867,7 @@ describe('ChallengeRun', () => {
     expect(run.consumeContractProgressCue()).toBeNull()
     expect(run.consumeContractCompletionCue()).toBe('WATERWAY TOUR')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('waterway-tour')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1082,12 +908,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('BRAKE CHECK')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('brake')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1113,12 +934,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('THERMAL CONTROL')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('heat')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1144,12 +960,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('CROSSWIND')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('crosswind')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1175,12 +986,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('G CONTROL')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('g-control')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1205,12 +1011,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('DEADSTICK')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    }, 0)
+    const result = run.finishAirborne(0)
     expect(result?.contractKind).toBe('deadstick')
     expect(result?.contractComplete).toBe(true)
     expect(result?.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1235,12 +1036,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('BURN RUN')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('boost')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1266,12 +1062,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('MACH RUN')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('mach')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1296,12 +1087,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('LEVEL FLIGHT')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('level')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1331,12 +1117,7 @@ describe('ChallengeRun', () => {
     expect(run.consumeContractProgressCue()).toBeNull()
     expect(run.consumeContractCompletionCue()).toBe('SETTLEMENT TOUR')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('tour')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1361,12 +1142,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('COMBO RUN')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('combo')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1393,12 +1169,7 @@ describe('ChallengeRun', () => {
     run.recordGate(0.9)
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('PRECISION CHAIN')
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('precision')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1424,12 +1195,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('NIGHT FLIGHT')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('night')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
@@ -1457,12 +1223,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(false)
     run.recordGate(1)
     expect(run.consumeContractCompletionCue()).toBeNull()
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('clean')
     expect(result.contractFailed).toBe(true)
     expect(result.contractComplete).toBe(false)
@@ -1512,18 +1273,13 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(true)
     expect(run.consumeContractCompletionCue()).toBe('FRONT CHASER')
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('front')
     expect(result.contractComplete).toBe(true)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
-  it('wires a centered touchdown into the precision-approach contract', () => {
+  it('does not invent runway alignment for the deferred precision-approach contract', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
@@ -1536,18 +1292,10 @@ describe('ChallengeRun', () => {
     expect(approachSeed).toBeGreaterThanOrEqual(0)
     run.reset('seed:approach-contract', 1, 'balanced', approachSeed, true)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-      baseDistanceM: 0,
-      runwayLateralM: 0,
-      headingErrorRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.contractKind).toBe('approach')
-    expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractComplete).toBe(false)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires runway alignment forecast into PRECISION APPROACH', () => {
@@ -1574,17 +1322,12 @@ describe('ChallengeRun', () => {
       getItem: (key: string) => values.get(key) ?? null,
       setItem: (key: string, value: string) => values.set(key, value),
     }
-    const finish = (fuel: number): NonNullable<ReturnType<ChallengeRun['finishLanding']>> => {
+    const finish = (fuel: number): NonNullable<ReturnType<ChallengeRun['finishAirborne']>> => {
       const run = new ChallengeRun(storage)
       run.reset('seed:contract-wins', 1, 'balanced', 1, true)
       run.update(0.1, 8)
       run.recordGate(1)
-      return run.finishLanding({
-        verticalSpeed: -1,
-        groundSpeed: 20,
-        pitchRad: 0,
-        rollRad: 0,
-      }, fuel)!
+      return run.finishAirborne(fuel)!
     }
 
     const first = finish(1)
@@ -1616,17 +1359,12 @@ describe('ChallengeRun', () => {
       getItem: (key: string) => values.get(key) ?? null,
       setItem: (key: string, value: string) => values.set(key, value),
     }
-    const complete = (): NonNullable<ReturnType<ChallengeRun['finishLanding']>> => {
+    const complete = (): NonNullable<ReturnType<ChallengeRun['finishAirborne']>> => {
       const run = new ChallengeRun(storage)
       run.reset('seed:contract-streak', 1, 'balanced', 0, true)
       run.update(0.1, 8)
       run.recordGate(1)
-      return run.finishLanding({
-        verticalSpeed: -1,
-        groundSpeed: 20,
-        pitchRad: 0,
-        rollRad: 0,
-      })!
+      return run.finishAirborne()!
     }
 
     const first = complete()
@@ -1646,14 +1384,9 @@ describe('ChallengeRun', () => {
     const incomplete = new ChallengeRun(storage)
     incomplete.reset('seed:contract-streak', 1, 'balanced', 0, true)
     incomplete.update(0.1, 8)
-    incomplete.recordGate(1)
     for (let i = 0; i < 12; i += 1) incomplete.update(5, 8)
-    const failedContract = incomplete.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    incomplete.recordGate(1)
+    const failedContract = incomplete.finishAirborne()!
     expect(failedContract.contractComplete).toBe(false)
     expect(failedContract.contractStreak).toBeUndefined()
     expect(failedContract.courseBestContractStreak).toBe(2)
@@ -1686,97 +1419,32 @@ describe('ChallengeRun', () => {
     expect(contractStreakBonusForStreak(Number.MAX_SAFE_INTEGER)).toBe(MAX_CONTRACT_STREAK_BONUS)
   })
 
-  it('persists the best runway approach score and repairs oversized records', () => {
-    const values = new Map<string, string>()
+  it('preserves historical approach and touchdown records without scoring new ones', () => {
+    const values = new Map<string, string>([
+      ['blackout.history.seed:legacy-landing', '{"completionCount":2,"bestTimeSec":4,"approachScore":500,"landingQuality":0.793}'],
+    ])
     const storage = {
       getItem: (key: string) => values.get(key) ?? null,
       setItem: (key: string, value: string) => values.set(key, value),
     }
-    const first = new ChallengeRun(storage)
-    first.reset('seed:approach-record', 1)
-    first.recordGate(1)
-    const firstResult = first.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-      baseDistanceM: 0,
-      runwayLateralM: 0,
-      headingErrorRad: 0,
-    })!
-    expect(firstResult.approachScore).toBe(MAX_APPROACH_SCORE)
-    expect(firstResult.courseBestApproachScore).toBe(MAX_APPROACH_SCORE)
-    expect(firstResult.newApproachRecord).toBe(true)
-    expect(values.get('blackout.history.seed:approach-record')).toBe(
-      '{"completionCount":1,"bestTimeSec":0,"approachScore":500,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"precision"}',
-    )
+    const run = new ChallengeRun(storage)
+    run.reset('seed:legacy-landing', 1, 'landing')
+    run.recordGate(1)
+    const result = run.finishAirborne()!
+    expect(result.landingScore).toBe(0)
+    expect(result.landingQuality).toBe(0)
+    expect(result.landingLabel).toBeUndefined()
+    expect(result.landingDebrief).toBeUndefined()
+    expect(result.approachScore).toBeUndefined()
+    expect(result.courseBestApproachScore).toBe(MAX_APPROACH_SCORE)
+    expect(result.courseBestLandingQuality).toBe(0.793)
+    expect(result.newApproachRecord).toBe(false)
+    expect(result.newLandingQualityRecord).toBe(false)
+    expect(readCourseHistory(storage, 'seed:legacy-landing')).toMatchObject({ approachScore: 500, landingQuality: 0.793 })
 
-    const retry = new ChallengeRun(storage)
-    retry.reset('seed:approach-record', 1)
-    retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-      baseDistanceM: 90,
-      runwayLateralM: 20,
-      headingErrorRad: Math.PI / 6,
-    })!
-    expect(retryResult.approachScore).toBeGreaterThan(0)
-    expect(retryResult.courseBestApproachScore).toBe(MAX_APPROACH_SCORE)
-    expect(retryResult.newApproachRecord).toBe(false)
-
-    values.set(
-      'blackout.history.seed:approach-record',
-      '{"completionCount":2,"bestTimeSec":4,"approachScore":9999,"extra":true}',
-    )
-    expect(repairCourseHistory(storage, 'seed:approach-record')?.approachScore).toBe(MAX_APPROACH_SCORE)
-    expect(values.get('blackout.history.seed:approach-record')).toBe(
-      '{"completionCount":2,"bestTimeSec":4,"approachScore":500}',
-    )
-  })
-
-  it('persists the best touchdown quality and repairs oversized records', () => {
-    const values = new Map<string, string>()
-    const storage = {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: (key: string, value: string) => values.set(key, value),
-    }
-    const first = new ChallengeRun(storage)
-    first.reset('seed:landing-record', 1)
-    first.recordGate(1)
-    const firstResult = first.finishLanding({
-      verticalSpeed: -3.5,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
-    expect(firstResult.courseBestLandingQuality).toBeCloseTo(0.793, 3)
-    expect(firstResult.newLandingQualityRecord).toBe(true)
-    expect(values.get('blackout.history.seed:landing-record')).toContain('"landingQuality":0.793')
-
-    const retry = new ChallengeRun(storage)
-    retry.reset('seed:landing-record', 1)
-    retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
-    expect(retryResult.courseBestLandingQuality).toBe(1)
-    expect(retryResult.newLandingQualityRecord).toBe(true)
-    expect(values.get('blackout.history.seed:landing-record')).toContain('"landingQuality":1')
-
-    values.set(
-      'blackout.history.seed:landing-record',
-      '{"completionCount":2,"bestTimeSec":4,"landingQuality":9999,"extra":true}',
-    )
-    expect(repairCourseHistory(storage, 'seed:landing-record')?.landingQuality).toBe(MAX_LANDING_QUALITY)
-    expect(values.get('blackout.history.seed:landing-record')).toBe(
-      '{"completionCount":2,"bestTimeSec":4,"landingQuality":1}',
-    )
+    values.set('blackout.history.seed:legacy-landing', '{"completionCount":2,"bestTimeSec":4,"approachScore":9999,"landingQuality":9999,"extra":true}')
+    expect(repairCourseHistory(storage, 'seed:legacy-landing')).toMatchObject({ approachScore: MAX_APPROACH_SCORE, landingQuality: MAX_LANDING_QUALITY })
+    expect(values.get('blackout.history.seed:legacy-landing')).toBe('{"completionCount":2,"bestTimeSec":4,"approachScore":500,"landingQuality":1}')
   })
 
   it('does not demote legacy mastery before a touchdown record exists', () => {
@@ -1792,15 +1460,10 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(storage)
     run.reset('seed:legacy-mastery', 1)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -3.5,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.courseMasteryTier).toBe('ace')
     expect(result.masteryTierPromoted).toBe(false)
-    expect(result.courseBestLandingQuality).toBe(1)
+    expect(result.courseBestLandingQuality).toBeUndefined()
   })
 
   it('persists the best fuel reserve and rejects malformed reserve records', () => {
@@ -1812,12 +1475,7 @@ describe('ChallengeRun', () => {
     const first = new ChallengeRun(storage)
     first.reset('seed:fuel-record', 1)
     first.recordGate(1)
-    const firstResult = first.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    }, 0.72)!
+    const firstResult = first.finishAirborne(0.72)!
     expect(firstResult.courseBestFuelRemainingPercent).toBe(72)
     expect(firstResult.newFuelRecord).toBe(true)
     expect(values.get('blackout.history.seed:fuel-record')).toContain('"fuelRemainingPercent":72')
@@ -1825,12 +1483,7 @@ describe('ChallengeRun', () => {
     const retry = new ChallengeRun(storage)
     retry.reset('seed:fuel-record', 1)
     retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    }, 0.4)!
+    const retryResult = retry.finishAirborne(0.4)!
     expect(retryResult.courseBestFuelRemainingPercent).toBe(72)
     expect(retryResult.newFuelRecord).toBe(false)
 
@@ -1855,12 +1508,7 @@ describe('ChallengeRun', () => {
     first.update(0.1, 8)
     first.recordCombo(6)
     first.recordGate(1)
-    const result = first.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = first.finishAirborne()!
     expect(result.courseBestCombo).toBe(6)
     expect(result.newComboRecord).toBe(true)
     expect(values.get('blackout.history.seed:combo-record')).toContain('"combo":6')
@@ -1872,7 +1520,7 @@ describe('ChallengeRun', () => {
     const repaired = new ChallengeRun(storage)
     repaired.reset('seed:combo-record', 1)
     repaired.recordGate(1)
-    repaired.finishLanding({ verticalSpeed: -1, groundSpeed: 20, pitchRad: 0, rollRad: 0 })
+    repaired.finishAirborne()
     expect(values.get('blackout.history.seed:combo-record')).toContain('"combo":20')
     expect(values.get('blackout.history.seed:combo-record')).not.toContain('extra')
   })
@@ -1887,27 +1535,17 @@ describe('ChallengeRun', () => {
     first.reset('seed:stunt-record', 1)
     first.recordStunt(3)
     first.recordGate(1)
-    const firstResult = first.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const firstResult = first.finishAirborne()!
     expect(firstResult.courseBestStuntRolls).toBe(3)
     expect(firstResult.newStuntRecord).toBe(true)
     expect(values.get('blackout.history.seed:stunt-record')).toBe(
-      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}',
+      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}',
     )
 
     const retry = new ChallengeRun(storage)
     retry.reset('seed:stunt-record', 1)
     retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const retryResult = retry.finishAirborne()!
     expect(retryResult.courseBestStuntRolls).toBe(3)
     expect(retryResult.newStuntRecord).toBe(false)
 
@@ -1961,12 +1599,7 @@ describe('ChallengeRun', () => {
     expect(run.phase).toBe('running')
     expect(run.elapsedSec).toBe(0)
     run.recordGate(Number.NaN)
-    const result = run.finishLanding({
-      verticalSpeed: Number.NaN,
-      groundSpeed: Number.POSITIVE_INFINITY,
-      pitchRad: Number.NaN,
-      rollRad: Number.NEGATIVE_INFINITY,
-    })
+    const result = run.finishAirborne()
     expect(result).not.toBeNull()
     expect(Number.isFinite(result!.totalScore)).toBe(true)
     expect(result!.gateScore).toBe(0)
@@ -1995,12 +1628,7 @@ describe('ChallengeRun', () => {
     run.update(0.1, 120, 300)
     run.update(0.1, 80, 900)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.peakSpeedKts).toBe(233)
     expect(result.peakAltitudeM).toBe(900)
     expect(Number.isFinite(result.totalScore)).toBe(true)
@@ -2016,12 +1644,7 @@ describe('ChallengeRun', () => {
     first.reset('seed:flight-log', 1)
     first.update(1, 120, 500, 0, 0, false, true, 0, 0, 4.5, 1, false, false, 500, 1, 240)
     first.recordGate(1)
-    const firstResult = first.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const firstResult = first.finishAirborne()!
     expect(firstResult.courseBestFlightDistanceM).toBe(240)
     expect(firstResult.courseBestPositiveG).toBe(4.5)
     expect(firstResult.courseBestNegativeG).toBeUndefined()
@@ -2036,12 +1659,7 @@ describe('ChallengeRun', () => {
     retry.reset('seed:flight-log', 1)
     retry.update(1, 90, 500, 0, 0, false, true, 0, 0, -1.25, 1, false, false, 500, 1, 80)
     retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const retryResult = retry.finishAirborne()!
     expect(retryResult.courseBestFlightDistanceM).toBe(240)
     expect(retryResult.courseBestPositiveG).toBe(4.5)
     expect(retryResult.courseBestNegativeG).toBe(-1.25)
@@ -2062,18 +1680,13 @@ describe('ChallengeRun', () => {
     first.recordGate(1)
     first.update(1, 8)
     first.recordGate(1)
-    const firstResult = first.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const firstResult = first.finishAirborne()!
     expect(firstResult.paceLabel).toBe('FIRST RUN')
     expect(firstResult.gateSplits).toEqual([1, 2])
     expect(firstResult.completionCount).toBe(1)
     expect(firstResult.bestTimeSec).toBe(2)
     expect(store.get('blackout.trace.seed:trace')).toBe('[1,2]')
-    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}')
+    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}')
 
     const retry = new ChallengeRun(scoreStore)
     retry.reset('seed:trace', 2)
@@ -2082,12 +1695,7 @@ describe('ChallengeRun', () => {
     expect(retry.gatePaceLabel).toBe('AHEAD 0.50S')
     retry.update(0.5, 8)
     retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const retryResult = retry.finishAirborne()!
     expect(retryResult.paceLabel).toBe('AHEAD 1.00S')
     expect(retryResult.bestGateSplits).toEqual([1, 2])
     expect(retryResult.completionCount).toBe(2)
@@ -2134,12 +1742,7 @@ describe('ChallengeRun', () => {
     run.recordGate(0.9)
     run.recordGate(0.82)
     run.recordGate(0.4)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
     expect(result.bestPrecisionStreak).toBe(2)
     expect(result.courseBestPrecisionStreak).toBe(2)
     expect(readBestCoursePrecisionStreak(storage, 'seed:streak-record')).toBe(2)
@@ -2149,12 +1752,7 @@ describe('ChallengeRun', () => {
     retry.recordGate(0.9)
     retry.recordGate(0.4)
     retry.recordGate(0.9)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const retryResult = retry.finishAirborne()!
     expect(retryResult.bestPrecisionStreak).toBe(1)
     expect(retryResult.courseBestPrecisionStreak).toBe(2)
   })
@@ -2201,12 +1799,7 @@ describe('ChallengeRun', () => {
     run.reset('seed:style-record', 1)
     run.update(0.1, 120, 300)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const result = run.finishAirborne()!
 
     expect(result.sortieStyle).toBe('balanced')
     expect(result.courseBestSortieStyle).toBe('balanced')
@@ -2243,30 +1836,20 @@ describe('ChallengeRun', () => {
     first.reset('seed:peaks', 1)
     first.update(0.1, 120, 300)
     first.recordGate(1)
-    const firstResult = first.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const firstResult = first.finishAirborne()!
     expect(firstResult.courseBestPeakSpeedKts).toBe(233)
     expect(firstResult.courseBestPeakAltitudeM).toBe(300)
     expect(firstResult.newPeakSpeedRecord).toBe(true)
     expect(firstResult.newPeakAltitudeRecord).toBe(true)
     expect(values.get('blackout.history.seed:peaks')).toBe(
-      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}',
+      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}',
     )
 
     const retry = new ChallengeRun(storage)
     retry.reset('seed:peaks', 1)
     retry.update(0.1, 80, 100)
     retry.recordGate(1)
-    const retryResult = retry.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    })!
+    const retryResult = retry.finishAirborne()!
     expect(retryResult.courseBestPeakSpeedKts).toBe(233)
     expect(retryResult.courseBestPeakAltitudeM).toBe(300)
     expect(retryResult.newPeakSpeedRecord).toBe(false)
@@ -2276,36 +1859,100 @@ describe('ChallengeRun', () => {
   it('keeps route scoring emphasis explicit and sum-stable', () => {
     for (const focus of ['balanced', 'gates', 'pace', 'landing'] as const) {
       const weights = scoringWeightsForFocus(focus)
-      expect(weights.gate + weights.time + weights.landing).toBe(100_000)
+      expect(weights.gate + weights.time).toBe(100_000)
       expect(weights.minimumTime).toBeGreaterThan(0)
     }
     expect(scoringWeightsForFocus('gates').gate).toBeGreaterThan(scoringWeightsForFocus('balanced').gate)
     expect(scoringWeightsForFocus('pace').time).toBeGreaterThan(scoringWeightsForFocus('balanced').time)
-    expect(scoringWeightsForFocus('landing').landing).toBeGreaterThan(scoringWeightsForFocus('balanced').landing)
+    expect(scoringWeightsForFocus('landing')).toEqual(scoringWeightsForFocus('gates'))
+  })
+
+  it('reaches bronze, silver and gold for every scoring focus and supported gate count', () => {
+    // 80% gate precision, half a tank, no contract/stunt/streak bonuses. Routes
+    // retain their own allowance; modest overruns distinguish the three medals.
+    for (const focus of ['balanced', 'gates', 'pace', 'landing'] as const) {
+      for (let count = 1; count <= MAX_STORED_GATE_SPLITS; count += 1) {
+        for (const [overrunSec, medal] of [[80, 'bronze'], [45, 'silver'], [10, 'gold']] as const) {
+          const allowanceSec = count * 4
+          const run = new ChallengeRun(null)
+          run.reset(`medals:${focus}:${count}`, count, focus, undefined, false, allowanceSec)
+          for (let gate = 0; gate < count; gate += 1) {
+            let segmentSec = (allowanceSec + overrunSec) / count
+            while (segmentSec > 0) {
+              const step = Math.min(5, segmentSec)
+              run.update(step, 150)
+              segmentSec -= step
+            }
+            run.recordGate(0.8)
+          }
+          const result = run.finishAirborne(0.5)!
+          expect(result.medal, `${focus}, ${count} gates, +${overrunSec}s`).toBe(medal)
+          expect(result.landingScore).toBe(0)
+          expect(result.landingQuality).toBe(0)
+          expect(result.approachScore).toBeUndefined()
+          expect(result.weatherScore).toBeUndefined()
+          expect(result.nightScore).toBeUndefined()
+          expect(result.deadstickScore).toBeUndefined()
+          expect(result.contractScore).toBeUndefined()
+        }
+      }
+    }
+  })
+
+  it('freezes final-gate time and telemetry before committing once with the final combo', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
+    run.reset('final-gate', 2)
+    expect(run.finishAirborne()).toBeNull()
+    run.update(2, 150, 500, 0, 0, false, true, 0, 0, 1, 1, false, false, 500, 1, 300)
+    run.recordGate(0.8)
+    expect(run.finishAirborne()).toBeNull()
+    run.update(3, 150, 500, 0, 0, false, true, 0, 0, 1, 1, false, false, 500, 1, 450)
+    run.recordGate(0.8)
+    run.update(5, 300, 5_000, 0, 0, false, true, 0, 0, 9, 1, false, false, 500, 1, 1_500)
+    run.recordCombo(2)
+    const result = run.finishAirborne(0.7)!
+    expect(result.elapsedSec).toBe(5)
+    expect(result.gateSplits).toEqual([2, 5])
+    expect(result.flightDistanceM).toBe(750)
+    expect(result.peakAltitudeM).toBe(500)
+    expect(result.peakPositiveG).toBe(1)
+    expect(result.comboScore).toBe(300)
+    expect(result.fuelRemainingPercent).toBe(70)
+    expect(run.phase).toBe('complete')
+    const saved = [...values]
+    run.update(5, 300)
+    run.recordGate(1)
+    expect(run.finishAirborne()).toBeNull()
+    expect([...values]).toEqual(saved)
+    expect(run.elapsedSec).toBe(5)
+    expect(run.result).toBe(result)
+
+    run.reset('no-gates', 0)
+    run.update(1, 150)
+    expect(run.finishAirborne()).toBeNull()
+    run.reset('failed', 1)
+    run.recordGate(1)
+    run.fail()
+    expect(run.finishAirborne()).toBeNull()
   })
 
   it('captures sanitized fuel usage in a completed result without changing scores', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:fuel-result', 1)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    }, 0.72)!
+    const result = run.finishAirborne(0.72)!
     expect(result.fuelRemainingPercent).toBe(72)
     expect(result.fuelUsedPercent).toBe(28)
     expect(Number.isFinite(result.totalScore)).toBe(true)
 
     run.reset('seed:fuel-result-2', 1)
     run.recordGate(1)
-    const malformed = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-    }, Number.NaN)!
+    const malformed = run.finishAirborne(Number.NaN)!
     expect(malformed.fuelRemainingPercent).toBe(0)
     expect(malformed.fuelUsedPercent).toBe(100)
   })
@@ -2355,7 +2002,7 @@ describe('ChallengeRun', () => {
     expect(MASTERY_BADGE_COUNT).toBe(6)
   })
 
-  it('persists an approach ace badge from a safe centered landing', () => {
+  it('does not award landing or approach badges for an airborne finish', () => {
     const values = new Map<string, string>()
     const storage = {
       getItem: (key: string) => values.get(key) ?? null,
@@ -2364,17 +2011,10 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(storage)
     run.reset('seed:approach-badge', 1)
     run.recordGate(1)
-    const result = run.finishLanding({
-      verticalSpeed: -1,
-      groundSpeed: 20,
-      pitchRad: 0,
-      rollRad: 0,
-      baseDistanceM: 0,
-      runwayLateralM: 0,
-      headingErrorRad: 0,
-    })!
-    expect(result.newMasteryBadges).toContain('approach-ace')
-    expect(readMasteryBadges(storage, 'seed:approach-badge')).toContain('approach-ace')
+    const result = run.finishAirborne()!
+    expect(result.newMasteryBadges).not.toContain('approach-ace')
+    expect(result.newMasteryBadges).not.toContain('landing-ace')
+    expect(readMasteryBadges(storage, 'seed:approach-badge')).not.toContain('approach-ace')
   })
 
   it('filters malformed and duplicate persisted badges', () => {

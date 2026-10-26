@@ -86,15 +86,11 @@ import {
   COURSE_BEST_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
   COURSE_STREAK_STORAGE_PREFIX,
-  landingApproachScore,
-  landingWeatherRisk,
-  landingQualityForMetrics,
   repairBestCoursePrecisionStreak,
   repairBestCourseScore,
   repairCourseHistory,
   repairMasteryBadges,
 } from './systems/ChallengeRun'
-import { touchdownKinematics } from './systems/LandingAssessment'
 import { browsingMissionId } from './ui/MissionPickerLayout'
 import {
   courseDefinitionForId,
@@ -159,7 +155,6 @@ import type { CoursePicker as CoursePickerInstance, CoursePickerCategory, Course
 import type {
   HUD as HudInstance,
   CrosswindSide,
-  FuelHomeCue,
   HudBannerTone,
   NavigationLateralCue,
   NavigationSpeedCue,
@@ -180,7 +175,7 @@ import { sampleGroundSurfaceInto, type GroundSurfaceSample } from './world/groun
 import { CrashCinematic } from './systems/CrashCinematic'
 import { WaterImpactFx } from './systems/WaterImpactFx'
 import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
-import { fuelEnduranceSeconds, refuelFuel, withinAirfieldRefuelRadius } from './aircraft/FuelSystem'
+import { refuelFuel, withinAirfieldRefuelRadius } from './aircraft/FuelSystem'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
 import { nightWeatherReadability, sceneExposure } from './core/SceneExposure'
@@ -353,9 +348,6 @@ export async function boot(): Promise<void> {
   const {
     createMissionHudLabelCache,
     createRouteRiskLabelCache,
-    fuelHomeCue,
-    fuelHomeTimeSeconds,
-    fuelHomeWarning,
     hudBackgroundHidden,
     HUD,
     machNumber,
@@ -363,7 +355,6 @@ export async function boot(): Promise<void> {
     engineHeatCue,
     engineHeatRearmBanner,
     engineFuelAvailabilityBanner,
-    emergencyReturnActive,
     flightBriefingHint,
     crosswindDirection,
     crosswindSpeedMps,
@@ -1462,7 +1453,6 @@ export async function boot(): Promise<void> {
   let terrainRegion = ''
   let overWater = false
   let refueling = false
-  let prevFuelHomeCue: FuelHomeCue = null
   const returnTarget = new Vector3()
 
   const courseId = (): string => activeSortie.recordId
@@ -1658,7 +1648,6 @@ export async function boot(): Promise<void> {
     biomeSurveyCooldown = 0
     overWater = false
     refueling = false
-    prevFuelHomeCue = null
     flightBriefing.reset(briefing, activeSortie.course.id === 'training-orbit')
     time.reset()
     if (briefing && !perfectLineActive) {
@@ -2287,9 +2276,6 @@ export async function boot(): Promise<void> {
             syncInputContext()
             break
           }
-          const scoredTouch =
-            touch === 'landed' ||
-            (touch === 'roll' && challenge.phase === 'returning')
           if (touch === 'landed' && wasAirborne) {
             cameras.impulse(TOUCHDOWN_IMPULSE)
             landingFx.trigger(aircraft.position, aircraft.velocity, 1)
@@ -2299,70 +2285,35 @@ export async function boot(): Promise<void> {
           if (aircraft.onGround && (touch === 'roll' || touch === 'landed')) {
             landingFx.scrub(aircraft.position, aircraft.velocity, dt)
           }
-          if (!perfectLineActive && scoredTouch && wasAirborne && aircraft.status === 'ok') {
+          if (!perfectLineActive && touch === 'landed' && wasAirborne && aircraft.status === 'ok') {
             aircraft.markLanded()
             wasAirborne = false
-            const pose = attitudeFromOrientation(aircraft.orientation)
-            const baseDx = aircraft.position.x - world.spawn.x
-            const baseDz = aircraft.position.z - world.spawn.z
-            const runwayRightX = Math.cos(world.spawn.yaw)
-            const runwayRightZ = -Math.sin(world.spawn.yaw)
-            const runwayLateralM = baseDx * runwayRightX + baseDz * runwayRightZ
-            const headingDelta = pose.heading - world.spawn.yaw
-            const finished = challenge.finishLanding({
-              ...touchdownKinematics(aircraft, pose.pitch, pose.roll),
-              baseDistanceM: Math.hypot(baseDx, baseDz),
-              runwayLateralM,
-              headingErrorRad: Math.atan2(Math.sin(headingDelta), Math.cos(headingDelta)),
-              weatherRisk: landingWeatherRisk(weather),
-              daylight: world.atmosphere.daylight,
-            }, aircraft.fuel.fraction)
-            if (finished) {
-              const previousPilotRank = currentPilotRank
-              const previousPilotCommendations = currentPilotCommendations
-              ghost.commitIfBest(finished.isNewBest, finished.totalScore)
-              ghost.setVisible(false)
-              audio.playCue(
-                finished.landingLabel === 'BUTTER'
-                  ? 'landing-soft'
-                  : finished.landingLabel === 'HARD' ? 'landing-hard' : 'landed',
-              )
-              const opsUpdate = recordOpsCompletion(
-                qualityStorage,
-                opsStreaks,
-                activeSortie.course.id,
-                activeSortie.periodKey,
-              )
-              if (opsUpdate) opsStreaks = opsUpdate.snapshot
-              refreshCourseUi()
-              const careerRankPromoted = pilotRankRank(currentPilotRank) > pilotRankRank(previousPilotRank)
-              const newCareerCommendations = currentPilotCommendations
-                .filter(id => !previousPilotCommendations.includes(id))
-                .map(pilotCommendationLabel)
-              if (flightRecordCueLabel(finished) || finished.masteryTierPromoted || careerRankPromoted || newCareerCommendations.length > 0) {
-                audio.playCue('milestone')
-              }
-              results.show(
-                finished,
-                currentPilotRank,
-                careerRankPromoted,
-                newCareerCommendations,
-                activeSortie.course.label,
-                courseConditionSummary(
-                  activeSortie.course,
-                  activeSortie.periodLabel,
-                ),
-                world.worldSeed,
-              )
-              syncInputContext()
-              break
-            }
-            if (touch === 'landed') {
-              audio.playCue('landed')
-              showBanner('LANDED', 2800, 'success')
-            }
+            audio.playCue('landed')
+            showBanner('LANDED', 2800, 'success')
           }
         }
+
+        if (!perfectLineActive) challenge.update(
+          dt,
+          aircraft.speed,
+          Math.max(0, aircraft.position.y - world.spawn.y),
+          weather.rain,
+          weather.snow,
+          aircraft.controls.airbrake,
+          !aircraft.onGround,
+          aircraft.engineHeat.fraction,
+          crosswindSpeedMps(weather.windX, weather.windZ, world.spawn.yaw),
+          aircraft.loadFactor,
+          aircraft.fuel.fraction,
+          world.atmosphere.weatherTransitioning,
+          aircraft.engineState.afterburnerActive,
+          terrainClearanceM,
+          world.atmosphere.daylight,
+          Math.max(0, aircraft.speed * dt),
+          weather.gust,
+          aircraft.thermalLift,
+        )
+        if (!freeFlight) ghost.record(challenge.elapsedSec, aircraft.position)
 
         if (aircraft.status !== 'crashed' && !freeFlight) {
           const altitudeMilestone = altitudeMilestones.update(
@@ -2427,9 +2378,46 @@ export async function boot(): Promise<void> {
             audio.playCue('complete')
             const streak = challenge.gateStreakLabel
             showBanner(
-              `FINAL GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''}${comboEvent?.milestone ? ` · COMBO X${comboEvent.combo}` : ''} · RETURN & LAND`,
+              `FINAL GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''}${comboEvent?.milestone ? ` · COMBO X${comboEvent.combo}` : ''} · RUN COMPLETE`,
               4200,
+              'success',
             )
+            const finished = challenge.finishAirborne(aircraft.fuel.fraction)
+            if (finished) {
+              const previousPilotRank = currentPilotRank
+              const previousPilotCommendations = currentPilotCommendations
+              ghost.commitIfBest(finished.isNewBest, finished.totalScore)
+              ghost.setVisible(false)
+              const opsUpdate = recordOpsCompletion(
+                qualityStorage,
+                opsStreaks,
+                activeSortie.course.id,
+                activeSortie.periodKey,
+              )
+              if (opsUpdate) opsStreaks = opsUpdate.snapshot
+              refreshCourseUi()
+              const careerRankPromoted = pilotRankRank(currentPilotRank) > pilotRankRank(previousPilotRank)
+              const newCareerCommendations = currentPilotCommendations
+                .filter(id => !previousPilotCommendations.includes(id))
+                .map(pilotCommendationLabel)
+              if (flightRecordCueLabel(finished) || finished.masteryTierPromoted || careerRankPromoted || newCareerCommendations.length > 0) {
+                audio.playCue('milestone')
+              }
+              results.show(
+                finished,
+                currentPilotRank,
+                careerRankPromoted,
+                newCareerCommendations,
+                activeSortie.course.label,
+                courseConditionSummary(
+                  activeSortie.course,
+                  activeSortie.periodLabel,
+                ),
+                world.worldSeed,
+              )
+              syncInputContext()
+              break
+            }
           }
         }
 
@@ -2479,28 +2467,6 @@ export async function boot(): Promise<void> {
             biomeSurveyCooldown = 0.65
           }
         }
-
-        if (!perfectLineActive) challenge.update(
-          dt,
-          aircraft.speed,
-          Math.max(0, aircraft.position.y - world.spawn.y),
-          weather.rain,
-          weather.snow,
-          aircraft.controls.airbrake,
-          !aircraft.onGround,
-          aircraft.engineHeat.fraction,
-          crosswindSpeedMps(weather.windX, weather.windZ, world.spawn.yaw),
-          aircraft.loadFactor,
-          aircraft.fuel.fraction,
-          world.atmosphere.weatherTransitioning,
-          aircraft.engineState.afterburnerActive,
-          terrainClearanceM,
-          world.atmosphere.daylight,
-          Math.max(0, aircraft.speed * dt),
-          weather.gust,
-          aircraft.thermalLift,
-        )
-        if (!freeFlight) ghost.record(challenge.elapsedSec, aircraft.position)
       }
 
       world.mission.setRouteTraceVisible(
@@ -2774,13 +2740,11 @@ export async function boot(): Promise<void> {
         pose.heading,
       )
       const gate = world.mission.activeGatePos()
-      const returning = !freeFlight && challenge.phase === 'returning'
-      const emergencyReturn = !freeFlight && emergencyReturnActive(engineOut, challenge.phase)
       // A valid Free flight final shares the runway cue and navigation target.
-      const finalApproachGlide = !perfectLineActive && (freeFlight || returning || emergencyReturn)
+      const finalApproachGlide = !perfectLineActive && freeFlight
         ? world.landingGlideCue(aircraft.position, pose.heading, aircraft.velocity, aircraft.onGround)
         : null
-      const landingNavigation = returning || emergencyReturn || finalApproachGlide !== null
+      const landingNavigation = finalApproachGlide !== null
       let navTarget: 'gate' | 'base' | 'city' | 'village' = landingNavigation ? 'base' : 'gate'
       let navPosition = gate
       let navTargetId: string | null = null
@@ -2793,7 +2757,6 @@ export async function boot(): Promise<void> {
       let navLateral: NavigationLateralCue | null = null
       let navSpeed: NavigationSpeedCue | null = null
       const navGlide: NavigationGlideCue | null = finalApproachGlide
-      let approachPreviewScore = Number.NaN
       if (landingNavigation) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
         navPosition = returnTarget
@@ -2809,14 +2772,6 @@ export async function boot(): Promise<void> {
         navApproach = navigationApproachCue(pose.heading - world.spawn.yaw, 'base')
         const lateralOffset = (aircraft.position.x - world.spawn.x) * Math.cos(world.spawn.yaw) +
           (aircraft.position.z - world.spawn.z) * -Math.sin(world.spawn.yaw)
-        const baseDx = aircraft.position.x - world.spawn.x
-        const baseDz = aircraft.position.z - world.spawn.z
-        const headingError = pose.heading - world.spawn.yaw
-        approachPreviewScore = landingApproachScore({
-          baseDistanceM: Math.hypot(baseDx, baseDz),
-          runwayLateralM: lateralOffset,
-          headingErrorRad: Math.atan2(Math.sin(headingError), Math.cos(headingError)),
-        })
         navLateral = navigationLateralCue(lateralOffset, 'base')
         navSpeed = navigationSpeedCue(aircraft.speed, 'base')
         navCrosswind = crosswindSpeedMps(
@@ -2830,26 +2785,6 @@ export async function boot(): Promise<void> {
           world.spawn.yaw,
         )
       }
-      const homeSeconds = returning || emergencyReturn
-        ? fuelHomeTimeSeconds(navDist, aircraft.speed)
-        : null
-      const enduranceSeconds = returning || emergencyReturn
-        ? fuelEnduranceSeconds(
-          aircraft.fuel.fraction,
-          aircraft.engineState.lever,
-          aircraft.engineState.afterburnerActive,
-        )
-        : null
-      const homeCue = fuelHomeCue(enduranceSeconds, homeSeconds)
-      const fuelWarning = fuelHomeWarning(homeCue, prevFuelHomeCue)
-      if (
-        fuelWarning &&
-        aircraft.status === 'ok' &&
-        (!banner || bannerUntil <= nowMs)
-      ) {
-        showBanner(fuelWarning, 2600, homeCue === 'low' ? 'danger' : 'info')
-      }
-      prevFuelHomeCue = returning || emergencyReturn ? homeCue : null
       if (radarUpdateDue(nowMs, radarNextUpdateMs) || radarContacts.length === 0) {
         radarContacts = radar.update(
           aircraft.position.x,
@@ -3002,21 +2937,9 @@ export async function boot(): Promise<void> {
       hudFrame.airbrake = aircraft.controls.airbrake
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
-      hudFrame.fuelHomeSeconds = homeSeconds
+      hudFrame.fuelHomeSeconds = null
       hudFrame.refueling = refueling
-      const landingPreview = (returning || emergencyReturn) && navDist <= 3_000 && aircraft.controls.gearDown
-        ? landingQualityForMetrics({
-          verticalSpeed: aircraft.velocity.y,
-          groundSpeed: Math.hypot(aircraft.velocity.x, aircraft.velocity.z),
-          pitchRad: pose.pitch,
-          rollRad: pose.roll,
-        })
-        : null
-      if (!perfectLineActive) {
-        challenge.recordLandingPreview(landingPreview ?? Number.NaN)
-        challenge.recordApproachPreview(approachPreviewScore)
-      }
-      hudFrame.landingPreview = landingPreview
+      hudFrame.landingPreview = null
       hudFrame.thermalLift = aircraft.thermalLift
       hudFrame.nitro = aircraft.nitro.fraction
       hudFrame.nitroGateRefills = aircraft.nitro.gateRefills
@@ -3069,11 +2992,11 @@ export async function boot(): Promise<void> {
       hudFrame.contractComplete = challenge.contractComplete
       hudFrame.contractFailed = challenge.contractFailed
       hudFrame.contractStreak = challenge.contractStreak
-      hudFrame.liveScore = challenge.phase === 'running' || challenge.phase === 'returning'
+      hudFrame.liveScore = challenge.phase === 'running'
         ? challenge.currentScorePreview
         : null
       hudFrame.gateQuality = challenge.gatesPassed > 0 ? challenge.currentGateQuality : null
-      hudFrame.altitudeMilestone = challenge.phase === 'running' || challenge.phase === 'returning'
+      hudFrame.altitudeMilestone = challenge.phase === 'running'
         ? altitudeMilestones.nextThresholdM || null
         : null
       hudFrame.biomeCount = challenge.biomeCount
@@ -3081,7 +3004,7 @@ export async function boot(): Promise<void> {
       hudFrame.terrainRegion = terrainRegion
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.ghostPace = visibleGhostPaceDelta((
-        (challenge.phase === 'running' || challenge.phase === 'returning') &&
+        challenge.phase === 'running' &&
         cameras.mode !== 'cockpit' &&
         aircraft.status === 'ok'
       ) ? ghost.paceDelta(challenge.elapsedSec) : null, ghostVisible)
@@ -3108,7 +3031,7 @@ export async function boot(): Promise<void> {
       hudFrame.trafficAlertVertical = trafficVerticalCue
       hudFrame.trafficAlertDistance = trafficAlert?.distance ?? null
       flightBriefing.observe(aircraft.onGround, challenge.gatesPassed, challenge.phase,
-        navGlide !== null, world.mission.totalGates, emergencyReturn)
+        navGlide !== null, world.mission.totalGates)
       hudFrame.controlHint = !freeFlight && flightBriefing.visible && aircraft.status !== 'crashed'
         ? flightBriefingHint({
           onGround: aircraft.onGround,
@@ -3119,7 +3042,6 @@ export async function boot(): Promise<void> {
           gearDown: aircraft.controls.gearDown,
           totalGates: world.mission.totalGates,
           approachActive: navGlide !== null,
-          emergencyReturn,
           navTarget,
           keyboardScheme: input.keyboardScheme,
           keyboardPitch: input.keyboardPitch,

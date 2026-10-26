@@ -67,15 +67,15 @@ describe('landing assessment', () => {
       .toEqual({ verticalSpeed: -1, groundSpeed: 5, pitchRad: 0, rollRad: 0 })
   })
 
-  it('retains coaching for completed results without expanding persisted course history', () => {
+  it('keeps touchdown coaching out of airborne results and persisted course history', () => {
     const entries = new Map<string, string>()
     const run = new ChallengeRun({ getItem: key => entries.get(key) ?? null, setItem: (key, value) => { entries.set(key, value) } })
     run.reset('seed:landing-coach', 1)
     run.update(.1, 8)
     run.recordGate(1)
-    const result = run.finishLanding({ ...smooth, verticalSpeed: -5 })!
-    expect(result.landingDebrief?.focus).toBe('sink')
-    expect(result.landingQuality).toBe(landingQualityForMetrics({ ...smooth, verticalSpeed: -5 }))
+    const result = run.finishAirborne()!
+    expect(result.landingDebrief).toBeUndefined()
+    expect(result.landingQuality).toBe(0)
     for (const value of entries.values()) {
       expect(value).not.toContain('landingDebrief')
       expect(value).not.toContain('Soften the flare')

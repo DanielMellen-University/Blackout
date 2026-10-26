@@ -33,7 +33,7 @@ describe('b21 record compatibility', () => {
     run.reset(currentId, 1)
     run.update(.1, 80)
     run.recordGate(1)
-    expect(run.finishLanding({ verticalSpeed: -1, groundSpeed: 40, pitchRad: 0, rollRad: 0 })).not.toBeNull()
+    expect(run.finishAirborne()).not.toBeNull()
     expect(values.has(`blackout.best.${currentId}`)).toBe(true)
     // Score/history persistence uses the same revisioned identity as the ghost.
     expect(currentId).toBe('seed:1:orbit:r32')

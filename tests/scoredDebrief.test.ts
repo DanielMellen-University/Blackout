@@ -5,16 +5,16 @@ import { ChallengeRun, readBestCourseScore, readCourseHistory } from '../src/sys
 import { courseSortieGoal } from '../src/ui/CourseBriefing'
 
 describe('durable scored goals', () => {
-  it('changes from medals to fastest complete-circuit time and preserves gold after a slower bronze retry', () => {
+  it('changes from medals to fastest final-gate time and preserves gold after a slower bronze retry', () => {
     const values = new Map<string, string>()
     const storage = { getItem: (k: string) => values.get(k) ?? null, setItem: (k: string, v: string) => values.set(k, v) }
     const id = 'seed:42:orbit:daily:2026-10-19'
     function complete(seconds: number) {
       const run = new ChallengeRun(storage)
       run.reset(id, 1, 'balanced', undefined, false, 90)
-      run.update(1, 100); run.recordGate(1)
-      for (let i = 1; i < seconds; i++) run.update(1, 70)
-      return run.finishLanding({ verticalSpeed: -1, groundSpeed: 30, pitchRad: 0, rollRad: 0 })!
+      for (let i = 0; i < seconds; i++) run.update(1, 100)
+      run.recordGate(1)
+      return run.finishAirborne()!
     }
     const gold = complete(90)
     const bronze = complete(190)

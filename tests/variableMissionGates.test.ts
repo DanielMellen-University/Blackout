@@ -49,7 +49,7 @@ it.each([15, 24, 55, 100])('preserves score and 125 percent uncapped nitro award
     const run = new ChallengeRun(storage)
     run.reset(`seed:gates:${gates}`, gates)
     for (let i = 0; i < gates; i++) run.recordGate(.8)
-    return run.finishLanding({ verticalSpeed: -1, groundSpeed: 20, pitchRad: 0, rollRad: 0 }, 1)!
+    return run.finishAirborne(1)!
   }
   const baseline = finish(5), result = finish(count)
   expect(result.gateScore).toBe(baseline.gateScore)
@@ -58,7 +58,7 @@ it.each([15, 24, 55, 100])('preserves score and 125 percent uncapped nitro award
   expect(result.gateSplits).toHaveLength(count)
   const replay = new ChallengeRun(storage); replay.reset(`seed:gates:${count}`, count)
   for (let i=0;i<count;i++) replay.recordGate(.8)
-  expect(replay.finishLanding({ verticalSpeed: -1, groundSpeed: 20, pitchRad: 0, rollRad: 0 }, 1)!.bestGateSplits).toHaveLength(count)
+  expect(replay.finishAirborne(1)!.bestGateSplits).toHaveLength(count)
   const nitro = createNitroState(); let refill = 0
   for (let i = 0; i < count; i++) { nitro.fraction = 0; refillNitroAtGate(nitro, count); refill += nitro.fraction }
   expect(refill).toBeCloseTo(1.25)

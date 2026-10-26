@@ -8,13 +8,12 @@ import {
   type SortieStyleId,
 } from './FlightStyle'
 import type { Biome, TerrainWaterBody } from '../world/terrainSample'
-import { assessLanding, landingQualityForMetrics, type LandingDebrief } from './LandingAssessment'
+import type { LandingDebrief } from './LandingAssessment'
 export { landingQualityForMetrics } from './LandingAssessment'
 
 export type ChallengePhase =
   | 'ready'
   | 'running'
-  | 'returning'
   | 'complete'
   | 'failed'
 
@@ -96,7 +95,7 @@ export interface ChallengeResult {
   masteryBadges?: MasteryBadgeId[]
   /** Badges earned for the first time on this run. */
   newMasteryBadges?: MasteryBadgeId[]
-  /** Remaining fuel at touchdown, rounded to a whole percent. */
+  /** Remaining fuel at run finish, rounded to a whole percent. */
   fuelRemainingPercent?: number
   /** Fuel spent during this sortie, rounded to a whole percent. */
   fuelUsedPercent?: number
@@ -152,7 +151,7 @@ export interface ChallengeResult {
   bestCombo?: number
   /** Capped score bonus awarded for combo milestones. */
   comboScore?: number
-  /** Capped score bonus awarded for preserving fuel through touchdown. */
+  /** Capped score bonus awarded for preserving fuel through the final gate. */
   fuelScore?: number
   /** Capped score bonus awarded for consecutive completed sorties. */
   runStreakScore?: number
@@ -200,7 +199,7 @@ export interface ChallengeResult {
   contractComplete?: boolean
   /** Whether the assigned contract became impossible during the sortie. */
   contractFailed?: boolean
-  /** Contract progress at touchdown, normalized to 0..1. */
+  /** Contract progress at run finish, normalized to 0..1. */
   contractProgress?: number
   /** Finite bonus awarded for completing the assigned contract. */
   contractScore?: number
@@ -271,8 +270,6 @@ export const MAX_FUEL_EFFICIENCY_SCORE = 1_000
 export const MAX_FUEL_REMAINING_PERCENT = 100
 export const MAX_APPROACH_SCORE = 500
 export const MAX_LANDING_QUALITY = 1
-export const MAX_WEATHER_SCORE = 500
-export const MAX_NIGHT_SCORE = 500
 export const MAX_ALTITUDE_MILESTONE_SCORE = 1_500
 export const MAX_DESTINATION_SCORE = 1_200
 export const MAX_DESTINATION_COUNT = 6
@@ -284,7 +281,6 @@ export const MAX_RUN_STREAK_SCORE = 2_000
 export const MAX_CONTRACT_WINS = 1_000
 export const MAX_CONTRACT_STREAK = 1_000
 export const MAX_CONTRACT_STREAK_BONUS = 1_000
-export const MAX_DEADSTICK_SCORE = 1_500
 export const MAX_STORED_GATE_SPLITS = 100
 export const MAX_FLIGHT_DISTANCE_M = 2_000_000
 export const MAX_PEAK_POSITIVE_G = 20
@@ -382,15 +378,15 @@ export interface CourseHistory {
 interface ScoringWeights {
   gate: number
   time: number
-  landing: number
   minimumTime: number
 }
 
 export function scoringWeightsForFocus(focus: ChallengeScoringFocus): ScoringWeights {
-  if (focus === 'gates') return { gate: 30_000, time: 60_000, landing: 10_000, minimumTime: 5_000 }
-  if (focus === 'pace') return { gate: 18_000, time: 76_000, landing: 6_000, minimumTime: 6_000 }
-  if (focus === 'landing') return { gate: 18_000, time: 60_000, landing: 22_000, minimumTime: 5_000 }
-  return { gate: 20_000, time: 70_000, landing: 10_000, minimumTime: 5_000 }
+  // Keep the existing 100K base budget and medal thresholds. The former landing
+  // allocation now rewards gate precision, including legacy landing-focus courses.
+  if (focus === 'gates' || focus === 'landing') return { gate: 40_000, time: 60_000, minimumTime: 5_000 }
+  if (focus === 'pace') return { gate: 24_000, time: 76_000, minimumTime: 6_000 }
+  return { gate: 30_000, time: 70_000, minimumTime: 5_000 }
 }
 
 export function landingQualityLabel(quality: number): LandingQualityLabel {
@@ -401,39 +397,9 @@ export function landingQualityLabel(quality: number): LandingQualityLabel {
   return 'HARD'
 }
 
-/** Reward a completed landing for preserving fuel, with a finite cap. */
+/** Reward a completed run for preserving fuel, with a finite cap. */
 export function fuelEfficiencyScore(fraction: number): number {
   return Math.round(clamp01(fraction) * MAX_FUEL_EFFICIENCY_SCORE)
-}
-
-/** Reward a safe runway approach without making off-field landings fail. */
-export function landingApproachScore(metrics: Pick<LandingMetrics, 'baseDistanceM' | 'runwayLateralM' | 'headingErrorRad'>): number {
-  if (
-    !Number.isFinite(metrics.baseDistanceM)
-    || !Number.isFinite(metrics.runwayLateralM)
-    || !Number.isFinite(metrics.headingErrorRad)
-  ) return 0
-  const distance = Math.max(0, metrics.baseDistanceM!)
-  const lateral = Math.abs(metrics.runwayLateralM!)
-  const heading = Math.abs(metrics.headingErrorRad!)
-  const distanceFactor = 1 - clamp01(distance / 180)
-  const lateralFactor = 1 - clamp01(lateral / 55)
-  const headingFactor = 1 - clamp01(heading / (Math.PI / 3))
-  return Math.round(MAX_APPROACH_SCORE * distanceFactor * lateralFactor * headingFactor)
-}
-
-/** Reward a clean touchdown through bounded precipitation or gust risk. */
-export function weatherLandingScore(risk: number, landingQuality = 1): number {
-  if (!Number.isFinite(risk) || !Number.isFinite(landingQuality)) return 0
-  return Math.round(MAX_WEATHER_SCORE * clamp01(risk) * clamp01(landingQuality))
-}
-
-/** Reward a clean night or dusk touchdown using the shared daylight envelope. */
-export function nightLandingScore(daylight: number, landingQuality = 1): number {
-  if (!Number.isFinite(daylight) || !Number.isFinite(landingQuality)) return 0
-  if (daylight < 0 || daylight > 1) return 0
-  const nightFactor = clamp01((0.42 - daylight) / 0.42)
-  return Math.round(MAX_NIGHT_SCORE * nightFactor * clamp01(landingQuality))
 }
 
 /** Reward the highest reached climb tier without allowing altitude to dominate a run. */
@@ -454,13 +420,6 @@ export function boundedScore(value: number): number {
     : 0
 }
 
-/** Reward a controlled touchdown after the engine has run dry. */
-export function deadstickLandingScore(fuelFraction: number, landingQuality = 1): number {
-  if (!Number.isFinite(fuelFraction) || !Number.isFinite(landingQuality)) return 0
-  if (fuelFraction < 0 || fuelFraction > 0.001) return 0
-  return Math.round(MAX_DEADSTICK_SCORE * clamp01(landingQuality))
-}
-
 /** Reward an active contract chain without allowing runaway score growth. */
 export function contractStreakBonusForStreak(streak: number): number {
   if (!Number.isFinite(streak)) return 0
@@ -471,14 +430,6 @@ export function contractStreakBonusForStreak(streak: number): number {
 export function runStreakBonusForStreak(streak: number): number {
   if (!Number.isFinite(streak)) return 0
   return Math.min(MAX_RUN_STREAK_SCORE, Math.max(0, Math.floor(streak) - 1) * 250)
-}
-
-/** Collapse the active front into one finite touchdown-risk scalar. */
-export function landingWeatherRisk(weather: { rain: number; snow: number; gust: number }): number {
-  const rain = clamp01(weather.rain)
-  const snow = clamp01(weather.snow)
-  const gust = Math.max(0, clamp01(weather.gust) - 0.18)
-  return Math.max(rain, snow, gust)
 }
 
 type HistoryReadStore = Pick<ScoreStore, 'getItem'> | null
@@ -957,9 +908,9 @@ function serializeCourseHistory(history: CourseHistory): string {
  * State and scoring for one repeatable circuit attempt.
  *
  * The run clock starts when the jet begins its takeoff roll. Passing every gate
- * changes the objective to returning for a landing; a clean touchdown finalizes
- * the result. World/course creation stays outside this class so a retry can use
- * the exact same seed and route.
+ * allows an immediate airborne finish; the final gate freezes the clock.
+ * World/course creation stays outside this class so a retry can use the exact
+ * same seed and route.
  */
 export class ChallengeRun {
   phase: ChallengePhase = 'ready'
@@ -1091,6 +1042,8 @@ export class ChallengeRun {
     weatherGust = 0,
     thermalLift = 0,
   ): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    if (!this.freeFlight && this.totalGates > 0 && this.gatesPassed >= this.totalGates) return
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
     const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
     const safeAltitude = Number.isFinite(altitudeM) ? Math.max(0, altitudeM) : 0
@@ -1130,9 +1083,9 @@ export class ChallengeRun {
     )
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
-      this.phase = this.freeFlight || this.totalGates > 0 ? 'running' : 'returning'
+      this.phase = 'running'
     }
-    if (this.phase === 'running' || this.phase === 'returning') {
+    if (this.phase === 'running') {
       this.elapsedSec += safeDt
       this.flightDistanceM = Math.min(2_000_000, this.flightDistanceM + safeDistance)
     }
@@ -1163,9 +1116,6 @@ export class ChallengeRun {
     const bestSplit = this.bestGateSplits[gateIndex]
     this.lastPaceDeltaSec = Number.isFinite(bestSplit) ? split - bestSplit! : Number.NaN
     this.gatePaceLabelDelta = Number.NaN
-    if (this.totalGates > 0 && this.gatesPassed >= this.totalGates) {
-      this.phase = 'returning'
-    }
   }
 
   /** Record a missed gate for the optional no-miss circuit contract. */
@@ -1221,7 +1171,7 @@ export class ChallengeRun {
 
   /** Add one bounded reward for each selected streamed settlement landmark. */
   recordDestination(kind: 'city' | 'village', id?: string): void {
-    if (this.phase !== 'running' && this.phase !== 'returning') return
+    if (this.phase !== 'running') return
     if (kind !== 'city' && kind !== 'village') return
     if (this.destinationCount >= MAX_DESTINATION_COUNT) return
     const safeId = typeof id === 'string' && id.length > 0 ? `${kind}:${id.slice(0, 128)}` : null
@@ -1284,7 +1234,7 @@ export class ChallengeRun {
     const wasContractComplete = this.contract.complete
     this.contract.recordBiome(this.surveyedBiomeCount)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
-    if (this.phase === 'running' || this.phase === 'returning') {
+    if (this.phase === 'running') {
       this.surveyedBiomeCue = biome as Biome
     }
     this.refreshScorePreview()
@@ -1336,7 +1286,7 @@ export class ChallengeRun {
       if ((this.surveyedWaterMask & bit) === 0) {
         this.surveyedWaterMask |= bit
         this.surveyedWaterCount = Math.min(MAX_WATER_BODY_COUNT, this.surveyedWaterCount + 1)
-        if (this.phase === 'running' || this.phase === 'returning') {
+        if (this.phase === 'running') {
           this.surveyedWaterCue = normalized as TerrainWaterBody
         }
       }
@@ -1377,7 +1327,7 @@ export class ChallengeRun {
     return this.peakNegativeG
   }
 
-  /** Earned score only; landing, time, weather, and contract payouts stay touchdown-gated. */
+  /** Earned score only; time and contract payouts wait until the final gate. */
   get currentScorePreview(): number {
     return this.scorePreviewValue
   }
@@ -1402,15 +1352,16 @@ export class ChallengeRun {
     return cue
   }
 
-  finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
+  /** Finalize a gated run immediately after recording its final gate and combo. */
+  finishAirborne(fuelFraction = 1): ChallengeResult | null {
     if (this.freeFlight) return null
-    if (this.phase !== 'returning') return null
+    if (this.phase !== 'running' || this.totalGates <= 0 || this.gatesPassed !== this.totalGates) return null
 
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     const fuelRemainingPercent = Math.round(clamp01(fuelFraction) * 100)
     const fuelUsedPercent = 100 - fuelRemainingPercent
     const fuelScore = fuelEfficiencyScore(fuelFraction)
-    const approachScore = landingApproachScore(metrics)
+    const approachScore = 0
     const gateQuality =
       this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
     const weights = scoringWeightsForFocus(this.scoringFocus)
@@ -1419,12 +1370,12 @@ export class ChallengeRun {
     // A brisk, clean circuit scores well; time can never erase completion.
     const timeScore = Math.round(Math.max(weights.minimumTime, weights.time - Math.max(0, elapsedSec - this.timeAllowanceSec) * 320))
 
-    const landingQuality = landingQualityForMetrics(metrics)
-    const landingScore = Math.round(weights.landing * landingQuality)
-    const weatherScore = weatherLandingScore(metrics.weatherRisk ?? Number.NaN, landingQuality)
-    const nightScore = nightLandingScore(metrics.daylight ?? Number.NaN, landingQuality)
+    // Legacy result/history fields remain readable while new runs award no
+    // touchdown, approach, weather-landing, night-landing or deadstick credit.
+    const landingQuality = 0
+    const landingScore = 0
     const altitudeScore = altitudeMilestoneScore(this.altitudeMilestone)
-    const deadstickScore = deadstickLandingScore(fuelFraction, landingQuality)
+    const deadstickScore = 0
     const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
     const comboScore = this.bestCombo > 1
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
@@ -1440,7 +1391,7 @@ export class ChallengeRun {
     const contractStreakBonus = contractComplete
       ? contractStreakBonusForStreak(history.contractStreak ?? 0)
       : 0
-    const rawTotalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + runStreakScore + approachScore + weatherScore + nightScore + altitudeScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
+    const rawTotalScore = gateScore + timeScore + stuntScore + comboScore + fuelScore + runStreakScore + altitudeScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
     const totalScore = boundedScore(rawTotalScore)
     const scoreCapped = rawTotalScore > totalScore
     const previousBest = this.readBest()
@@ -1481,9 +1432,7 @@ export class ChallengeRun {
     const previousStuntRolls = history.stuntRolls ?? 0
     const previousCombo = history.combo ?? 0
     const previousApproachScore = history.approachScore ?? 0
-    // Legacy histories predate touchdown persistence. Treat an existing completed course
-    // as fully qualified until a real quality record is present, avoiding a surprise tier drop.
-    const previousLandingQuality = history.landingQuality ?? (history.completionCount > 0 ? 1 : 0)
+    const previousLandingQuality = history.landingQuality ?? 0
     const previousFuelRemainingPercent = history.fuelRemainingPercent ?? 0
     const previousDestinationCount = history.destinations ?? 0
     const previousBiomeCount = history.biomes ?? 0
@@ -1535,7 +1484,6 @@ export class ChallengeRun {
     const newNegativeGRecord = courseBestNegativeG < previousPeakNegativeG
     const sortieStyle = sortieStyleForResult({
       landingQuality,
-      landingLabel: landingQualityLabel(landingQuality),
       bestPrecisionStreak: this.bestGateQualityStreak,
       approachScore,
       destinationCount: this.destinationCount,
@@ -1615,8 +1563,6 @@ export class ChallengeRun {
       timeScore,
       landingScore,
       landingQuality,
-      landingLabel: landingQualityLabel(landingQuality),
-      landingDebrief: assessLanding(metrics),
       totalScore,
       scoreCapped,
       medal,
@@ -1667,8 +1613,6 @@ export class ChallengeRun {
       fuelScore: fuelScore > 0 ? fuelScore : undefined,
       runStreakScore: runStreakScore > 0 ? runStreakScore : undefined,
       approachScore: approachScore > 0 ? approachScore : undefined,
-      weatherScore: weatherScore > 0 ? weatherScore : undefined,
-      nightScore: nightScore > 0 ? nightScore : undefined,
       destinationScore: this.destinationScore > 0 ? this.destinationScore : undefined,
       destinationCount: this.destinationCount > 0 ? this.destinationCount : undefined,
       courseBestDestinationCount: courseBestDestinationCount > 0 ? courseBestDestinationCount : undefined,
@@ -1691,7 +1635,6 @@ export class ChallengeRun {
       contractProgress: this.contract.enabled ? this.contract.progress : undefined,
       contractScore: contractScore > 0 ? contractScore : undefined,
       contractStreakBonus: contractStreakBonus > 0 ? contractStreakBonus : undefined,
-      deadstickScore: deadstickScore > 0 ? deadstickScore : undefined,
       altitudeScore: altitudeScore > 0 ? altitudeScore : undefined,
       contractWins: contractWins > 0 ? contractWins : undefined,
       courseBestContractWins: courseBestContractWins > 0 ? courseBestContractWins : undefined,
@@ -1781,7 +1724,6 @@ export class ChallengeRun {
   get objectiveLabel(): string {
     if (this.freeFlight) return 'Explore freely'
     if (this.phase === 'ready') return 'TAKE OFF'
-    if (this.phase === 'returning') return 'RETURN & LAND'
     if (this.phase === 'complete') return 'RUN COMPLETE'
     if (this.phase === 'failed') return 'RUN FAILED'
     return `GATE ${Math.min(this.gatesPassed + 1, this.totalGates)}/${this.totalGates}`

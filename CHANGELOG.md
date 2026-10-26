@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.010** d1: finish every gated run in the air at the last gate; remove return-to-base navigation and landing preview, and replace landing-related scoring with gate/time points while retaining medal thresholds.
+
 - **11.009** Camera views open behind and a bit above the jet on every switch, and the middle view sits a little further back.
 - **11.008** Third-person camera now follows Q and E roll rigidly like first person, removing the stabilizer lag and bank cap that caused the jerk.
 - **11.007** Fix the third-person camera snapping when rolling with Q and E through inverted: the capped chase bank now holds its side instead of flipping in one frame.
