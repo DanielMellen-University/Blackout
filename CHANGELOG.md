@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.013** Remove landing quality from course ranks and retire the Landing Ace and Approach Ace badges.
+
 - **11.012** Retire the Butter Landing contract and resolve fuel, speed and range contracts at the final gate. Runway alignment awaits a design decision.
 
 - **11.011** Retheme five landing-oriented courses as gate runs, retaining their identities, seeds and weather.

@@ -447,8 +447,8 @@ describe('run results focus flow', () => {
       fuelRemainingPercent: 72,
       fuelUsedPercent: 28,
       scoringFocus: 'pace',
-      masteryBadges: ['first-flight', 'landing-ace'],
-      newMasteryBadges: ['landing-ace'],
+      masteryBadges: ['first-flight', 'gate-master'],
+      newMasteryBadges: ['gate-master'],
       bestPrecisionStreak: 3,
       courseBestPrecisionStreak: 4,
       peakSpeedKts: 962,
@@ -507,7 +507,7 @@ describe('run results focus flow', () => {
       'NEW BEST · 100,000 · RUN 3 · FASTEST 0:38.40',
     )
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('PACE FOCUS')
-    expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · LANDING ACE')
+    expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · GATE MASTER')
     expect(elementsFor(fixture.document, 'result-fuel')?.textContent).toBe('72%')
     expect(elementsFor(fixture.document, 'result-fuel-detail')?.textContent).toBe('28% USED')
     expect(elementsFor(fixture.document, 'result-streak')?.textContent).toBe('X3')
@@ -628,22 +628,6 @@ describe('run results focus flow', () => {
     })
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
       .toContain('NEXT SILVER 76,000')
-    results.dispose()
-    vi.unstubAllGlobals()
-  })
-
-  it('labels a newly earned approach ace badge', () => {
-    vi.stubGlobal('HTMLElement', FakeElement)
-    const fixture = resultsFixture()
-    vi.stubGlobal('document', fixture.document)
-    const results = new RunResults(fixture.document as unknown as Document)
-
-    results.show({
-      ...result,
-      newMasteryBadges: ['approach-ace'],
-      masteryBadges: ['approach-ace'],
-    })
-    expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · APPROACH ACE')
     results.dispose()
     vi.unstubAllGlobals()
   })

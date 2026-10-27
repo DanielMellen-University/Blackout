@@ -499,7 +499,6 @@ export async function boot(): Promise<void> {
         bestScore: record?.bestScore,
         badgeCount: record?.badgeCount,
         contractWins: record?.history?.contractWins,
-        landingQuality: record?.history?.landingQuality,
       })
       return {
         id: course.id,
@@ -638,7 +637,6 @@ export async function boot(): Promise<void> {
         bestScore: record.bestScore,
         badgeCount: record.badgeCount,
         contractWins: history?.contractWins,
-        landingQuality: history?.landingQuality,
       }) === 'legend') mastered += 1
     }
     career.completedCourses = completed

@@ -19,7 +19,7 @@ export type ChallengePhase =
 
 export type Medal = 'gold' | 'silver' | 'bronze' | 'complete'
 export type ChallengeScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
-export type MasteryBadgeId = 'first-flight' | 'gate-master' | 'landing-ace' | 'approach-ace' | 'streak-hunter' | 'gold-run'
+export type MasteryBadgeId = 'first-flight' | 'gate-master' | 'streak-hunter' | 'gold-run'
 export type LandingQualityLabel = 'BUTTER' | 'SMOOTH' | 'FIRM' | 'HARD'
 
 export interface LandingMetrics {
@@ -300,8 +300,6 @@ export interface CourseMasteryProgress {
   bestScore?: number
   badgeCount?: number
   contractWins?: number
-  /** Best persisted touchdown quality, defaulting to legacy-compatible full credit when absent. */
-  landingQuality?: number
 }
 
 /** Derive a stable, bounded course rank from the records already in storage. */
@@ -310,10 +308,9 @@ export function courseMasteryTierForProgress(progress: CourseMasteryProgress): C
   const score = safeCount(progress.bestScore, MAX_BEST_SCORE)
   const badges = safeCount(progress.badgeCount, MASTERY_BADGE_COUNT)
   const contracts = safeCount(progress.contractWins, MAX_CONTRACT_WINS)
-  const landingQuality = progress.landingQuality === undefined ? 1 : clamp01(progress.landingQuality)
-  if (runs >= 10 && score >= 100_000 && badges >= MASTERY_BADGE_COUNT && contracts >= 5 && landingQuality >= 0.92) return 'legend'
-  if (runs >= 5 && score >= 88_000 && badges >= 3 && contracts >= 2 && landingQuality >= 0.78) return 'ace'
-  if (runs >= 3 && score >= 76_000 && badges >= 2 && landingQuality >= 0.6) return 'veteran'
+  if (runs >= 10 && score >= 100_000 && badges >= MASTERY_BADGE_COUNT && contracts >= 5) return 'legend'
+  if (runs >= 5 && score >= 88_000 && badges >= 3 && contracts >= 2) return 'ace'
+  if (runs >= 3 && score >= 76_000 && badges >= 2) return 'veteran'
   if (runs >= 1) return 'pilot'
   return 'rookie'
 }
@@ -336,9 +333,9 @@ export function courseMasteryNextTierLabel(tier: CourseMasteryTier): string {
 
 /** Explain the next tier's bounded requirements without exposing storage details. */
 export function courseMasteryNextTierGoalLabel(tier: CourseMasteryTier): string {
-  if (tier === 'pilot') return '3 RUNS / 76K / 2 BADGES / LAND FIRM'
-  if (tier === 'veteran') return '5 RUNS / 88K / 3 BADGES / 2 CONTRACTS / LAND SMOOTH'
-  if (tier === 'ace') return '10 RUNS / 100K / 6 BADGES / 5 CONTRACTS / LAND BUTTER'
+  if (tier === 'pilot') return '3 RUNS / 76K / 2 BADGES'
+  if (tier === 'veteran') return '5 RUNS / 88K / 3 BADGES / 2 CONTRACTS'
+  if (tier === 'ace') return '10 RUNS / 100K / 4 BADGES / 5 CONTRACTS'
   return ''
 }
 
@@ -513,8 +510,6 @@ export function repairBestCoursePrecisionStreak(
 const MASTERY_BADGES: readonly MasteryBadgeId[] = [
   'first-flight',
   'gate-master',
-  'landing-ace',
-  'approach-ace',
   'streak-hunter',
   'gold-run',
 ]
@@ -522,13 +517,10 @@ export const MASTERY_BADGE_COUNT = MASTERY_BADGES.length
 
 const GATE_STREAK_THRESHOLD = 0.82
 const STREAK_HUNTER_THRESHOLD = 3
-const APPROACH_ACE_THRESHOLD = 400
 
 export function masteryBadgeLabel(badge: MasteryBadgeId): string {
   if (badge === 'first-flight') return 'FIRST FLIGHT'
   if (badge === 'gate-master') return 'GATE MASTER'
-  if (badge === 'landing-ace') return 'LANDING ACE'
-  if (badge === 'approach-ace') return 'APPROACH ACE'
   if (badge === 'streak-hunter') return 'STREAK HUNTER'
   return 'GOLD RUN'
 }
@@ -598,18 +590,12 @@ function writeMasteryBadges(storage: ScoreStore | null, courseId: string, badges
 export function masteryBadgesForRun(
   completionCount: number,
   gateQuality: number,
-  landingQuality: number,
   medal: Medal,
   precisionStreak = 0,
-  approachScore = 0,
 ): MasteryBadgeId[] {
   const badges: MasteryBadgeId[] = []
   if (completionCount >= 1) badges.push('first-flight')
   if (gateQuality >= 0.9) badges.push('gate-master')
-  if (landingQuality >= 0.9) badges.push('landing-ace')
-  if (Number.isFinite(approachScore) && approachScore >= APPROACH_ACE_THRESHOLD && landingQuality >= 0.78) {
-    badges.push('approach-ace')
-  }
   if (Number.isFinite(precisionStreak) && precisionStreak >= STREAK_HUNTER_THRESHOLD) {
     badges.push('streak-hunter')
   }
@@ -1397,7 +1383,6 @@ export class ChallengeRun {
       bestScore: previousBest,
       badgeCount: priorBadges.length,
       contractWins: history.contractWins,
-      landingQuality: history.landingQuality,
     })
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -1521,10 +1506,8 @@ export class ChallengeRun {
     const earnedBadges = masteryBadgesForRun(
       history.completionCount,
       clamp01(gateQuality),
-      landingQuality,
       medal,
       this.bestGateQualityStreak,
-      approachScore,
     )
     const allBadges = [...priorBadges]
     for (const badge of earnedBadges) {
@@ -1542,7 +1525,6 @@ export class ChallengeRun {
       bestScore,
       badgeCount: allBadges.length,
       contractWins: history.contractWins,
-      landingQuality: history.landingQuality,
     })
     const masteryTierPromoted = courseMasteryTierRank(courseMasteryTier) > courseMasteryTierRank(previousCourseMasteryTier)
 

@@ -1433,11 +1433,11 @@ describe('ChallengeRun', () => {
     expect(values.get('blackout.history.seed:legacy-landing')).toBe('{"completionCount":2,"bestTimeSec":4,"approachScore":500,"landingQuality":1}')
   })
 
-  it('does not demote legacy mastery before a touchdown record exists', () => {
+  it('ignores legacy landing quality and retired badges in mastery progression', () => {
     const values = new Map<string, string>([
-      ['blackout.history.seed:legacy-mastery', '{"completionCount":5,"bestTimeSec":4,"approachScore":500,"contractWins":2}'],
+      ['blackout.history.seed:legacy-mastery', '{"completionCount":5,"bestTimeSec":4,"approachScore":500,"landingQuality":0.1,"contractWins":2}'],
       ['blackout.best.seed:legacy-mastery', '88000'],
-      ['blackout.badges.seed:legacy-mastery', '["first-flight","gate-master","landing-ace"]'],
+      ['blackout.badges.seed:legacy-mastery', '["first-flight","gate-master","landing-ace","approach-ace","streak-hunter"]'],
     ])
     const storage = {
       getItem: (key: string) => values.get(key) ?? null,
@@ -1449,7 +1449,9 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.courseMasteryTier).toBe('ace')
     expect(result.masteryTierPromoted).toBe(false)
-    expect(result.courseBestLandingQuality).toBeUndefined()
+    expect(result.courseBestLandingQuality).toBe(0.1)
+    expect(readMasteryBadges(storage, 'seed:legacy-mastery')).toEqual(['first-flight', 'gate-master', 'streak-hunter', 'gold-run'])
+    expect(values.get('blackout.badges.seed:legacy-mastery')).toBe('["first-flight","gate-master","streak-hunter","gold-run"]')
   })
 
   it('persists the best fuel reserve and rejects malformed reserve records', () => {
@@ -1948,44 +1950,24 @@ describe('ChallengeRun', () => {
     expect(courseMasteryTierForProgress({ completionCount: 1 })).toBe('pilot')
     expect(courseMasteryTierForProgress({ completionCount: 3, bestScore: 76_000, badgeCount: 2 })).toBe('veteran')
     expect(courseMasteryTierForProgress({ completionCount: 5, bestScore: 88_000, badgeCount: 3, contractWins: 2 })).toBe('ace')
-    expect(courseMasteryTierForProgress({ completionCount: 10, bestScore: 100_000, badgeCount: 6, contractWins: 5 })).toBe('legend')
-    expect(courseMasteryTierForProgress({ completionCount: 5, bestScore: 88_000, badgeCount: 3, contractWins: 2, landingQuality: 0.7 })).toBe('veteran')
-    expect(courseMasteryTierForProgress({ completionCount: 10, bestScore: 100_000, badgeCount: 6, contractWins: 5, landingQuality: 0.8 })).toBe('ace')
+    expect(courseMasteryTierForProgress({ completionCount: 10, bestScore: 100_000, badgeCount: 4, contractWins: 5 })).toBe('legend')
     expect(courseMasteryTierForProgress({ completionCount: Number.NaN, bestScore: Number.POSITIVE_INFINITY })).toBe('rookie')
     expect(courseMasteryTierLabel('rookie')).toBe('ROOKIE')
     expect(courseMasteryTierLabel('legend')).toBe('LEGEND')
     expect(courseMasteryNextTierLabel('pilot')).toBe('VETERAN')
     expect(courseMasteryNextTierLabel('ace')).toBe('LEGEND')
     expect(courseMasteryNextTierLabel('legend')).toBe('')
-    expect(courseMasteryNextTierGoalLabel('veteran')).toBe('5 RUNS / 88K / 3 BADGES / 2 CONTRACTS / LAND SMOOTH')
+    expect(courseMasteryNextTierGoalLabel('veteran')).toBe('5 RUNS / 88K / 3 BADGES / 2 CONTRACTS')
     expect(courseMasteryNextTierGoalLabel('legend')).toBe('')
   })
 
-  it('awards mastery badges from finite run quality thresholds', () => {
-    expect(masteryBadgesForRun(1, 1, 1, 'gold')).toEqual([
-      'first-flight',
-      'gate-master',
-      'landing-ace',
-      'gold-run',
+  it('awards only active mastery badges and keeps legend attainable', () => {
+    expect(masteryBadgesForRun(1, 1, 'gold', 3)).toEqual([
+      'first-flight', 'gate-master', 'streak-hunter', 'gold-run',
     ])
-    expect(masteryBadgesForRun(0, Number.NaN, 0.89, 'complete')).toEqual([])
-    expect(masteryBadgesForRun(1, 1, 1, 'gold', 3)).toEqual([
-      'first-flight',
-      'gate-master',
-      'landing-ace',
-      'streak-hunter',
-      'gold-run',
-    ])
-    expect(masteryBadgesForRun(1, 1, 0.8, 'complete', 0, 450)).toEqual([
-      'first-flight',
-      'gate-master',
-      'approach-ace',
-    ])
-    expect(masteryBadgesForRun(1, 1, 0.7, 'complete', 0, 450)).toEqual([
-      'first-flight',
-      'gate-master',
-    ])
-    expect(MASTERY_BADGE_COUNT).toBe(6)
+    expect(masteryBadgesForRun(0, Number.NaN, 'complete')).toEqual([])
+    expect(MASTERY_BADGE_COUNT).toBe(4)
+    expect(courseMasteryNextTierGoalLabel('ace')).toBe('10 RUNS / 100K / 4 BADGES / 5 CONTRACTS')
   })
 
   it('does not award landing or approach badges for an airborne finish', () => {
@@ -2007,7 +1989,7 @@ describe('ChallengeRun', () => {
     const storage = {
       getItem: () => '["gold-run","unknown","gold-run","landing-ace"]',
     }
-    expect(readMasteryBadges(storage, 'seed:badges')).toEqual(['gold-run', 'landing-ace'])
+    expect(readMasteryBadges(storage, 'seed:badges')).toEqual(['gold-run'])
   })
 
   it('reads a finite persisted best score without leaking malformed values', () => {
