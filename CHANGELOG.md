@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.015** Document the mission gate-spacing specification and the unresolved route geometry tradeoff; implementation remains pending.
+
 - **11.014** Remove landing references from gated results, course records, sorting, briefing and flight styles; correct the flight manual while preserving Free flight.
 
 - **11.013** Remove landing quality from course ranks and retire the Landing Ace and Approach Ace badges.

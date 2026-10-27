@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 11.015. Document the M0 gate-spacing spec and the unresolved route geometry tradeoff; implementation remains pending.
+
 Chunk 11.014. Remove landing references from gated results, course records, sorting, briefing and flight styles; correct the flight manual while preserving Free flight.
 
 Chunk 11.013. Remove landing quality from course ranks and retire the Landing Ace and Approach Ace badges.
@@ -127,7 +129,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.014** is current. Previous ship: **11.013**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.015** is current. Previous ship: **11.014**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
@@ -358,7 +360,7 @@ Every new feature, mission type, system or ROADMAP item needs Daniel's approval 
 
 **Further out (proposed Oct 24, each needs Daniel's approval before work starts):**
 
-8. **Mission overhaul: TOP future phase, direction A+C picked (Oct 24).** Daniel, Oct 24: the missions are not fun and the gates are too close together. Picked: A wide lines (8 to 20 gates, 0.8 to 2.5 km apart, through valleys and over ridges with real height changes) plus C scored flying (bonuses for low, near-terrain and high-speed flying). Replaces the Oct 22 15 to 100 gate rule. Starts after item 6 as daily slices, each slice list approved first. Week 2 (Nov 2 to 6) approved Oct 24: gate spacing, terrain routes, airborne starts, scoring, proof flights. No in-flight bonus readout. Plan, phases and usage: [mission overhaul roadmap](gameplay/mission-overhaul.md).
+8. **Mission overhaul: IN PROGRESS, M0 and spacing partial in 11.015; direction A+C picked (Oct 24).** Daniel, Oct 24: the missions are not fun and the gates are too close together. Picked: A wide lines (8 to 20 gates, 0.8 to 2.5 km apart, through valleys and over ridges with real height changes) plus C scored flying (bonuses for low, near-terrain and high-speed flying). Replaces the Oct 22 15 to 100 gate rule. Starts after item 6 as daily slices, each slice list approved first. Week 2 (Nov 2 to 6) approved Oct 24: gate spacing, terrain routes, airborne starts, scoring, proof flights. No in-flight bonus readout. **NEEDS DANIEL:** the spacing implementation needs a decision on widening narrow seeded routes beyond their original width while retaining the 75° turn check and Waterway route features. Plan, phases and usage: [mission overhaul roadmap](gameplay/mission-overhaul.md).
 9. **Time-based results after landing removal.** With every run finishing in the air, medals, records and ghosts key on finish time, gates and nitro use only. Separate a new record revision so older landing-era records stay intact.
 10. **Airborne starts.** Every gated run starts in the air on the line to gate 1 instead of a runway takeoff, matching Perfect Line. Free flight keeps its runway start.
 11. **Known performance debt.** Fix the seed-1337 synchronous hydrology look-ahead stall and re-verify the 10.989 frame-spike numbers. No budget changes.

@@ -28,13 +28,23 @@ Status: direction **A+C picked** by Daniel on Oct 24 2026 (wide lines plus score
 
 8 to 20 gates, 0.8 to 2.5 km apart, routed through valleys and over ridges with real height changes. Score is time plus bonuses for flying low, close to terrain and carrying speed. Phases M0, M1, M4 and M5 in full, M2 light, M3 optional. Estimated about 20 to 30% of the weekly limit in total.
 
+## M0 and spacing slice spec (b40 r5, 11.015)
+
+Generate 8–20 gates on the existing seeded stadium routes, with consecutive gate centers 800–2,500 m apart. Keep course identities, catalog slots, weather and seeds; preserve the existing runway start and airborne finish for gated runs. Free flight retains its ground start, takeoff and landing behavior. Retain the current scoring and flight physics. Terrain-following routes, airborne starts and flying-score bonuses belong to later slices.
+
+Acceptance: verify the count and spacing on generated and migrated routes across themes and seeds, including the final route after terrain clearance; check route clearance and flyability, and capture and inspect a gated run. Verify Free flight still starts on the runway and can land. The open runway-alignment contract question in landing-removal step 6.4 remains unchanged.
+
+**Status: partial; no generator change shipped.** A bounded search through 161 arc-length samples per existing stadium, with 805–2,300 m horizontal legs and turns below 74°, failed to find a route for 72 of 500 theme/seed cases. It is a discrete search, not a proof that no placement exists. A trial widening narrow loops to 1,700 m found placements in 25,000 theme/seed cases, but exceeded the original width for some seeds. Sparse Waterway placements also missed the river or lake in 11 of 36 checked seeds. A later search requiring the last two gates to stay on the runway axis found placements for 2,500 theme/seed cases; the combined implementation has not passed the full checks.
+
+**NEEDS DANIEL:** May narrow seeded routes extend beyond their original width to support the 800 m minimum spacing while retaining the 75° turn limit, with Waterway placements adjusted to retain both river and lake? Alternatively, retain each seed's original bounds and investigate a different placement method; the sampled search did not establish a solution. Course identities and the 75° check remain unchanged. This does not resolve the separate step 6.4 runway-alignment contract question.
+
 ## Week 2 daily slices (approved Oct 24 2026)
 
 Daniel approved this list on Oct 24 2026, without the in-flight bonus readout. It runs after week 1 (landing removal, ROADMAP item 6). If a slice fails, it is retried the next weekday and the rest shift by a day.
 
 | Day | Slice |
 |---|---|
-| Mon Nov 2 | M0 spec in this doc, plus 8 to 20 gates spaced 0.8 to 2.5 km apart on the current routes |
+| Mon Nov 2 | PARTIAL, 11.015: M0 spec documented; gate spacing awaits the route decision above |
 | Tue Nov 3 | M1 routes follow the terrain: through valleys and over ridges with real height changes |
 | Wed Nov 4 | Every gated run starts in the air, lined up on gate 1. Free flight keeps its runway start (ROADMAP item 10, folded in) |
 | Thu Nov 5 | M4 scoring: time plus bonuses for flying low, close to terrain and carrying speed. New record revision, old records kept separately |
