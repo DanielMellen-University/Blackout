@@ -1,3 +1,4 @@
+import { FlyingScore } from './FlyingScore'
 import { flightRecordId } from '../core/FlightRevision'
 import { MAX_STUNT_ROLLS } from './StuntTracker'
 import { MAX_COMBO_COUNT } from './FlightCombo'
@@ -56,6 +57,8 @@ export interface ChallengeResult {
   failureReason?: string
   gateScore: number
   timeScore: number
+  /** Time-weighted flying telemetry; not included in the legacy score. */
+  flyingBonuses?: { lowScore: number; terrainScore: number; speedScore: number }
   landingScore: number
   landingQuality: number
   /** Human-readable touchdown quality band. */
@@ -909,6 +912,7 @@ export class ChallengeRun {
   private courseId = 'default'
   private scoringFocus: ChallengeScoringFocus = 'balanced'
   private freeFlight = false
+  private flyingScore = new FlyingScore()
   private altitudeMilestone = 0
   private gateQualityTotal = 0
   private gateQualityStreak = 0
@@ -965,6 +969,7 @@ export class ChallengeRun {
     this.scoringFocus = scoringFocus
     this.freeFlight = courseId === 'free-flight' || courseId === flightRecordId('free-flight')
     this.altitudeMilestone = 0
+    this.flyingScore = new FlyingScore()
     this.phase = 'ready'
     this.elapsedSec = 0
     this.gatesPassed = 0
@@ -1073,6 +1078,7 @@ export class ChallengeRun {
     }
     if (this.phase === 'running') {
       this.elapsedSec += safeDt
+      if (!this.freeFlight && airborne) this.flyingScore.sample(safeDt, altitudeM, terrainClearanceM, speed)
       this.flightDistanceM = Math.min(2_000_000, this.flightDistanceM + safeDistance)
     }
     this.contract.recordPace(this.elapsedSec)
@@ -1538,6 +1544,7 @@ export class ChallengeRun {
       courseId: this.courseId,
       gateScore,
       timeScore,
+      flyingBonuses: this.flyingScore.bonuses(),
       landingScore,
       landingQuality,
       totalScore,
