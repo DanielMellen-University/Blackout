@@ -8,6 +8,8 @@ const item: CoursePickerItem = { id: 'route', label: 'A route', detail: '', meta
 describe('course briefing goals', () => {
   it('prioritizes a complete circuit before a record chase', () => {
     expect(courseSortieGoal(item)).toMatchObject({ kind: 'first-run' })
+    expect(courseSortieGoal(item).detail).toContain('final gate')
+    expect(courseSortieGoal({ ...item, runs: 2, score: 88_000, time: 42 }).detail).not.toMatch(/land|touchdown/i)
     expect(courseSortieGoal({ ...item, runs: Number.NaN, score: 88_000 })).toMatchObject({ kind: 'first-run' })
     expect(courseSortieGoal({ ...item, runs: 1, score: 0 })).toMatchObject({ kind: 'medal', title: 'BRONZE · 64,000 points' })
   })
@@ -26,7 +28,7 @@ describe('course briefing goals', () => {
     expect(courseSortieGoal({ ...item, runs: 2, challenge: 'precision' }).detail).toContain('gate centers')
     expect(courseSortieGoal({ ...item, runs: 2, challenge: 'altitude' }).detail).toContain('Plan climbs early')
     expect(courseSortieGoal({ ...item, runs: 2, challenge: 'range' }).detail).toContain('smooth turns')
-    expect(courseSortieGoal({ ...item, runs: 2, challenge: 'approach' }).detail).toContain('controlled landing')
+    expect(courseSortieGoal({ ...item, runs: 2, challenge: 'approach' }).detail).toContain('each gate')
   })
 
   it('chases complete-circuit time after gold, not an impossible score cap', () => {

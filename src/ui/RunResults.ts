@@ -13,15 +13,15 @@ import { formatWorldSeed, type ClipboardWriter } from '../core/WorldSeed'
 import { failedLandingCorrection } from '../systems/LandingAssessment'
 import { modalFocusable } from './ModalFocus'
 
-/** Return the compact course records that deserve a touchdown cue. */
+/** Return the compact course records that deserve a cue. */
 export function flightRecordCueLabel(
-  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord' | 'newFuelRecord' | 'newMedalRecord' | 'newRunStreakRecord' | 'newContractStreakRecord'>,
+  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord' | 'freeFlight' | 'newFuelRecord' | 'newMedalRecord' | 'newRunStreakRecord' | 'newContractStreakRecord'>,
 ): string {
   return [
     result.newFlightDistanceRecord ? 'DISTANCE' : '',
     result.newPositiveGRecord ? 'POS G' : '',
     result.newNegativeGRecord ? 'NEG G' : '',
-    result.newLandingQualityRecord ? 'LANDING' : '',
+    result.freeFlight && result.newLandingQualityRecord ? 'LANDING' : '',
     result.newFuelRecord ? 'FUEL' : '',
     result.newMedalRecord ? 'MEDAL' : '',
     result.newRunStreakRecord ? 'RUN STREAK' : '',
@@ -81,7 +81,7 @@ function gateMissesLabel(result: ChallengeResult): string {
 }
 const FUEL_CLASSES = ['fuel-healthy', 'fuel-low', 'fuel-critical'] as const
 
-/** Results screen for the takeoff → circuit → landing challenge loop. */
+/** Results screen for a completed or failed flight. */
 export class RunResults {
   private readonly root: HTMLElement
   private readonly title: HTMLElement
@@ -287,16 +287,18 @@ export class RunResults {
         ? result.failureReason.trim().toUpperCase()
         : ditched ? 'DITCHED' : 'CRASH')
       : ''
+    const landingCard = this.landing.parentElement
+    if (landingCard) landingCard.hidden = !result.freeFlight
     const landingName = crashed
       ? failureLabel
       : (result.landingLabel ?? 'HARD')
     this.landing.textContent = crashed ? landingName : `${Math.round(result.landingQuality * 100)}%`
     this.landingDetail.textContent = crashed ? 'FLIGHT FAILURE' : landingName
     this.landingDetail.setAttribute('aria-label', crashed ? `${landingName} flight failure` : `Landing quality ${landingName}`)
-    const correction = crashed
+    const correction = !result.freeFlight ? '' : crashed
       ? failedLandingCorrection(result.failureReason, result.ditched)
       : result.landingDebrief?.correction ?? ''
-    const touchdown = crashed ? '' : result.landingDebrief?.telemetry ?? ''
+    const touchdown = !result.freeFlight || crashed ? '' : result.landingDebrief?.telemetry ?? ''
     if (this.coaching) {
       this.coaching.textContent = correction
       this.coaching.hidden = correction.length === 0
@@ -344,7 +346,7 @@ export class RunResults {
       : result.freeFlight
         ? 'SCENIC MISSION COMPLETE'
         : 'ROUTE COMPLETE'
-    const landingSummary = crashed && landingName === outcome ? '' : ` · ${landingName}`
+    const landingSummary = crashed ? (failureLabel !== outcome ? ` · ${failureLabel}` : '') : result.freeFlight ? ` · ${landingName}` : ''
     this.summary.textContent = `${course}${conditions ? ` · ${conditions.replaceAll(' / ', ' · ')}` : ''} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES${gateMisses ? ` · ${gateMisses}` : ''}${landingSummary}`
     const summaryScore = Number.isFinite(result.totalScore)
       ? Math.max(0, Math.floor(result.totalScore))
@@ -376,7 +378,7 @@ export class RunResults {
       `SCORE ${summaryScore.toLocaleString()}`,
       `TIME ${formatTime(summaryTime)}`,
       `${gatesLabel} GATES`,
-      `LAND ${landingName}`,
+      result.freeFlight ? `LAND ${landingName}` : '',
       `FUEL ${fuelRemaining}%`,
       summaryMedal,
       contractSummary,
@@ -386,7 +388,7 @@ export class RunResults {
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,
-      `LAND +${result.landingScore.toLocaleString()}`,
+      ...(result.freeFlight ? [`LAND +${result.landingScore.toLocaleString()}`] : []),
     ]
     const sortieStyle = result.sortieStyle
       ? {
@@ -600,7 +602,7 @@ export class RunResults {
     if (Number.isFinite(result.courseBestApproachScore) && result.courseBestApproachScore! > (result.approachScore ?? 0)) {
       scoreParts.push(`COURSE APPROACH +${Math.max(0, Math.floor(result.courseBestApproachScore!)).toLocaleString()}`)
     }
-    if (Number.isFinite(result.courseBestLandingQuality) && result.courseBestLandingQuality! > result.landingQuality) {
+    if (result.freeFlight && Number.isFinite(result.courseBestLandingQuality) && result.courseBestLandingQuality! > result.landingQuality) {
       scoreParts.push(`COURSE LAND ${Math.round(Math.max(0, Math.min(1, result.courseBestLandingQuality!)) * 100)}%`)
     }
     if (Number.isFinite(result.courseBestFuelRemainingPercent) && result.courseBestFuelRemainingPercent! > (result.fuelRemainingPercent ?? 0)) {
@@ -618,7 +620,7 @@ export class RunResults {
       result.newStuntRecord ? 'ROLLS' : '',
       result.newComboRecord ? 'COMBO' : '',
       result.newApproachRecord ? 'APPROACH' : '',
-      result.newLandingQualityRecord ? 'LANDING' : '',
+      result.freeFlight && result.newLandingQualityRecord ? 'LANDING' : '',
       result.newFuelRecord ? 'FUEL' : '',
       result.newMedalRecord ? 'MEDAL' : '',
       result.masteryTierPromoted ? 'MASTERY' : '',

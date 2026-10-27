@@ -2,7 +2,6 @@ import {
   MAX_BEST_SCORE,
   courseMasteryTierLabel,
   formatTime,
-  landingQualityLabel,
   medalForScore,
   nextMedalTargetForScore,
   type CourseHistory,
@@ -42,8 +41,6 @@ export interface CoursePickerItem {
   speed?: number
   /** Persisted best fuel reserve used only by the optional fuel sort. */
   fuel?: number
-  /** Persisted best landing quality used only by the optional landing sort. */
-  landing?: number
   /** Persisted peak altitude used only by the optional altitude sort. */
   altitude?: number
   /** Persisted best clean-flight combo used only by the optional combo sort. */
@@ -108,7 +105,7 @@ function isCoursePickerCategory(value: unknown): value is CoursePickerCategory {
   return typeof value === 'string' && COURSE_PICKER_CATEGORY_SET.has(value)
 }
 
-const COURSE_PICKER_SORT_VALUES = ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'positiveG', 'negativeG', 'precision', 'difficulty', 'mastery', 'name'] as const
+const COURSE_PICKER_SORT_VALUES = ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'positiveG', 'negativeG', 'precision', 'difficulty', 'mastery', 'name'] as const
 export type CoursePickerSort = typeof COURSE_PICKER_SORT_VALUES[number]
 const COURSE_PICKER_SORT_SET = new Set<string>(COURSE_PICKER_SORT_VALUES)
 
@@ -152,7 +149,6 @@ const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   distance: 'Longest flight',
   speed: 'Top speed',
   fuel: 'Fuel reserve',
-  landing: 'Best landing',
   altitude: 'Highest altitude',
   combo: 'Best combo',
   approach: 'Best approach',
@@ -363,10 +359,6 @@ export function sortCoursePickerItems(
       const aFuel = finiteFuel(a.fuel)
       const bFuel = finiteFuel(b.fuel)
       if (aFuel !== bFuel) return bFuel - aFuel
-    } else if (safeSort === 'landing') {
-      const aLanding = finiteLanding(a.landing)
-      const bLanding = finiteLanding(b.landing)
-      if (aLanding !== bLanding) return bLanding - aLanding
     } else if (safeSort === 'altitude') {
       const aAltitude = finiteAltitude(a.altitude)
       const bAltitude = finiteAltitude(b.altitude)
@@ -592,11 +584,6 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
     const target = nextMedalTargetForScore(bestScore)
     if (target) statsParts.push(`NEXT ${target.medal.toUpperCase()} ${target.score.toLocaleString()}`)
   }
-  const landingQuality = input.history?.landingQuality
-  if (Number.isFinite(landingQuality) && landingQuality! > 0) {
-    const safeLanding = Math.max(0, Math.min(1, landingQuality!))
-    statsParts.push(`LAND ${landingQualityLabel(safeLanding)}`)
-  }
   const medal = medalForScore(input.bestScore)
   if (medal !== 'complete') statsParts.push(`MEDAL ${medal.toUpperCase()}`)
   const badges = finiteCount(input.badgeCount)
@@ -633,10 +620,6 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   }
   if (Number.isFinite(history.peakNegativeG) && history.peakNegativeG! < 0) {
     parts.push(`G${history.peakNegativeG!.toFixed(1)}`)
-  }
-  if (Number.isFinite(history.landingQuality) && history.landingQuality! > 0) {
-    const landingQuality = Math.max(0, Math.min(1, history.landingQuality!))
-    parts.push(`LAND ${landingQualityLabel(landingQuality)} ${Math.round(landingQuality * 100)}%`)
   }
   if (Number.isFinite(history.fuelRemainingPercent) && history.fuelRemainingPercent! > 0) {
     parts.push(`FUEL ${Math.min(100, Math.floor(history.fuelRemainingPercent!))}%`)
@@ -1253,10 +1236,6 @@ function finiteSpeed(value: number | undefined): number {
 
 function finiteFuel(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(100, Math.floor(value!))) : 0
-}
-
-function finiteLanding(value: number | undefined): number {
-  return Number.isFinite(value) ? Math.max(0, Math.min(1, value!)) : 0
 }
 
 function finiteAltitude(value: number | undefined): number {

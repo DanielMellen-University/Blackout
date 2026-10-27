@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.014** Remove landing references from gated results, course records, sorting, briefing and flight styles; correct the flight manual while preserving Free flight.
+
 - **11.013** Remove landing quality from course ranks and retire the Landing Ace and Approach Ace badges.
 
 - **11.012** Retire the Butter Landing contract and resolve fuel, speed and range contracts at the final gate. Runway alignment awaits a design decision.

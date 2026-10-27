@@ -1462,6 +1462,7 @@ export class ChallengeRun {
     const newPositiveGRecord = courseBestPositiveG > previousPeakPositiveG
     const newNegativeGRecord = courseBestNegativeG < previousPeakNegativeG
     const sortieStyle = sortieStyleForResult({
+      freeFlight: this.freeFlight,
       landingQuality,
       bestPrecisionStreak: this.bestGateQualityStreak,
       approachScore,

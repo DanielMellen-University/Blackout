@@ -42,7 +42,11 @@ describe('flight manual', () => {
   it('describes thrust and the short task list, not the old speed target or timer tasks', () => {
     expect(info).toContain('Throttle changes thrust, not instant speed')
     expect(info).toContain('fly through the gates in order')
-    expect(info).toContain('follow the base cue home and land to finish')
+    expect(info).toContain('The run finishes when you pass the final gate')
+    expect(html).not.toContain('follow BASE to land')
+    expect(html).toContain('Fly every gate to finish the run')
+    expect(info).toContain('explore freely, land, and take off again whenever you like')
+    expect(info).not.toContain('RETURN &amp; LAND</span></div>')
     expect(info).toContain('Crashes show a brief cinematic, then your flight report')
     expect(info).not.toContain('1500 kts')
     expect(info).not.toContain('speed target')

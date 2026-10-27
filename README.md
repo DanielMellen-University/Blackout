@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off and fly a gate run to an airborne finish. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.013**. Previous roadmap chunk: **11.012**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.014**. Previous roadmap chunk: **11.013**.
 
-Recent changes from **11.013**. Remove landing quality from course ranks and retire the Landing Ace and Approach Ace badges.
+Recent changes from **11.014**. Remove landing references from gated results, course records, sorting, briefing and flight styles; correct the flight manual while preserving Free flight.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

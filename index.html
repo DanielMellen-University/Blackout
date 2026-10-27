@@ -110,7 +110,7 @@
               <ol class="takeoff-steps">
                 <li><kbd id="title-power-control">Shift / 2</kbd><span><b>Build speed</b>Hold for power. Stay straight until <span data-rotate-speed>80</span> kt.</span></li>
                 <li><kbd id="title-rotate-control">W</kbd><span><b>Lift off</b>At <span data-rotate-speed>80</span> kt, hold gently to climb.</span></li>
-                <li><kbd>AUTO</kbd><span><b>Fly the mission</b>Fly every gate, then follow BASE to land. Gear is automatic; <kbd id="title-gear-control">G</kbd> overrides it.</span></li>
+                <li><kbd>AUTO</kbd><span><b>Fly the mission</b>Fly every gate to finish the run. Gear is automatic; <kbd id="title-gear-control">G</kbd> overrides it.</span></li>
               </ol>
               <p class="takeoff-controller">Gamepad: RT / R2 power, left stick up to climb, right stick to turn. Full mappings in Controls.</p>
             </section>
@@ -475,9 +475,9 @@
                   <dl class="instrument-guide"><div><dt>IAS / KT</dt><dd>Your current airspeed in knots. The target marker shows the speed associated with the current engine command-not a cruise-control setting.</dd></div><div><dt>ENGINE / FUEL</dt><dd>Commanded engine power, afterburner availability, and remaining fuel. Long boosts spend fuel and build heat.</dd></div><div><dt>ALT / VERTICAL SPEED</dt><dd>Height above the local surface and your climb or descent rate. Rising terrain can reduce clearance even while you are climbing.</dd></div><div><dt>HEADING / ATTITUDE</dt><dd>The compass shows direction. The attitude display shows pitch and bank relative to the horizon.</dd></div><div><dt>NAVIGATION</dt><dd>Target direction and distance. A target behind you needs a turn, not a steeper climb. A selected city or village is not a mission gate.</dd></div></dl>
                   <p class="manual-note">First person is deliberately unobstructed: no cockpit frame or instruments. Use an external view when you need to check the flight deck.</p>
                 </section>
-                <section id="manual-route" class="manual-chapter" tabindex="-1"><span class="guide-number">04 / THE MISSION</span><h3>Out through the gates. Back to base.</h3>
-                  <p>A course defines the route and conditions. Follow the navigation cue and fly through the gates in order; smooth, centred crossings improve gate quality. After the final gate, follow the base cue home and land to finish. Free flight has no missions or score: explore freely, land, and take off again whenever you like.</p>
-                  <div class="mission-flow"><span>TAKE OFF</span><span aria-hidden="true">→</span><span>CLEAR GATES</span><span aria-hidden="true">→</span><span>RETURN &amp; LAND</span></div>
+                <section id="manual-route" class="manual-chapter" tabindex="-1"><span class="guide-number">04 / THE MISSION</span><h3>Fly through the final gate.</h3>
+                  <p>A course defines the route and conditions. Follow the navigation cue and fly through the gates in order; smooth, centred crossings improve gate quality. The run finishes when you pass the final gate. Free flight has no missions or score: explore freely, land, and take off again whenever you like.</p>
+                  <div class="mission-flow"><span>TAKE OFF</span><span aria-hidden="true">→</span><span>CLEAR GATES</span><span aria-hidden="true">→</span><span>FINISH IN THE AIR</span></div>
                   <p>Read the selected course’s goal and contract before launch. Medals and personal bests reward repeat attempts. The ghost shows your saved best-run path when available; toggle it with X.</p>
                 </section>
                 <section id="manual-landing" class="manual-chapter" tabindex="-1"><span class="guide-number">05 / RETURN &amp; LAND</span><h3>Give the approach some room.</h3>
@@ -862,7 +862,7 @@
               <span class="label">TIME</span>
               <span id="result-time">0:00.00</span>
             </div>
-            <div>
+            <div id="result-landing-card" hidden>
               <span class="label">LANDING</span>
               <span id="result-landing">0%</span>
               <span id="result-landing-detail" class="result-fuel-detail">HARD</span>

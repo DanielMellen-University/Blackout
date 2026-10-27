@@ -40,6 +40,13 @@ describe('course library', () => {
     expect(normalizeCourseId('not-a-course', 'not-a-course' as never)).toBe('random')
   })
 
+  it('describes gated courses without landing instructions while retaining free-flight copy', () => {
+    for (const course of COURSE_LIBRARY.filter(course => course.id !== 'free-flight')) {
+      expect(course.detail, course.id).not.toMatch(/\bland(?:ing)?\b|\btouchdown\b/i)
+    }
+    expect(courseDefinitionForId('free-flight').detail).toContain('Land and take off again whenever you like')
+  })
+
   it('keeps the random entry and fixed course contracts stable', () => {
     expect(COURSE_LIBRARY).toHaveLength(82)
     expect(courseDefinitionForId('missing').id).toBe('random')

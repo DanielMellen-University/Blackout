@@ -31,6 +31,7 @@ class FakeClassList {
 
 class FakeElement {
   hidden = false
+  parentElement: FakeElement | null = null
   tabIndex = 0
   disabled = false
   textContent = ''
@@ -138,6 +139,7 @@ function resultsFixture(): {
     ['btn-copy-seed', new FakeElement()],
     ['btn-load-seed', loadSeed],
   ])
+  elements.get('result-landing')!.parentElement = new FakeElement()
   root.setList(
     MODAL_FOCUSABLE_SELECTOR,
     [retry, newWorld],
@@ -179,12 +181,27 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
+  it('hides the landing card for gated results and restores it for free flight', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+    const card = elementsFor(fixture.document, 'result-landing')!.parentElement!
+    results.show(result)
+    expect(card.hidden).toBe(true)
+    expect(results.summaryText).not.toMatch(/LAND|TOUCHDOWN/)
+    results.show({ ...result, freeFlight: true })
+    expect(card.hidden).toBe(false)
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('shows calm touchdown coaching and clears it across crash and legacy results', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
     vi.stubGlobal('document', fixture.document)
     const results = new RunResults(fixture.document as unknown as Document)
-    results.show({ ...result, landingDebrief: {
+    results.show({ ...result, freeFlight: true, landingDebrief: {
       focus: 'sink', correction: 'Soften the flare: reduce descent before contact.',
       telemetry: 'Sink 5.0 m/s · 97 kt · Bank 0° · Pitch 7°',
     } })
@@ -193,7 +210,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-touchdown')?.textContent).toContain('Sink 5.0 m/s')
     expect(elementsFor(fixture.document, 'result-touchdown')?.hidden).toBe(false)
     expect(fixture.root.getAttribute('aria-describedby')).toContain('result-coaching')
-    results.show({ ...result, endedByCrash: true, failureReason: 'GEAR UP' })
+    results.show({ ...result, freeFlight: true, endedByCrash: true, failureReason: 'GEAR UP' })
     expect(elementsFor(fixture.document, 'result-coaching')?.textContent).toContain('Lower the landing gear')
     expect(elementsFor(fixture.document, 'result-touchdown')?.textContent).toBe('')
     expect(elementsFor(fixture.document, 'result-touchdown')?.hidden).toBe(true)
@@ -248,8 +265,8 @@ describe('run results focus flow', () => {
     expect(flightRecordCueLabel({})).toBe('')
     expect(flightRecordCueLabel({ newFlightDistanceRecord: true })).toBe('DISTANCE')
     expect(flightRecordCueLabel({ newPositiveGRecord: true, newNegativeGRecord: true })).toBe('POS G / NEG G')
-    expect(flightRecordCueLabel({ newLandingQualityRecord: true })).toBe('LANDING')
-    expect(flightRecordCueLabel({ newFlightDistanceRecord: true, newLandingQualityRecord: true })).toBe('DISTANCE / LANDING')
+    expect(flightRecordCueLabel({ newLandingQualityRecord: true })).toBe('')
+    expect(flightRecordCueLabel({ newFlightDistanceRecord: true, newLandingQualityRecord: true })).toBe('DISTANCE')
     expect(flightRecordCueLabel({ newFuelRecord: true })).toBe('FUEL')
     expect(flightRecordCueLabel({ newMedalRecord: true })).toBe('MEDAL')
     expect(flightRecordCueLabel({ newRunStreakRecord: true })).toBe('RUN STREAK')
@@ -265,14 +282,14 @@ describe('run results focus flow', () => {
     results.show(result)
     expect(fixture.retry.focus).toHaveBeenCalledWith({ preventScroll: true })
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toBe(
-      'GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT · PB +100,000',
+      'GATE +20,000 · TIME +70,000 · STYLE BALANCED · GATE RUN · PB +100,000',
     )
     expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('GOLD MEDAL')
     expect(elementsFor(fixture.document, 'result-title')?.textContent).toContain('GOLD')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('GOLD RUN')
     expect(elementsFor(fixture.document, 'result-gates')?.textContent).toBe('0')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'MISSION · ROUTE COMPLETE · 0:42.00 · 0 GATES · HARD',
+      'MISSION · ROUTE COMPLETE · 0:42.00 · 0 GATES',
     )
 
     fixture.document.activeElement = fixture.newWorld
@@ -309,7 +326,7 @@ describe('run results focus flow', () => {
 
     results.show(result, 'ace', true)
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
-      .toBe('GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT · CAREER ACE UP · PB +100,000')
+      .toBe('GATE +20,000 · TIME +70,000 · STYLE BALANCED · GATE RUN · CAREER ACE UP · PB +100,000')
 
     results.dispose()
     vi.unstubAllGlobals()
@@ -343,7 +360,7 @@ describe('run results focus flow', () => {
       approachScore: 460,
     })
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
-      .toContain('STYLE PRECISION · BUTTER TOUCHDOWN')
+      .toContain('STYLE PRECISION · GATE STREAK X3')
 
     results.dispose()
     vi.unstubAllGlobals()
@@ -406,7 +423,7 @@ describe('run results focus flow', () => {
     expect(results.summaryText).toContain('SCORE 100,000')
     expect(results.summaryText).toContain('MEDAL GOLD')
     expect(results.summaryText).toContain('3/5 GATES')
-    expect(results.summaryText).toContain('LAND HARD')
+    expect(results.summaryText).not.toContain('LAND HARD')
     expect(results.summaryText).toContain('CONTRACT OPEN SPEED RUN')
     expect(results.summaryText).toContain('CONTRACT PROGRESS 40%')
     expect(results.summaryText).not.toContain('seed:10:storm')
@@ -548,13 +565,13 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE CONTRACT STREAK X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TIER ACE')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
-    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE LAND 95%')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).not.toContain('COURSE LAND')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE FUEL 90%')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE ALT 1,800M')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'MISSION · ROUTE COMPLETE · 0:42.00 · 0 GATES · BUTTER',
+      'MISSION · ROUTE COMPLETE · 0:42.00 · 0 GATES',
     )
     results.dispose()
     vi.unstubAllGlobals()
@@ -587,7 +604,7 @@ describe('run results focus flow', () => {
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / LANDING / FUEL / MEDAL / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / FUEL / MEDAL / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
     )
     results.dispose()
     vi.unstubAllGlobals()

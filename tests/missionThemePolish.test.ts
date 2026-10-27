@@ -35,7 +35,7 @@ it('retains all existing identities and gameplay settings while correcting copy'
     expect(copy.detail).toContain(sortieContractLabelForSeed(course.seed!, 5, resolved.contractCatalog === true))
     expect(resolveCourseReplaySeed(resolved, 9001).detail).toBe(course.detail)
   }
-  expect(details).toBe(42); expect(names).toBe(15)
+  expect(details).toBe(44); expect(names).toBe(15)
 })
 
 it('retains the Free flight label even when clearing a migrated mission', () => {

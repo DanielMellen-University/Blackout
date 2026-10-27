@@ -15,6 +15,7 @@ export interface SortieStyleSummary {
 }
 
 export interface SortieStyleInput {
+  freeFlight?: boolean
   landingQuality?: number
   landingLabel?: string
   bestPrecisionStreak?: number
@@ -33,6 +34,18 @@ export interface SortieStyleInput {
  * The classifier itself stays allocation-light and adds no simulation state.
  */
 export function sortieStyleForResult(result: SortieStyleInput): SortieStyleSummary {
+  if (!result.freeFlight) {
+    const streak = safeCount(result.bestPrecisionStreak)
+    const destinations = safeCount(result.destinationCount)
+    const biomes = safeCount(result.biomeCount)
+    const speed = safeCount(result.peakSpeedKts)
+    if (streak >= 3) return { id: 'precision', label: 'PRECISION', detail: `GATE STREAK X${streak}` }
+    if (destinations >= 2 || biomes >= 5) return { id: 'explorer', label: 'EXPLORER', detail: destinations >= 2 ? `DEST X${destinations}` : `BIOMES X${biomes}` }
+    if (speed >= 850 || (result.scoringFocus === 'pace' && safeCount(result.timeScore) >= 40_000)) {
+      return { id: 'speed', label: 'SPEED', detail: speed > 0 ? `TOP ${speed.toLocaleString()}KT` : 'PACE PUSH' }
+    }
+    return { id: 'balanced', label: 'BALANCED', detail: 'GATE RUN' }
+  }
   const landingQuality = clamp01(result.landingQuality)
   const precisionStreak = safeCount(result.bestPrecisionStreak)
   const approachScore = safeCount(result.approachScore)

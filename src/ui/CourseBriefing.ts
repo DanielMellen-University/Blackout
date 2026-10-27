@@ -34,7 +34,7 @@ export function courseSortieGoal(item: CoursePickerItem): CourseSortieGoal {
   const completed = Number.isFinite(item.runs) && item.runs! >= 1
   if (!completed) return {
     kind: 'first-run', title: 'Complete your first circuit',
-    detail: 'Pass every gate, then land safely with the gear down. A finished route is the first target.',
+    detail: 'Pass every gate in order. The run finishes at the final gate.',
   }
   const target = nextMedalTargetForScore(score)
   const technique = item.challenge === 'precision'
@@ -43,7 +43,7 @@ export function courseSortieGoal(item: CoursePickerItem): CourseSortieGoal {
       ? 'Plan climbs early so you reach each gate without a last-second pull-up.'
       : item.challenge === 'range'
         ? 'Use smooth turns to keep speed between gates.'
-        : 'Line up early and save room for a controlled landing.'
+        : 'Line up early for each gate.'
   if (target) return {
     kind: 'medal', title: `${target.medal.toUpperCase()} · ${target.score.toLocaleString()} points`,
     detail: `${(target.score - score).toLocaleString()} above your best. ${technique}`,
@@ -54,7 +54,7 @@ export function courseSortieGoal(item: CoursePickerItem): CourseSortieGoal {
   }
   if (Number.isFinite(item.time) && item.time! > 0) return {
     kind: 'time', title: `Beat your ${formatTime(item.time!)} best time`,
-    detail: `Gold is secured. Fly a quicker complete circuit, including a safe landing. ${technique}`,
+    detail: `Gold is secured. Fly a quicker complete circuit through the final gate. ${technique}`,
   }
   if (score < MAX_BEST_SCORE) return {
     kind: 'record', title: `Beat your ${score.toLocaleString()} point record`, detail: technique,

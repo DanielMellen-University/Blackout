@@ -176,7 +176,6 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('distance')).toBe('Longest flight')
     expect(coursePickerSortLabel('speed')).toBe('Top speed')
     expect(coursePickerSortLabel('fuel')).toBe('Fuel reserve')
-    expect(coursePickerSortLabel('landing')).toBe('Best landing')
     expect(coursePickerSortLabel('altitude')).toBe('Highest altitude')
     expect(coursePickerSortLabel('combo')).toBe('Best combo')
     expect(coursePickerSortLabel('approach')).toBe('Best approach')
@@ -218,7 +217,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerSort('distance')).toBe('distance')
     expect(normalizeCoursePickerSort('speed')).toBe('speed')
     expect(normalizeCoursePickerSort('fuel')).toBe('fuel')
-    expect(normalizeCoursePickerSort('landing')).toBe('landing')
+    expect(normalizeCoursePickerSort('landing')).toBe('catalog')
     expect(normalizeCoursePickerSort('altitude')).toBe('altitude')
     expect(normalizeCoursePickerSort('combo')).toBe('combo')
     expect(normalizeCoursePickerSort('approach')).toBe('approach')
@@ -274,12 +273,6 @@ describe('course picker copy', () => {
       { id: 'unknown', label: 'Unknown', detail: '', meta: '', stats: '', fuel: Number.NaN },
     ]
     expect(sortCoursePickerItems(fuel, 'fuel').map(item => item.id)).toEqual(['high', 'low', 'unknown'])
-    const landing = [
-      { id: 'rough', label: 'Rough', detail: '', meta: '', stats: '', landing: 0.42 },
-      { id: 'butter', label: 'Butter', detail: '', meta: '', stats: '', landing: 0.96 },
-      { id: 'unlanded', label: 'Unlanded', detail: '', meta: '', stats: '', landing: Number.NaN },
-    ]
-    expect(sortCoursePickerItems(landing, 'landing').map(item => item.id)).toEqual(['butter', 'rough', 'unlanded'])
     const altitude = [
       { id: 'low', label: 'Low', detail: '', meta: '', stats: '', altitude: 850 },
       { id: 'high', label: 'High', detail: '', meta: '', stats: '', altitude: 4_200 },
@@ -500,7 +493,7 @@ describe('course picker copy', () => {
       completionCount: 1,
       bestTimeSec: 90,
       landingQuality: 0.95,
-    })).toBe('LOG LAND BUTTER 95%')
+    })).toBe('')
     expect(courseFlightLogLabel({
       completionCount: 1,
       bestTimeSec: 90,
@@ -662,7 +655,7 @@ describe('course picker copy', () => {
       bestPrecisionStreak: 4,
     })
     expect(copy.meta).toBe('5 RUNS')
-    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · LAND FIRM · MEDAL GOLD · BADGES X3 · GATE STREAK X4 · CONTRACT WINS X2 · CONTRACT STREAK X4')
+    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · MEDAL GOLD · BADGES X3 · GATE STREAK X4 · CONTRACT WINS X2 · CONTRACT STREAK X4')
     expect(copy.stats).not.toContain('VETERAN')
     expect(copy.stats).not.toContain('TASK')
   })

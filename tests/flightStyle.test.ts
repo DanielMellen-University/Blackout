@@ -6,13 +6,13 @@ import {
 } from '../src/systems/FlightStyle'
 
 describe('sortie style debrief classifier', () => {
-  it('prioritizes deadstick recovery over other telemetry', () => {
+  it('uses gate precision instead of touchdown telemetry for gated runs', () => {
     expect(sortieStyleForResult({
       landingQuality: 0.95,
       bestPrecisionStreak: 4,
       deadstickScore: 1_500,
       peakSpeedKts: 980,
-    })).toEqual({ id: 'survivor', label: 'SURVIVOR', detail: 'DEADSTICK RECOVERY' })
+    })).toEqual({ id: 'precision', label: 'PRECISION', detail: 'GATE STREAK X4' })
   })
 
   it('recognizes precise and exploratory sorties from bounded records', () => {
@@ -21,7 +21,7 @@ describe('sortie style debrief classifier', () => {
       landingLabel: 'butter',
       bestPrecisionStreak: 3,
       approachScore: 450,
-    })).toEqual({ id: 'precision', label: 'PRECISION', detail: 'BUTTER TOUCHDOWN' })
+    })).toEqual({ id: 'precision', label: 'PRECISION', detail: 'GATE STREAK X3' })
     expect(sortieStyleForResult({
       landingQuality: 0.7,
       destinationCount: 2,
@@ -43,7 +43,12 @@ describe('sortie style debrief classifier', () => {
     expect(sortieStyleForResult({
       landingQuality: Number.NaN,
       fuelRemainingPercent: Number.NaN,
-    })).toEqual({ id: 'balanced', label: 'BALANCED', detail: 'HARD CIRCUIT' })
+    })).toEqual({ id: 'balanced', label: 'BALANCED', detail: 'GATE RUN' })
+  })
+
+  it('preserves the free-flight touchdown style', () => {
+    expect(sortieStyleForResult({ freeFlight: true, landingQuality: 0.94, bestPrecisionStreak: 3 }))
+      .toEqual({ id: 'precision', label: 'PRECISION', detail: 'BUTTER TOUCHDOWN' })
   })
 
   it('normalizes persisted style identifiers without leaking unknown values', () => {
