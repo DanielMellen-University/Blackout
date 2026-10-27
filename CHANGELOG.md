@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.012** Retire the Butter Landing contract and resolve fuel, speed and range contracts at the final gate. Runway alignment awaits a design decision.
+
 - **11.011** Retheme five landing-oriented courses as gate runs, retaining their identities, seeds and weather.
 - **11.010** d1: finish every gated run in the air at the last gate; remove return-to-base navigation and landing preview, and replace landing-related scoring with gate/time points while retaining medal thresholds.
 

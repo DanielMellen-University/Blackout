@@ -187,7 +187,7 @@ describe('ChallengeRun', () => {
     const contractCrash = contractedCrash.crashDebrief(false, 'OBSTACLE')
     expect(contractCrash.contractKind).toBe('pace')
     expect(contractCrash.contractLabel).toBe('SPEED RUN')
-    expect(contractCrash.contractDetail).toContain('LAND UNDER')
+    expect(contractCrash.contractDetail).toContain('FINISH UNDER')
     expect(contractCrash.contractComplete).toBe(false)
     expect(contractCrash.contractFailed).toBe(true)
     expect(contractCrash.contractProgress).toBeGreaterThan(0)
@@ -581,7 +581,7 @@ describe('ChallengeRun', () => {
     expect(run.contractLabel).toBe('CONTRACT SPEED RUN')
     expect(run.contractProgress).toBe(0)
     expect(run.contractComplete).toBe(false)
-    expect(run.contractBriefing).toContain('LAND UNDER')
+    expect(run.contractBriefing).toContain('FINISH UNDER')
     run.update(0.1, 8)
     run.recordGate(1)
     const result = run.finishAirborne()!
@@ -609,25 +609,7 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(false)
   })
 
-  it('wires landing quality forecast into the butter contract without early completion', () => {
-    const run = new ChallengeRun(null)
-    let butterSeed = -1
-    for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:butter-live', 5, 'balanced', seed, true)
-      if (run.contractLabel === 'CONTRACT BUTTER LANDING') {
-        butterSeed = seed
-        break
-      }
-    }
-    expect(butterSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:butter-live', 5, 'balanced', butterSeed, true)
-    run.recordLandingPreview(0.8)
-    expect(run.contractProgress).toBeCloseTo(0.8)
-    expect(run.contractDetail).toContain('PREVIEW 80%')
-    expect(run.contractComplete).toBe(false)
-  })
-
-  it('shows live fuel reserve progress before the FUEL SAVER landing', () => {
+  it('shows live fuel reserve progress before the FUEL SAVER finish', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:fuel-live', 1, 'balanced', 1, true)
     expect(run.contractLabel).toBe('CONTRACT FUEL SAVER')
@@ -638,6 +620,8 @@ describe('ChallengeRun', () => {
     run.update(0.1, 8, 180, 0, 0, false, true, 0, 0, 1, 0.8)
     expect(run.contractDetail).toContain('CURRENT 80%')
     expect(run.contractComplete).toBe(false)
+    run.recordGate(1)
+    expect(run.finishAirborne(0.8)!.contractComplete).toBe(true)
   })
 
   it('emits one live cue when an event contract is completed', () => {
@@ -710,15 +694,17 @@ describe('ChallengeRun', () => {
     }
     expect(rangeSeed).toBeGreaterThanOrEqual(0)
     run.reset('seed:range-contract', 1, 'balanced', rangeSeed, true)
-    expect(run.contractBriefing).toContain('FLY 12KM BEFORE LANDING')
+    expect(run.contractBriefing).toContain('FLY 12KM BEFORE THE FINAL GATE')
     run.update(0.1, 8)
     run.update(1, 8, 180, 0, 0, false, false, 0, 0, 1, 1, false, false, 180, 1, 5_000)
     expect(run.contractProgress).toBe(0)
     run.update(1, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180, 1, 5_000)
     expect(run.contractProgress).toBeCloseTo(5 / 12)
     run.update(1, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180, 1, 7_000)
-    expect(run.contractComplete).toBe(true)
-    expect(run.consumeContractCompletionCue()).toBe('RANGE RUN')
+    expect(run.contractComplete).toBe(false)
+    expect(run.consumeContractCompletionCue()).toBeNull()
+    run.recordGate(1)
+    expect(run.finishAirborne()!.contractComplete).toBe(true)
   })
 
   it('turns low-level contract time into a bounded terrain-hugger reward', () => {

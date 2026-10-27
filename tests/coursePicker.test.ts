@@ -476,9 +476,9 @@ describe('course picker copy', () => {
       badgeCount: 0,
       bestPrecisionStreak: 0,
       contractLabel: 'CONTRACT RANGE RUN',
-      contractDetail: 'FLY 12KM BEFORE LANDING',
+      contractDetail: 'FLY 12KM BEFORE THE FINAL GATE',
     })
-    expect(copy.detail).toBe('Gentle circuit and approach practice / TASK CONTRACT RANGE RUN / FLY 12KM BEFORE LANDING')
+    expect(copy.detail).toBe('Gentle circuit and approach practice / TASK CONTRACT RANGE RUN / FLY 12KM BEFORE THE FINAL GATE')
     expect(coursePickerCopy({
       course: { seed: null, profile: 'free', detail: 'Explore the terrain with no checkpoint clock' },
       history: null,

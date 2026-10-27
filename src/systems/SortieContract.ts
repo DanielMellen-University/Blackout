@@ -1,6 +1,6 @@
 import { MIN_MISSION_GATES } from './MissionGates'
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour' | 'traffic-watch' | 'traffic-dodge' | 'thermal-surf'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour' | 'traffic-watch' | 'traffic-dodge' | 'thermal-surf'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -49,7 +49,6 @@ const PRECISION_CHAIN_TARGET = 3
 const PRECISION_GATE_THRESHOLD = 0.82
 const NIGHT_MAX_DAYLIGHT = 0.38
 const NIGHT_TARGET_SECONDS = 12
-const BUTTER_LANDING_THRESHOLD = 0.92
 const DRY_MIN_MPS = 280
 const DRY_TARGET_SECONDS = 12
 const RADAR_RUN_DETAIL = 'LOCK ONE RADAR CONTACT THEN ARRIVE'
@@ -57,7 +56,7 @@ const GUST_MIN_FRACTION = 0.62
 const GUST_TARGET_SECONDS = 10
 const GUST_RUN_DETAIL = 'FLY THROUGH STRONG GUSTS FOR 10S'
 const RANGE_TARGET_METERS = 12_000
-const RANGE_RUN_DETAIL = 'FLY 12KM BEFORE LANDING'
+const RANGE_RUN_DETAIL = 'FLY 12KM BEFORE THE FINAL GATE'
 const HIGH_DIVE_TOP_M = 1_800
 const HIGH_DIVE_EXIT_M = 420
 const HIGH_DIVE_DETAIL = 'REACH 1,800M THEN RECOVER BELOW 420M'
@@ -107,7 +106,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'combo', label: 'COMBO RUN', target: COMBO_TARGET },
   { kind: 'precision', label: 'PRECISION CHAIN', target: PRECISION_CHAIN_TARGET },
   { kind: 'night', label: 'NIGHT FLIGHT', target: NIGHT_TARGET_SECONDS },
-  { kind: 'butter', label: 'BUTTER LANDING', target: BUTTER_LANDING_THRESHOLD },
+  { kind: 'clean', label: 'CLEAN CIRCUIT', target: 1 }, // Retain legacy catalog indices.
   { kind: 'dry', label: 'DRY RUN', target: DRY_TARGET_SECONDS },
   { kind: 'target', label: 'RADAR RUN', target: 1 },
   { kind: 'gust', label: 'GUST RIDER', target: GUST_TARGET_SECONDS },
@@ -438,7 +437,6 @@ export class SortieContractTracker {
       this.rangeDetailBucket = detailBucket
       this.detailValue = rangeRunDetail(this.rangeMeters, this.definition.target)
     }
-    if (this.progressValue >= 1) this.completeValue = true
   }
 
   /** Require a high climb followed by an airborne recovery dive. */
@@ -551,7 +549,7 @@ export class SortieContractTracker {
     if (this.progressValue >= 1) this.completeValue = true
   }
 
-  /** Show live reserve progress while keeping FUEL SAVER touchdown-gated. */
+  /** Show live reserve progress while resolving FUEL SAVER at the final gate. */
   recordFuel(fuelFraction: number): void {
     if (this.definition?.kind !== 'fuel' || this.completeValue || !Number.isFinite(fuelFraction)) return
     const safeFuel = clamp01(fuelFraction)
@@ -562,7 +560,7 @@ export class SortieContractTracker {
     this.detailValue = `${this.detailBaseValue} / CURRENT ${Math.min(100, bucket * 5)}%`
   }
 
-  /** Show elapsed budget while keeping SPEED RUN completion touchdown-gated. */
+  /** Show elapsed budget while resolving SPEED RUN at the final gate. */
   recordPace(elapsedSec: number): void {
     if (this.definition?.kind !== 'pace' || this.completeValue || !Number.isFinite(elapsedSec)) return
     const safeElapsed = Math.max(0, Math.min(this.definition.target * 4, elapsedSec))
@@ -571,17 +569,6 @@ export class SortieContractTracker {
     if (bucket === this.detailProgressBucket) return
     this.detailProgressBucket = bucket
     this.detailValue = `${this.detailBaseValue} / ELAPSED ${bucket}S`
-  }
-
-  /** Show a landing forecast without converting a prediction into success. */
-  recordLandingPreview(quality: number): void {
-    if (this.definition?.kind !== 'butter' || this.completeValue || !Number.isFinite(quality)) return
-    const safeQuality = clamp01(quality)
-    this.progressValue = safeQuality
-    const bucket = Math.floor(safeQuality * 20)
-    if (bucket === this.detailProgressBucket) return
-    this.detailProgressBucket = bucket
-    this.detailValue = `${this.detailBaseValue} / PREVIEW ${Math.min(100, bucket * 5)}%`
   }
 
   /** Show runway alignment progress without completing before touchdown. */
@@ -781,8 +768,8 @@ export class SortieContractTracker {
     if (this.cleanGateCount >= total) this.completeValue = true
   }
 
-  /** Resolve contracts whose success depends on the final touchdown telemetry. */
-  finish(elapsedSec: number, fuelFraction: number, approachScore = 0, landingQuality = 0): number {
+  /** Resolve contracts whose success depends on final-gate telemetry. */
+  finish(elapsedSec: number, fuelFraction: number, approachScore = 0): number {
     if (!this.definition || this.completeValue) return this.completeValue ? MAX_CONTRACT_SCORE : 0
     if (this.definition.kind === 'pace') {
       this.completeValue = Number.isFinite(elapsedSec) && elapsedSec <= this.definition.target
@@ -798,10 +785,8 @@ export class SortieContractTracker {
       const safeApproach = Number.isFinite(approachScore) ? Math.max(0, approachScore) : 0
       this.completeValue = safeApproach >= this.definition.target
       this.progressValue = clamp01(safeApproach / this.definition.target)
-    } else if (this.definition.kind === 'butter') {
-      const safeQuality = Number.isFinite(landingQuality) ? clamp01(landingQuality) : 0
-      this.completeValue = safeQuality >= this.definition.target
-      this.progressValue = clamp01(safeQuality / this.definition.target)
+    } else if (this.definition.kind === 'range') {
+      this.completeValue = this.rangeMeters >= this.definition.target
     }
     return this.completeValue ? MAX_CONTRACT_SCORE : 0
   }
@@ -844,11 +829,10 @@ export const ASSIGNED_CONTRACT_KINDS = [
   'clean',
   'low-level',
   'approach',
-  'butter',
   'deadstick',
 ] as const
 
-const LINE_KINDS = ['clean', 'low-level', 'approach', 'butter'] as const
+const LINE_KINDS = ['clean', 'low-level', 'approach', 'clean'] as const
 
 function mixSeed(seed: number): number {
   const safe = Math.trunc(seed)
@@ -873,7 +857,7 @@ function legacyIndexForSeed(seed: number): number {
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
-  // night-flight, butter-landing, dry-run, radar-run, gust-rider, range-run,
+  // night-flight, dry-run, radar-run, gust-rider, range-run,
   // high-dive, water-skim, ridge-run, waterway-tour, traffic-watch, traffic-dodge,
   // and thermal-surf objectives.
   const legacyContractCount = 5
@@ -952,11 +936,11 @@ function contractTargetFor(
 
 function contractDetailFor(kind: SortieContractKind, target: number): string {
   switch (kind) {
-    case 'pace': return `LAND UNDER ${Math.round(target)}S`
+    case 'pace': return `FINISH UNDER ${Math.round(target)}S`
     case 'altitude': return `REACH ${Math.round(target).toLocaleString()}M`
     case 'stunt': return `COMPLETE ${Math.round(target)} BARREL ROLLS`
     case 'scout': return `REACH ${Math.round(target)} SETTLEMENTS`
-    case 'fuel': return `LAND WITH ${Math.round(target * 100)}% FUEL`
+    case 'fuel': return `FINISH WITH ${Math.round(target * 100)}% FUEL`
     case 'low-level': return `HOLD RADIO ALT ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
     case 'biome': return `SURVEY ${Math.round(target)} DISTINCT BIOMES`
     case 'speed-band': return `HOLD ${Math.round(SPEED_BAND_MIN_MPS * 1.943844492)}-${Math.round(SPEED_BAND_MAX_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
@@ -977,7 +961,6 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'combo': return COMBO_RUN_DETAIL
     case 'precision': return `CLEAR ${Math.round(target)} PERFECT GATES IN A ROW`
     case 'night': return `FLY AFTER DARK FOR ${Math.round(target)}S`
-    case 'butter': return 'LAND WITH A BUTTER TOUCHDOWN'
     case 'dry': return `HOLD DRY POWER ABOVE ${Math.round(DRY_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'target': return RADAR_RUN_DETAIL
     case 'gust': return GUST_RUN_DETAIL

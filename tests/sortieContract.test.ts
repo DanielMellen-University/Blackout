@@ -12,7 +12,7 @@ describe('sortie contracts', () => {
   it('previews deterministic seeded tasks without assigning Free flight a contract', () => {
     expect(sortieContractLabelForSeed(undefined)).toBe('')
     const label = sortieContractLabelForSeed(42)
-    expect(['CLEAN CIRCUIT', 'TERRAIN HUGGER', 'PRECISION APPROACH', 'BUTTER LANDING', 'DEADSTICK']).toContain(label)
+    expect(['CLEAN CIRCUIT', 'TERRAIN HUGGER', 'PRECISION APPROACH', 'DEADSTICK']).toContain(label)
     expect(label).not.toBe('PRECISION CHAIN')
     expect(sortieContractDetailForSeed(42).length).toBeGreaterThan(0)
     expect(sortieContractDetailForSeed(undefined)).toBe('')
@@ -45,8 +45,7 @@ describe('sortie contracts', () => {
     expect(sortieContractDetailForSeed(113, 5, true)).toContain('LOCK ONE RADAR CONTACT')
     expect(sortieContractLabelForSeed(45, 5, true)).toBe('PRECISION CHAIN')
     expect(sortieContractDetailForSeed(45, 5, true)).toContain('CLEAR 3 PERFECT GATES')
-    expect(sortieContractLabelForSeed(222, 5, true)).toBe('BUTTER LANDING')
-    expect(sortieContractDetailForSeed(222, 5, true)).toContain('BUTTER TOUCHDOWN')
+    expect(sortieContractLabelForSeed(222, 5, true)).toBe('CLEAN CIRCUIT')
     expect(sortieContractLabelForSeed(63, 5, true)).toBe('DRY RUN')
     expect(sortieContractDetailForSeed(63, 5, true)).toContain('DRY POWER')
     expect(sortieContractLabelForSeed(361, 5, true)).toBe('GUST RIDER')
@@ -64,7 +63,7 @@ describe('sortie contracts', () => {
     expect(sortieContractLabelForSeed(33, 5, true)).toBe('SKYLINE')
     expect(sortieContractDetailForSeed(33, 5, true)).toContain('3,000M')
     expect(sortieContractLabelForSeed(20, 5, true)).toBe('SPEED RUN')
-    expect(sortieContractDetailForSeed(20, 5, true)).toContain('LAND UNDER 68S')
+    expect(sortieContractDetailForSeed(20, 5, true)).toContain('FINISH UNDER 68S')
     expect(sortieContractLabelForSeed(46, 5, true)).toBe('TERRAIN HUGGER')
     expect(sortieContractDetailForSeed(46, 5, true)).toContain('24-360M')
     expect(sortieContractLabelForSeed(38, 5, true)).toBe('FUEL SAVER')
@@ -116,7 +115,7 @@ describe('sortie contracts', () => {
     expect(disabled.finish(0, 1)).toBe(0)
   })
 
-  it('shows live FUEL SAVER progress without completing before touchdown', () => {
+  it('shows live FUEL SAVER progress without completing before the final gate', () => {
     const tracker = new SortieContractTracker()
     let fuelSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
@@ -128,7 +127,7 @@ describe('sortie contracts', () => {
     }
     expect(fuelSeed).toBeGreaterThanOrEqual(0)
     tracker.reset(fuelSeed, 5, true)
-    expect(tracker.detail).toBe('LAND WITH 75% FUEL')
+    expect(tracker.detail).toBe('FINISH WITH 75% FUEL')
     tracker.recordFuel(0.5)
     expect(tracker.progress).toBeCloseTo(2 / 3)
     expect(tracker.detail).toContain('CURRENT 50%')
@@ -140,11 +139,11 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
   })
 
-  it('shows elapsed SPEED RUN budget without completing before touchdown', () => {
+  it('shows elapsed SPEED RUN budget without completing before the final gate', () => {
     const tracker = new SortieContractTracker()
     tracker.reset(0, 5, true)
     expect(tracker.kind).toBe('pace')
-    expect(tracker.detail).toBe('LAND UNDER 68S')
+    expect(tracker.detail).toBe('FINISH UNDER 68S')
     tracker.recordPace(12.8)
     expect(tracker.progress).toBeCloseTo(12.8 / 68)
     expect(tracker.detail).toContain('ELAPSED 12S')
@@ -153,28 +152,7 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
   })
 
-  it('shows a BUTTER LANDING forecast without completing early', () => {
-    const tracker = new SortieContractTracker()
-    let butterSeed = -1
-    for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5, true)
-      if (tracker.kind === 'butter') {
-        butterSeed = seed
-        break
-      }
-    }
-    expect(butterSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(butterSeed, 5, true)
-    expect(tracker.detail).toBe('LAND WITH A BUTTER TOUCHDOWN')
-    tracker.recordLandingPreview(0.8)
-    expect(tracker.progress).toBeCloseTo(0.8)
-    expect(tracker.detail).toContain('PREVIEW 80%')
-    expect(tracker.complete).toBe(false)
-    expect(tracker.finish(99, 1, 0, 0.93)).toBe(MAX_CONTRACT_SCORE)
-    expect(tracker.complete).toBe(true)
-  })
-
-  it('covers every contract kind with bounded event and touchdown completion', () => {
+  it('covers every contract kind with bounded event and final-gate completion', () => {
     const kinds = new Set<SortieContractKind>()
     for (let seed = 0; seed < 512; seed += 1) {
       const tracker = new SortieContractTracker()
@@ -352,13 +330,12 @@ describe('sortie contracts', () => {
         0,
         1,
         tracker.kind === 'approach' ? 500 : 0,
-        tracker.kind === 'butter' ? 1 : 0,
       )
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge', 'thermal-surf']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge', 'thermal-surf']))
   })
 
   it('turns sustained thermal lift into a bounded THERMAL SURF objective', () => {
@@ -594,9 +571,13 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBeCloseTo(5 / 12)
     expect(tracker.detail).toContain('CURRENT 5.0KM')
     tracker.recordDistance(7_000)
-    expect(tracker.complete).toBe(true)
+    expect(tracker.complete).toBe(false)
     expect(tracker.detail).toContain('CURRENT 12.0KM')
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+    tracker.reset(rangeSeed, 5, true)
+    tracker.recordDistance(5_000)
+    expect(tracker.finish(99, 1)).toBe(0)
+    expect(tracker.complete).toBe(false)
   })
 
   it('requires a radar lock before a target arrival can complete the contract', () => {
@@ -1188,27 +1169,6 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
-  })
-
-  it('requires a finite butter-quality touchdown for the landing contract', () => {
-    const tracker = new SortieContractTracker()
-    let butterSeed = -1
-    for (let seed = 0; seed < 2_048; seed += 1) {
-      tracker.reset(seed, 5, true)
-      if (tracker.kind === 'butter') {
-        butterSeed = seed
-        break
-      }
-    }
-    expect(butterSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(butterSeed, 5, true)
-    expect(tracker.label).toBe('BUTTER LANDING')
-    expect(tracker.detail).toBe('LAND WITH A BUTTER TOUCHDOWN')
-    expect(tracker.finish(99, 1, 0, 0.91)).toBe(0)
-    expect(tracker.progress).toBeCloseTo(0.91 / 0.92)
-    expect(tracker.finish(99, 1, 0, 0.92)).toBe(MAX_CONTRACT_SCORE)
-    expect(tracker.complete).toBe(true)
-    expect(tracker.progress).toBe(1)
   })
 
   it('accumulates only high-speed airborne time on dry power', () => {

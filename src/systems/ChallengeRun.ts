@@ -1264,12 +1264,6 @@ export class ChallengeRun {
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
   }
 
-  /** Record a cached landing-quality forecast for BUTTER LANDING. */
-  recordLandingPreview(quality: number): void {
-    if (this.phase === 'complete' || this.phase === 'failed') return
-    this.contract.recordLandingPreview(quality)
-  }
-
   /** Record a cached runway-alignment forecast for PRECISION APPROACH. */
   recordApproachPreview(score: number): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
@@ -1381,7 +1375,7 @@ export class ChallengeRun {
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
     const biomeScore = Math.min(MAX_BIOME_SCORE, this.surveyedBiomeCount * 120)
-    const contractScore = this.contract.finish(elapsedSec, fuelFraction, approachScore, landingQuality)
+    const contractScore = this.contract.finish(elapsedSec, fuelFraction, approachScore)
     const contractComplete = this.contract.enabled && this.contract.complete
     const history = this.readHistory()
     const previousRunStreak = history.runStreak ?? 0

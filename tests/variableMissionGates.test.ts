@@ -117,7 +117,7 @@ it('previews the actual replay/period count and avoids a five-gate time target f
   const replay = resolveCourseReplaySeed(fresh, 67)
   const count = courseGateCountPreview(replay)!
   expect(count).toBe(generateMission(67, replay.terrainTheme!).goals.gates)
-  expect(sortieContractDetailForSeed(replay.contractSeed, count, true)).toBe(`LAND UNDER ${53 + count * 3}S`)
+  expect(sortieContractDetailForSeed(replay.contractSeed, count, true)).toBe(`FINISH UNDER ${53 + count * 3}S`)
   expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), 6))).toBe(100)
   expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('training-orbit'), 67))).toBe(15)
   expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('free-flight'), 6))).toBe(0)
