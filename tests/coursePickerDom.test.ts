@@ -128,7 +128,7 @@ describe('course picker interaction', () => {
     picker.onChange(onChange); picker.onFavorite(onFavorite)
     picker.setItems([...missionItems,
       { id: 'contour-circuit', label: 'Contour circuit', detail: '', meta: '', stats: '' },
-      { id: 'weather-approach', label: 'Weather approach', detail: '', meta: '', stats: '' },
+      { id: 'weather-approach', label: 'Weather circuit', detail: '', meta: '', stats: '' },
       perfectLinePickerItem(activate, '?dev=perfect-line')!,
     ], 'training-orbit')
     expect(element('.course-picker-featured').children.map(node => node.textContent.replace(/Resets in .*/, '')))
@@ -137,7 +137,7 @@ describe('course picker interaction', () => {
       .toEqual(['free-flight', 'training-orbit', 'daily-ops'])
     expect(element('.course-picker-category').children[0].textContent).toBe('All courses (5)')
     const grid = element('.course-picker-grid')
-    for (const label of ['Contour circuit', 'Weather approach', 'Perfect Line (prototype)']) {
+    for (const label of ['Contour circuit', 'Weather circuit', 'Perfect Line (prototype)']) {
       expect(grid.querySelectorAll('.course-option-name').map(node => node.textContent)).toContain(label)
     }
     const prototype = grid.querySelector<TestElement>('[data-course-id="perfect-line"]')!

@@ -3,6 +3,7 @@ import {
   COURSE_LIBRARY,
   COURSE_SELECTION_STORAGE_KEY,
   courseDefinitionForId,
+  courseContractSeed,
   courseRunId,
   courseSessionId,
   courseSeedForId,
@@ -390,4 +391,25 @@ describe('course library', () => {
       expect(isUsableAirfield(pad!)).toBe(true)
     }
   }, 60_000)
+})
+
+it('keeps the five rethemed courses in their slots with their original conditions and gate-only objectives', () => {
+  const entries = [
+    ['weather-approach', 619, undefined, undefined, 'Weather circuit'],
+    ['pattern-approach', 28, 'clear', undefined, 'Desert circuit'],
+    ['crosswind-approach', 29, 'storm', 'right', 'Crosswind circuit'],
+    ['precision-landing', 127, 'clear', undefined, 'Precision circuit'],
+    ['butter-landing', 222, 'clear', undefined, 'Smooth circuit'],
+  ] as const
+  for (const [id, seed, weather, windSide, label] of entries) {
+    const course = courseDefinitionForId(id)
+    expect(course).toMatchObject({ seed, label, gatesOnly: true })
+    expect(course.weather).toBe(weather)
+    expect(course.windSide).toBe(windSide)
+    expect(course.detail).not.toMatch(/land|touchdown|approach/i)
+    for (const replay of [resolveCourseDefinition(course), resolveCourseReplaySeed(resolveCourseDefinition(course), 9001)]) {
+      expect(courseContractSeed(replay, 42)).toBeUndefined()
+    }
+  }
+  expect(courseContractSeed(resolveCourseDefinition(courseDefinitionForId('training-orbit')), 42)).toBe(1)
 })

@@ -34,6 +34,8 @@ interface CourseDefinitionShape {
   windSide?: WindSide
   /** Use the expanded catalog contract pool for a deliberately themed course. */
   contractCatalog?: boolean
+  /** Run the gates without a sortie contract. */
+  gatesOnly?: boolean
   /** Resolve this entry from the UTC day instead of keeping one fixed seed. */
   daily?: boolean
   /** Resolve this entry from the current UTC week instead of keeping one fixed seed. */
@@ -192,8 +194,9 @@ export const COURSE_LIBRARY = [
   },
   {
     id: 'weather-approach',
-    label: 'Weather approach',
-    detail: 'Fly a seeded weather circuit, hold the inbound line through cloud or rain, then land. Replay your seed to beat your medal and complete-flight time.',
+    gatesOnly: true,
+    label: 'Weather circuit',
+    detail: 'Fly a seeded gate circuit through cloud or rain. Replay your seed to beat your medal and time.',
     seed: 619,
     profile: 'weather',
     timeOfDay: 0.48,
@@ -426,16 +429,18 @@ export const COURSE_LIBRARY = [
   },
   {
     id: 'pattern-approach',
-    label: 'Pattern approach',
-    detail: 'Desert circuit and aligned final that grade the landing',
+    gatesOnly: true,
+    label: 'Desert circuit',
+    detail: 'Follow the gates around a clear desert circuit',
     seed: 28,
     profile: 'approach',
     weather: 'clear',
   },
   {
     id: 'crosswind-approach',
-    label: 'Crosswind approach',
-    detail: 'Storm-locked pattern that tests the final landing',
+    gatesOnly: true,
+    label: 'Crosswind circuit',
+    detail: 'Follow the gates through a stormy desert circuit',
     seed: 29,
     profile: 'approach',
     weather: 'storm',
@@ -506,8 +511,9 @@ export const COURSE_LIBRARY = [
   },
   {
     id: 'precision-landing',
-    label: 'Precision landing',
-    detail: 'Clear desert circuit with a centered-touchdown contract',
+    gatesOnly: true,
+    label: 'Precision circuit',
+    detail: 'Fly a clear desert gate circuit with precision',
     seed: 127,
     profile: 'approach',
     weather: 'clear',
@@ -552,8 +558,9 @@ export const COURSE_LIBRARY = [
   },
   {
     id: 'butter-landing',
-    label: 'Butter landing',
-    detail: 'Clear desert circuit with a smooth-touchdown contract',
+    gatesOnly: true,
+    label: 'Smooth circuit',
+    detail: 'Fly a smooth line through a clear desert gate circuit',
     seed: 222,
     profile: 'approach',
     weather: 'clear',
@@ -1114,4 +1121,9 @@ export function writeSelectedCourseId(
 /** A selection update from another tab invalidates any in-memory seed identity. */
 export function shouldResetSeededRandomWorldForStorageKey(key: string | null): boolean {
   return key === null || key === COURSE_SELECTION_STORAGE_KEY
+}
+
+/** Contract seed for a course, or undefined when its gates are the only objective. */
+export function courseContractSeed(course: CourseDefinition, fallback?: number): number | undefined {
+  return course.gatesOnly ? undefined : course.contractSeed ?? course.seed ?? fallback
 }

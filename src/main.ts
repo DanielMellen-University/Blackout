@@ -94,6 +94,7 @@ import {
 import { browsingMissionId } from './ui/MissionPickerLayout'
 import {
   courseDefinitionForId,
+  courseContractSeed,
   courseGateCountPreview,
   dailyOpsDayKey,
   dailyOpsTimestampForDayKey,
@@ -481,7 +482,7 @@ export async function boot(): Promise<void> {
       const favoriteRank = favoriteCourseIds.indexOf(course.id)
       const previewGates = courseGateCountPreview(resolvedCourse)
       const previewContractSeed = previewGates === 0 ? undefined
-        : resolvedCourse.contractSeed ?? resolvedCourse.seed ?? undefined
+        : courseContractSeed(resolvedCourse)
       const copy = coursePickerCopy({
         course: resolvedCourse,
         history: record?.history ?? null,
@@ -1616,7 +1617,7 @@ export async function boot(): Promise<void> {
       activeCourseId,
       world.mission.totalGates,
       world.mission.scoringFocus,
-      activeSortie.course.contractSeed ?? world.worldSeed,
+      courseContractSeed(activeSortie.course, world.worldSeed),
       activeSortie.course.contractCatalog === true,
       world.mission.timeAllowanceSec,
     )
@@ -3078,7 +3079,7 @@ export async function boot(): Promise<void> {
         courseId(),
         world.mission.totalGates,
         world.mission.scoringFocus,
-        world.worldSeed,
+        activeSortie.course.gatesOnly ? undefined : world.worldSeed,
         activeSortie.course.contractCatalog === true,
       world.mission.timeAllowanceSec,
       )

@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off and fly a gate run to an airborne finish. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.010**. Previous roadmap chunk: **11.009**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.011**. Previous roadmap chunk: **11.010**.
 
-Recent changes from **11.010**. d1: finish every gated run in the air at the last gate; remove return-to-base navigation and landing preview, and replace landing-related scoring with gate/time points while retaining medal thresholds.
+Recent changes from **11.011**. Retheme five landing-oriented courses as gate runs, retaining their identities, seeds and weather.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -41,7 +41,7 @@ A gated mission is one flight attempt, from launch until the final gate or a cra
 
 ## Mission picker
 
-Launch and Pause > Next mission share a featured row: **Free flight**, **Training orbit**, **Daily challenge**. **Contour circuit** and **Weather approach** are in the course list; **Perfect Line (prototype)** is hidden unless `?dev=perfect-line` is set. **Random world** stays first in the scrollable grid. Search, categories, sorting, counts, and empty messages apply only to the remaining missions; featured cards and Random world always remain visible. Choosing a mission card prepares it without launching; Perfect Line uses its existing immediate launch. Arrow keys follow the displayed rows; Home/End reach the first/last visible card, and Enter/Space select it.
+Launch and Pause > Next mission share a featured row: **Free flight**, **Training orbit**, **Daily challenge**. **Contour circuit** and **Weather circuit** are in the course list; **Perfect Line (prototype)** is hidden unless `?dev=perfect-line` is set. **Random world** stays first in the scrollable grid. Search, categories, sorting, counts, and empty messages apply only to the remaining missions; featured cards and Random world always remain visible. Choosing a mission card prepares it without launching; Perfect Line uses its existing immediate launch. Arrow keys follow the displayed rows; Home/End reach the first/last visible card, and Enter/Space select it.
 
 Regular mission cards have an independent star in the top-right: navy when unsaved, orange when favorited. Clicking a star never selects or launches that mission. Select a regular mission and press F, or Tab to its star and use Enter/Space. Favorites share existing saved data across both pickers. Featured modes and Random world have no stars. The launch panel stays centered and fully bounded; shorter windows scroll its columns internally. The takeoff brief below pilot rank follows your configured controls.
 
