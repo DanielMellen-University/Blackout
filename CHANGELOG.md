@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.018** Add a tested time-weighted flying bonus calculation; M4 integration and record separation remain pending.
 - **11.017** Start gated runs in the air, aligned with the first gate; preserve Free flight runway starts and landings.
 - **11.016** Derive generated gate heights from terrain while retaining the existing route geometry and clearance limits. Terrain-directed horizontal routing remains incomplete.
 
