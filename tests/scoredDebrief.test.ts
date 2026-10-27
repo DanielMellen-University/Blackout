@@ -17,12 +17,12 @@ describe('durable scored goals', () => {
       return run.finishAirborne()!
     }
     const gold = complete(90)
-    const bronze = complete(190)
+    const bronze = complete(175)
     expect(gold.medal).toBe('gold')
     expect(bronze.medal).toBe('bronze')
     expect(bronze.courseBestMedal).toBe('gold')
     expect(bronze.bestTimeSec).toBe(90)
-    expect(bronze.paceDeltaSec).toBe(100)
+    expect(bronze.paceDeltaSec).toBe(85)
     expect(bronze.isNewBestTime).toBe(false)
     const history = readCourseHistory(storage, id)!
     expect(courseSortieGoal({ id, label: 'Daily', detail: '', meta: '', stats: '', runs: history.completionCount, time: history.bestTimeSec, score: readBestCourseScore(storage, id) })).toMatchObject({ kind: 'time', title: 'Beat your 1:30.00 best time' })

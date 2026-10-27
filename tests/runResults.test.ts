@@ -273,6 +273,21 @@ describe('run results focus flow', () => {
     expect(flightRecordCueLabel({ newContractStreakRecord: true })).toBe('CONTRACT STREAK')
   })
 
+  it('shows the three awarded flying bonuses in the final score breakdown', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+    results.show({ ...result, flyingBonuses: { lowScore: 1234, terrainScore: 2345, speedScore: 3456 } })
+    const detail = elementsFor(fixture.document, 'result-score-detail')!.textContent
+    expect(detail).toContain('LOW +1,234')
+    expect(detail).toContain('TERRAIN +2,345')
+    expect(detail).toContain('SPEED +3,456')
+    expect(detail).not.toContain('GATE +')
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('traps Tab and restores the flight focus target when hidden', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()

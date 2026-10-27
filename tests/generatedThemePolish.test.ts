@@ -48,7 +48,7 @@ for(const theme of themes){
    const finish=(quality:number,delay:number)=>{
     const run=new ChallengeRun(null)
     run.reset(`polish:${theme}`,mission.totalGates,'balanced',undefined,false,mission.timeAllowanceSec)
-    for(let i=0;i<mission.totalGates;i++){run.update((60+delay)/mission.totalGates,150);run.recordGate(quality)}
+    for(let i=0;i<mission.totalGates;i++){run.update((60+delay)/mission.totalGates,delay ? 100 : 250,delay ? 300 : 0,0,0,false,true,0,0,1,1,false,false,delay ? 100 : 0);run.recordGate(quality)}
     return run.finishAirborne()!
    }
    expect(finish(1,0).medal).toBe('gold')

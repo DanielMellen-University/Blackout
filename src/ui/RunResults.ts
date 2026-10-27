@@ -386,8 +386,13 @@ export class RunResults {
       contractProgress,
     ].filter(Boolean).join(' · ').slice(0, 500)
     const scoreParts = [
-      `GATE +${result.gateScore.toLocaleString()}`,
+      ...(result.freeFlight || !result.flyingBonuses ? [`GATE +${result.gateScore.toLocaleString()}`] : []),
       `TIME +${result.timeScore.toLocaleString()}`,
+      ...(result.flyingBonuses && !crashed ? [
+        `LOW +${result.flyingBonuses.lowScore.toLocaleString()}`,
+        `TERRAIN +${result.flyingBonuses.terrainScore.toLocaleString()}`,
+        `SPEED +${result.flyingBonuses.speedScore.toLocaleString()}`,
+      ] : []),
       ...(result.freeFlight ? [`LAND +${result.landingScore.toLocaleString()}`] : []),
     ]
     const sortieStyle = result.sortieStyle

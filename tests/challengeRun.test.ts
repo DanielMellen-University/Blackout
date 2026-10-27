@@ -30,9 +30,7 @@ import {
   MAX_APPROACH_SCORE,
   MAX_LANDING_QUALITY,
   MAX_DESTINATION_COUNT,
-  MAX_DESTINATION_SCORE,
   MAX_BIOME_COUNT,
-  MAX_BIOME_SCORE,
   MAX_WATER_BODY_COUNT,
   MAX_CONTRACT_WINS,
   MAX_CONTRACT_STREAK,
@@ -51,7 +49,6 @@ import {
   readBestCoursePrecisionStreak,
   repairBestCoursePrecisionStreak,
 } from '../src/systems/ChallengeRun'
-import { MAX_CONTRACT_SCORE } from '../src/systems/SortieContract'
 
 describe('ChallengeRun', () => {
   it('keeps score medal tiers finite and ordered', () => {
@@ -83,7 +80,7 @@ describe('ChallengeRun', () => {
     expect(altitudeMilestoneScore(99_999)).toBe(MAX_ALTITUDE_MILESTONE_SCORE)
   })
 
-  it('keeps stacked rewards aligned with the persisted score ceiling', () => {
+  it('keeps legacy activities out of the new score and persists the result', () => {
     expect(boundedScore(117_500)).toBe(117_500)
     expect(boundedScore(117_501)).toBe(MAX_BEST_SCORE)
     expect(boundedScore(Number.NaN)).toBe(0)
@@ -106,12 +103,12 @@ describe('ChallengeRun', () => {
     }
     run.recordGate(1)
     const result = run.finishAirborne(1)!
-    expect(result.scoreCapped).toBe(true)
-    expect(result.totalScore).toBe(MAX_BEST_SCORE)
-    expect(readBestCourseScore(storage, 'seed:score-cap')).toBe(MAX_BEST_SCORE)
+    expect(result.scoreCapped).toBe(false)
+    expect(result.totalScore).toBe(94_968)
+    expect(readBestCourseScore(storage, 'seed:score-cap')).toBe(result.totalScore)
   })
 
-  it('turns repeat completions into a bounded streak payout', () => {
+  it('tracks repeat completions without adding a streak payout', () => {
     expect(runStreakBonusForStreak(0)).toBe(0)
     expect(runStreakBonusForStreak(1)).toBe(0)
     expect(runStreakBonusForStreak(2)).toBe(250)
@@ -134,7 +131,7 @@ describe('ChallengeRun', () => {
     expect(first.runStreak).toBe(1)
     expect(first.runStreakScore).toBeUndefined()
     expect(second.runStreak).toBe(2)
-    expect(second.runStreakScore).toBe(250)
+    expect(second.runStreakScore).toBeUndefined()
   })
 
   it('starts the clock on the takeoff roll and scores the final gate airborne', () => {
@@ -159,7 +156,7 @@ describe('ChallengeRun', () => {
 
     const result = run.finishAirborne()
     expect(result).not.toBeNull()
-    expect(result!.gateScore).toBe(22_500)
+    expect(result!.gateScore).toBe(0)
     expect(result!.gatesCleared).toBe(2)
     expect(result!.gatesTotal).toBe(2)
     expect(result!.gatesCleared).not.toBe(result!.gateScore)
@@ -203,12 +200,12 @@ describe('ChallengeRun', () => {
     expect(result!.flightDistanceM).toBe(160)
     expect(result!.peakPositiveG).toBe(4.25)
     expect(result!.peakNegativeG).toBe(0)
-    expect(result!.newMasteryBadges).toEqual(['first-flight', 'gold-run'])
+    expect(result!.newMasteryBadges).toEqual(['first-flight'])
     expect(result!.courseMasteryTier).toBe('pilot')
     expect(result!.courseMasteryTierLabel).toBe('PILOT')
     expect(result!.masteryTierPromoted).toBe(true)
     expect(readMasteryBadges({ getItem: (key) => store.get(key) ?? null }, 'seed:1'))
-      .toEqual(['first-flight', 'gold-run'])
+      .toEqual(['first-flight'])
     expect(run.phase).toBe('complete')
   })
 
@@ -223,7 +220,7 @@ describe('ChallengeRun', () => {
     run.recordCombo(2)
     run.recordDestination('city')
     run.recordBiome('plains')
-    expect(run.currentScorePreview).toBe(18_020)
+    expect(run.currentScorePreview).toBe(74_968)
     expect(run.currentScorePreview).toBeLessThan(MAX_BEST_SCORE)
   })
 
@@ -294,7 +291,7 @@ describe('ChallengeRun', () => {
     expect(result?.bestPrecisionStreak).toBe(2)
   })
 
-  it('adds a bounded barrel-roll bonus to the completed sortie', () => {
+  it('tracks barrel rolls without a legacy score payout', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:stunt', 1)
     run.update(0.1, 8)
@@ -302,13 +299,11 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     const result = run.finishAirborne()!
     expect(result.stuntRolls).toBe(2)
-    expect(result.stuntScore).toBe(1_500)
-    expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.stuntScore! + result.fuelScore!,
-    )
+    expect(result.stuntScore).toBe(0)
+    expect(result.totalScore).toBe(result.timeScore + result.flyingBonuses!.lowScore + result.flyingBonuses!.terrainScore + result.flyingBonuses!.speedScore)
   })
 
-  it('adds a capped clean-flight combo bonus without changing runs that never chain', () => {
+  it('tracks combos without a legacy score payout', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:combo', 1)
     run.update(0.1, 8)
@@ -317,10 +312,8 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     const result = run.finishAirborne()!
     expect(result.bestCombo).toBe(20)
-    expect(result.comboScore).toBe(5_700)
-    expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.comboScore! + result.fuelScore!,
-    )
+    expect(result.comboScore).toBeUndefined()
+    expect(result.totalScore).toBe(result.timeScore + result.flyingBonuses!.lowScore + result.flyingBonuses!.terrainScore + result.flyingBonuses!.speedScore)
   })
 
   it('keeps fuel efficiency rewards finite and capped', () => {
@@ -340,9 +333,7 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     const result = run.finishAirborne()!
     expect(result.weatherScore).toBeUndefined()
-    expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.fuelScore!,
-    )
+    expect(result.totalScore).toBe(result.timeScore + result.flyingBonuses!.lowScore + result.flyingBonuses!.terrainScore + result.flyingBonuses!.speedScore)
   })
 
 
@@ -352,9 +343,7 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     const result = run.finishAirborne()!
     expect(result.nightScore).toBeUndefined()
-    expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.fuelScore!,
-    )
+    expect(result.totalScore).toBe(result.timeScore + result.flyingBonuses!.lowScore + result.flyingBonuses!.terrainScore + result.flyingBonuses!.speedScore)
   })
 
 
@@ -364,12 +353,10 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     const result = run.finishAirborne(0)!
     expect(result.deadstickScore).toBeUndefined()
-    expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + (result.fuelScore ?? 0),
-    )
+    expect(result.totalScore).toBe(result.timeScore + result.flyingBonuses!.lowScore + result.flyingBonuses!.terrainScore + result.flyingBonuses!.speedScore)
   })
 
-  it('awards bounded city and village destination rewards during a live sortie', () => {
+  it('tracks city and village destinations without a legacy score payout', () => {
     const values = new Map<string, string>()
     const storage = {
       getItem: (key: string) => values.get(key) ?? null,
@@ -386,13 +373,11 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     const result = run.finishAirborne()!
     expect(result.destinationCount).toBe(MAX_DESTINATION_COUNT)
-    expect(result.destinationScore).toBe(MAX_DESTINATION_SCORE)
+    expect(result.destinationScore).toBeUndefined()
     expect(result.courseBestDestinationCount).toBe(MAX_DESTINATION_COUNT)
     expect(result.newDestinationRecord).toBe(true)
     expect(values.get('blackout.history.seed:destination-score')).toContain('"destinations":6')
-    expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.destinationScore!,
-    )
+    expect(result.totalScore).toBe(result.timeScore + result.flyingBonuses!.lowScore + result.flyingBonuses!.terrainScore + result.flyingBonuses!.speedScore)
 
     const retry = new ChallengeRun(storage)
     retry.reset('seed:destination-score', 1)
@@ -413,7 +398,7 @@ describe('ChallengeRun', () => {
     )
   })
 
-  it('rewards each identified settlement only once per sortie', () => {
+  it('counts each identified settlement only once per sortie', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:destination-unique', 1)
     run.update(0.1, 8)
@@ -423,10 +408,10 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     const result = run.finishAirborne()!
     expect(result.destinationCount).toBe(2)
-    expect(result.destinationScore).toBe(900)
+    expect(result.destinationScore).toBeUndefined()
   })
 
-  it('awards a bounded survey bonus for distinct natural biomes', () => {
+  it('tracks distinct natural biomes without a legacy score payout', () => {
     const values = new Map<string, string>()
     const storage = {
       getItem: (key: string) => values.get(key) ?? null,
@@ -449,13 +434,11 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     const result = run.finishAirborne()!
     expect(result.biomeCount).toBe(MAX_BIOME_COUNT)
-    expect(result.biomeScore).toBe(MAX_BIOME_SCORE)
+    expect(result.biomeScore).toBeUndefined()
     expect(result.courseBestBiomeCount).toBe(MAX_BIOME_COUNT)
     expect(result.newBiomeRecord).toBe(true)
     expect(values.get('blackout.history.seed:biome-survey')).toContain(`"biomes":${MAX_BIOME_COUNT}`)
-    expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.biomeScore!,
-    )
+    expect(result.totalScore).toBe(result.timeScore + result.flyingBonuses!.lowScore + result.flyingBonuses!.terrainScore + result.flyingBonuses!.speedScore)
 
     const retry = new ChallengeRun(storage)
     retry.reset('seed:biome-survey', 1)
@@ -575,7 +558,7 @@ describe('ChallengeRun', () => {
     }
   })
 
-  it('assigns and scores a deterministic contract at the airborne finish', () => {
+  it('tracks a deterministic contract at the airborne finish', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:contract', 1, 'balanced', 0, true)
     expect(run.contractLabel).toBe('CONTRACT SPEED RUN')
@@ -588,13 +571,11 @@ describe('ChallengeRun', () => {
     expect(result.contractKind).toBe('pace')
     expect(result.contractComplete).toBe(true)
     expect(result.contractProgress).toBe(1)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
     expect(result.contractWins).toBe(1)
     expect(result.courseBestContractWins).toBe(1)
     expect(result.newContractRecord).toBe(true)
-    expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.contractScore!,
-    )
+    expect(result.totalScore).toBe(result.timeScore + result.flyingBonuses!.lowScore + result.flyingBonuses!.terrainScore + result.flyingBonuses!.speedScore)
   })
 
   it('shows elapsed speed-run budget during the sortie', () => {
@@ -658,7 +639,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('target')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires weather gust telemetry into the gust-rider contract', () => {
@@ -721,7 +702,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('low-level')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('uses rendered terrain clearance for terrain-hugger progress', () => {
@@ -751,7 +732,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('biome')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires precipitation time into the storm-run contract', () => {
@@ -768,7 +749,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('weather')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires rendered water time into the water-run contract', () => {
@@ -796,7 +777,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('water')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires terrain surveys into the ridge-run contract', () => {
@@ -825,7 +806,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('ridge-run')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires rendered water-body labels into WATERWAY TOUR', () => {
@@ -856,7 +837,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('waterway-tour')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('surfaces partial progress for the catalog traffic contract', () => {
@@ -897,7 +878,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('brake')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires controlled engine heat into the thermal-control contract', () => {
@@ -923,7 +904,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('heat')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires runway-relative wind into the crosswind contract', () => {
@@ -949,7 +930,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('crosswind')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires smoothed load telemetry into the G-control contract', () => {
@@ -975,7 +956,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('g-control')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires fuel-out recovery into the deadstick contract', () => {
@@ -1000,7 +981,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne(0)
     expect(result?.contractKind).toBe('deadstick')
     expect(result?.contractComplete).toBe(true)
-    expect(result?.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result?.contractScore).toBeUndefined()
   })
 
   it('wires active afterburner time into the burn-run contract', () => {
@@ -1025,7 +1006,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('boost')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires supersonic time into the Mach-run contract', () => {
@@ -1051,7 +1032,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('mach')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires stable altitude time into the level-flight contract', () => {
@@ -1076,7 +1057,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('level')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires city and village arrivals into the settlement-tour contract', () => {
@@ -1106,7 +1087,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('tour')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires the existing combo chain into the combo-run contract', () => {
@@ -1131,7 +1112,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('combo')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires gate quality into the precision-chain contract', () => {
@@ -1158,7 +1139,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('precision')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('wires atmosphere daylight into the night-flight contract', () => {
@@ -1184,7 +1165,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('night')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('marks a clean-circuit contract failed after a missed gate', () => {
@@ -1262,7 +1243,7 @@ describe('ChallengeRun', () => {
     const result = run.finishAirborne()!
     expect(result.contractKind).toBe('front')
     expect(result.contractComplete).toBe(true)
-    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractScore).toBeUndefined()
   })
 
   it('does not invent runway alignment for the deferred precision-approach contract', () => {
@@ -1363,7 +1344,7 @@ describe('ChallengeRun', () => {
     expect(second.contractStreak).toBe(2)
     expect(second.courseBestContractStreak).toBe(2)
     expect(second.newContractStreakRecord).toBe(true)
-    expect(second.contractStreakBonus).toBe(250)
+    expect(second.contractStreakBonus).toBeUndefined()
     expect(values.get('blackout.history.seed:contract-streak')).toContain('"contractStreak":2')
     expect(values.get('blackout.history.seed:contract-streak')).toContain('"contractStreakRecord":2')
 
@@ -1450,8 +1431,8 @@ describe('ChallengeRun', () => {
     expect(result.courseMasteryTier).toBe('ace')
     expect(result.masteryTierPromoted).toBe(false)
     expect(result.courseBestLandingQuality).toBe(0.1)
-    expect(readMasteryBadges(storage, 'seed:legacy-mastery')).toEqual(['first-flight', 'gate-master', 'streak-hunter', 'gold-run'])
-    expect(values.get('blackout.badges.seed:legacy-mastery')).toBe('["first-flight","gate-master","streak-hunter","gold-run"]')
+    expect(readMasteryBadges(storage, 'seed:legacy-mastery')).toEqual(['first-flight', 'gate-master', 'streak-hunter'])
+    expect(values.get('blackout.badges.seed:legacy-mastery')).toBe('["first-flight","gate-master","streak-hunter"]')
   })
 
   it('persists the best fuel reserve and rejects malformed reserve records', () => {
@@ -1909,7 +1890,7 @@ describe('ChallengeRun', () => {
     expect(result.flightDistanceM).toBe(750)
     expect(result.peakAltitudeM).toBe(500)
     expect(result.peakPositiveG).toBe(1)
-    expect(result.comboScore).toBe(300)
+    expect(result.comboScore).toBeUndefined()
     expect(result.fuelRemainingPercent).toBe(70)
     expect(run.phase).toBe('complete')
     const saved = [...values]

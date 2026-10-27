@@ -6,8 +6,8 @@ function fixture() {
   const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value) }
   return { values, storage }
 }
-function fly(run: ChallengeRun, gateTime: number, quality = 1) {
-  for (let time = 0; time < gateTime; time++) run.update(1, 100)
+function fly(run: ChallengeRun, gateTime: number, quality = 1, altitude = 0) {
+  for (let time = 0; time < gateTime; time++) run.update(1, 100, altitude)
   run.recordGate(quality)
   return run.finishAirborne()!
 }
@@ -22,7 +22,7 @@ describe('scored complete circuits', () => {
     expect(first.bestTimeSec).toBe(10)
     expect(first.isNewBestTime).toBe(true)
     run.reset('seed:scored:orbit', 1)
-    const second = fly(run, 8, 0.5)
+    const second = fly(run, 8, 0.5, 300)
     expect(second.paceDeltaSec).toBe(-2)
     expect(second.paceLabel).toBe('AHEAD 2.00S')
     expect(second.previousBestTimeSec).toBe(10)
@@ -40,7 +40,7 @@ describe('scored complete circuits', () => {
 
   it('allows the route time budget before pace deductions, then retains bronze, silver and gold records across reload', () => {
     const { storage } = fixture()
-    for (const [elapsed, medal] of [[190, 'bronze'], [155, 'silver'], [90, 'gold']] as const) {
+    for (const [elapsed, medal] of [[175, 'bronze'], [135, 'silver'], [90, 'gold']] as const) {
       const run = new ChallengeRun(storage)
       run.reset('seed:scored:orbit', 1, 'balanced', undefined, false, 90)
       const result = fly(run, elapsed)
@@ -48,7 +48,7 @@ describe('scored complete circuits', () => {
       expect(result.courseBestMedal).toBe(medal)
       expect(result.newMedalRecord).toBe(true)
       expect(result.isNewBestTime).toBe(true)
-      expect(result.timeScore).toBe(70_000 - Math.max(0, elapsed - 90) * 320)
+      expect(result.timeScore).toBe(75_000 - Math.max(0, elapsed - 90) * 320)
     }
     expect(readCourseHistory(storage, 'seed:scored:orbit')).toMatchObject({ completionCount: 3, bestTimeSec: 90 })
   })
@@ -58,6 +58,6 @@ describe('scored complete circuits', () => {
     run.reset('seed:invalid:orbit', 1, 'balanced', undefined, false, allowance)
     const result = fly(run, 10)
     expect(result.timeAllowanceSec).toBe(0)
-    expect(result.timeScore).toBe(66_800)
+    expect(result.timeScore).toBe(71_800)
   })
 })

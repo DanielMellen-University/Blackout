@@ -5,12 +5,12 @@ import type { MissionRouteModifier } from './Mission'
 import { normalizeWorldSeed } from '../core/WorldSeed'
 import { generatedThemeForProfile } from '../world/TerrainProfile'
 import { generateMission } from './MissionGenerator'
-import { FLIGHT_REVISION_TAG, flightRecordId } from '../core/FlightRevision'
+import { FLIGHT_REVISION_TAG, flightRecordId, scoreRecordId } from '../core/FlightRevision'
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
-export const RANDOM_COURSE_RUN_ID = flightRecordId('random-world')
+export const RANDOM_COURSE_RUN_ID = scoreRecordId(flightRecordId('random-world'))
 
 interface CourseDefinitionShape {
   id: string
@@ -1044,7 +1044,7 @@ export function courseRunId(course: CourseDefinition, nowMs = Date.now()): strin
         ? `:monthly:${monthlyOpsMonthKey(nowMs)}`
         : ''
   const migrated = resolved.terrainTheme ? legacyGeneratedRecordId({ ...resolved, seed: resolved.contractSeed! }, resolved.seed) : null
-  return `${migrated ?? courseSessionBaseId(resolved.seed, resolved.profile)}${migrated ? '' : courseIdentitySuffix(resolved.id)}${periodSuffix}`
+  return `${scoreRecordId(`${migrated ?? courseSessionBaseId(resolved.seed, resolved.profile)}${migrated ? '' : courseIdentitySuffix(resolved.id)}`)}${periodSuffix}`
 }
 
 /** Keep random sorties bounded while giving explicitly replayed worlds stable identity. */
@@ -1058,7 +1058,7 @@ export function courseSessionId(
   if (selectedCourseId === 'random') {
     if (!seededRandom) return RANDOM_COURSE_RUN_ID
     const safeSeed = generatedThemeForProfile(profile) ? normalizeWorldSeed(worldSeed) ?? .001 : Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
-    return `${courseSessionBaseId(safeSeed, profile)}:custom`
+    return scoreRecordId(`${courseSessionBaseId(safeSeed, profile)}:custom`)
   }
   if (profile === 'free') return flightRecordId('free-flight')
   const safeSeed = generatedThemeForProfile(profile) ? normalizeWorldSeed(worldSeed) ?? .001 : Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
@@ -1075,7 +1075,7 @@ export function courseSessionId(
   const definition = courseDefinitionForId(selectedCourseId)
   const migrated = isLegacyGeneratedCourse(definition)
     ? legacyGeneratedRecordId({ ...definition, seed: definition.seed ?? safeSeed, profile }, normalizeWorldSeed(worldSeed) ?? .001) : null
-  return `${migrated ?? courseSessionBaseId(safeSeed, profile)}${migrated ? '' : courseIdentitySuffix(selectedCourseId)}${periodSuffix}`
+  return `${scoreRecordId(`${migrated ?? courseSessionBaseId(safeSeed, profile)}${migrated ? '' : courseIdentitySuffix(selectedCourseId)}`)}${periodSuffix}`
 }
 
 /** Keep authored records stable while separating the one legacy key collision. */

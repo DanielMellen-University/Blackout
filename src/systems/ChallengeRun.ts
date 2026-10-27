@@ -57,7 +57,7 @@ export interface ChallengeResult {
   failureReason?: string
   gateScore: number
   timeScore: number
-  /** Time-weighted flying telemetry; not included in the legacy score. */
+  /** Time-weighted bonuses awarded for the completed gated run. */
   flyingBonuses?: { lowScore: number; terrainScore: number; speedScore: number }
   landingScore: number
   landingQuality: number
@@ -1346,38 +1346,25 @@ export class ChallengeRun {
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     const fuelRemainingPercent = Math.round(clamp01(fuelFraction) * 100)
     const fuelUsedPercent = 100 - fuelRemainingPercent
-    const fuelScore = fuelEfficiencyScore(fuelFraction)
     const approachScore = 0
     const gateQuality =
       this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
-    const weights = scoringWeightsForFocus(this.scoringFocus)
-    const gateScore = Math.round(weights.gate * clamp01(gateQuality))
-
-    // A brisk, clean circuit scores well; time can never erase completion.
-    const timeScore = Math.round(Math.max(weights.minimumTime, weights.time - Math.max(0, elapsedSec - this.timeAllowanceSec) * 320))
+    const gateScore = 0
+    const timeScore = this.timeScore()
+    const flyingBonuses = this.flyingScore.bonuses()
 
     // Legacy result/history fields remain readable while new runs award no
     // touchdown, approach, weather-landing, night-landing or deadstick credit.
     const landingQuality = 0
     const landingScore = 0
-    const altitudeScore = altitudeMilestoneScore(this.altitudeMilestone)
     const deadstickScore = 0
-    const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
-    const comboScore = this.bestCombo > 1
-      ? Math.min(6_000, (this.bestCombo - 1) * 300)
-      : 0
-    const biomeScore = Math.min(MAX_BIOME_SCORE, this.surveyedBiomeCount * 120)
-    const contractScore = this.contract.finish(elapsedSec, fuelFraction, approachScore)
+    this.contract.finish(elapsedSec, fuelFraction, approachScore)
     const contractComplete = this.contract.enabled && this.contract.complete
     const history = this.readHistory()
     const previousRunStreak = history.runStreak ?? 0
     const runStreak = Math.min(MAX_RUN_STREAK, previousRunStreak + 1)
-    const runStreakScore = runStreakBonusForStreak(runStreak)
     const priorBadges = repairMasteryBadges(this.storage, this.courseId)
-    const contractStreakBonus = contractComplete
-      ? contractStreakBonusForStreak(history.contractStreak ?? 0)
-      : 0
-    const rawTotalScore = gateScore + timeScore + stuntScore + comboScore + fuelScore + runStreakScore + altitudeScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
+    const rawTotalScore = timeScore + flyingBonuses.lowScore + flyingBonuses.terrainScore + flyingBonuses.speedScore
     const totalScore = boundedScore(rawTotalScore)
     const scoreCapped = rawTotalScore > totalScore
     const previousBest = this.readBest()
@@ -1544,7 +1531,7 @@ export class ChallengeRun {
       courseId: this.courseId,
       gateScore,
       timeScore,
-      flyingBonuses: this.flyingScore.bonuses(),
+      flyingBonuses,
       landingScore,
       landingQuality,
       totalScore,
@@ -1587,17 +1574,17 @@ export class ChallengeRun {
       newPeakSpeedRecord,
       newPeakAltitudeRecord,
       stuntRolls: this.stuntRollCount,
-      stuntScore,
+      stuntScore: 0,
       courseBestStuntRolls,
       newStuntRecord,
       freeFlight: this.freeFlight,
       altitudeMilestoneM: this.altitudeMilestone,
       bestCombo: this.bestCombo > 0 ? this.bestCombo : undefined,
-      comboScore: comboScore > 0 ? comboScore : undefined,
-      fuelScore: fuelScore > 0 ? fuelScore : undefined,
-      runStreakScore: runStreakScore > 0 ? runStreakScore : undefined,
+      comboScore: undefined,
+      fuelScore: undefined,
+      runStreakScore: undefined,
       approachScore: approachScore > 0 ? approachScore : undefined,
-      destinationScore: this.destinationScore > 0 ? this.destinationScore : undefined,
+      destinationScore: undefined,
       destinationCount: this.destinationCount > 0 ? this.destinationCount : undefined,
       courseBestDestinationCount: courseBestDestinationCount > 0 ? courseBestDestinationCount : undefined,
       newDestinationRecord,
@@ -1605,7 +1592,7 @@ export class ChallengeRun {
       waterBodyCount: this.surveyedWaterCount > 0 ? this.surveyedWaterCount : undefined,
       courseBestWaterBodyCount: courseBestWaterBodyCount > 0 ? courseBestWaterBodyCount : undefined,
       newWaterBodyRecord,
-      biomeScore: biomeScore > 0 ? biomeScore : undefined,
+      biomeScore: undefined,
       courseBestBiomeCount: courseBestBiomeCount > 0 ? courseBestBiomeCount : undefined,
       newBiomeRecord,
       runStreak,
@@ -1617,9 +1604,9 @@ export class ChallengeRun {
       contractComplete: this.contract.enabled ? this.contract.complete : undefined,
       contractFailed: this.contract.enabled ? this.contract.failed : undefined,
       contractProgress: this.contract.enabled ? this.contract.progress : undefined,
-      contractScore: contractScore > 0 ? contractScore : undefined,
-      contractStreakBonus: contractStreakBonus > 0 ? contractStreakBonus : undefined,
-      altitudeScore: altitudeScore > 0 ? altitudeScore : undefined,
+      contractScore: undefined,
+      contractStreakBonus: undefined,
+      altitudeScore: undefined,
       contractWins: contractWins > 0 ? contractWins : undefined,
       courseBestContractWins: courseBestContractWins > 0 ? courseBestContractWins : undefined,
       newContractRecord,
@@ -1746,17 +1733,13 @@ export class ChallengeRun {
     return this.contract.enabled ? `${this.contract.label} / ${this.contract.detail}` : ''
   }
 
+  private timeScore(): number {
+    return Math.round(Math.max(5_000, 75_000 - Math.max(0, this.elapsedSec - this.timeAllowanceSec) * 320))
+  }
+
   private refreshScorePreview(): void {
-    const weights = scoringWeightsForFocus(this.scoringFocus)
-    const gateQuality = this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
-    const gateScore = Math.round(weights.gate * clamp01(gateQuality))
-    const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
-    const comboScore = this.bestCombo > 1 ? Math.min(6_000, (this.bestCombo - 1) * 300) : 0
-    const altitudeScore = altitudeMilestoneScore(this.altitudeMilestone)
-    const biomeScore = Math.min(MAX_BIOME_SCORE, this.surveyedBiomeCount * 120)
-    this.scorePreviewValue = boundedScore(
-      gateScore + stuntScore + comboScore + altitudeScore + this.destinationScore + biomeScore,
-    )
+    // Flying bonuses are deliberately withheld until the results screen.
+    this.scorePreviewValue = this.timeScore()
   }
 
   /** Consume one event-driven contract-completion cue for the live HUD. */
