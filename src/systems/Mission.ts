@@ -416,7 +416,15 @@ export function buildMissionRoute(
   const generatedTheme = generatedThemeForProfile(safeProfile) ?? (migrated ? activeTerrain.theme : null)
   const wideCorridor = generatedTheme === 'coastal-island-run' || generatedTheme === 'volcanic-run'
   const corridorOffsets = wideCorridor ? [-52, 0, 52] : ROUTE_CORRIDOR_OFFSETS
-  if (generatedTheme) points = generateMission(getWorldSeed(), generatedTheme, safeProfile === 'orbit').course.map(point => ({ ...point }))
+  if (generatedTheme) {
+    // Keep the seeded horizontal course and gate count, but place its vertical
+    // line against the actual surface rather than arbitrary runway-relative heights.
+    // The corridor and slope passes below raise this baseline wherever needed.
+    points = generateMission(getWorldSeed(), generatedTheme, safeProfile === 'orbit').course.map(point => {
+      const ground = sampleTerrainSurfaceHeightFast(point.x, point.z)
+      return { ...point, y: Number.isFinite(ground) ? ground + ROUTE_CLEARANCE + 4 : point.y }
+    })
+  }
 
   if (safeProfile === 'contour' && !migrated) {
     // Five bounded choices reuse the existing orbit and gate corridor. Only

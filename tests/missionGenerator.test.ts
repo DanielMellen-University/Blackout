@@ -60,7 +60,7 @@ it('reshapes the shared geography paths and clears back to the original world', 
 })
 
 import { Scene } from 'three'
-import { MissionSystem } from '../src/systems/Mission'
+import { MissionSystem, buildMissionRoute } from '../src/systems/Mission'
 import { setOpsPad, clearOpsPad } from '../src/world/terrainSample'
 import { courseDefinitionForId, courseRunId, courseSessionId, resolveCourseReplaySeed } from '../src/systems/CourseLibrary'
 
@@ -138,5 +138,21 @@ it('invalidates settlement and anchor caches when the same seed and pad change t
     expect(settlementAnchorCells('city', getOpsPad()).length).toBeGreaterThan(0)
     setTerrainProfile(desert.terrain)
     expect(settlementForCell(0, 0, 'city')).toBeNull()
+  } finally { setTerrainProfile(null); clearOpsPad() }
+})
+
+it.each([42, 1337, 9001])('uses terrain-derived heights without changing seeded gate positions on seed %s', seed => {
+  try {
+    for (const theme of MISSION_THEMES) {
+      const spec = generateMission(seed, theme), pad = spec.landingRunway
+      setWorldSeed(seed); setTerrainProfile(spec.terrain); setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
+      const route = buildMissionRoute(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, spec.profile)
+      expect(route).toHaveLength(spec.course.length)
+      for (let i = 0; i < route.length; i++) {
+        expect(route[i]!.x).toBe(spec.course[i]!.x)
+        expect(route[i]!.z).toBe(spec.course[i]!.z)
+      }
+      expect(route.some((point, i) => Math.abs(point.y - spec.course[i]!.y) > 5)).toBe(true)
+    }
   } finally { setTerrainProfile(null); clearOpsPad() }
 })

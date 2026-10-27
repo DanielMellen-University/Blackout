@@ -45,7 +45,7 @@ Daniel approved this list on Oct 24 2026, without the in-flight bonus readout. I
 | Day | Slice |
 |---|---|
 | Mon Nov 2 | PARTIAL, 11.015: M0 spec documented; gate spacing awaits the route decision above |
-| Tue Nov 3 | M1 routes follow the terrain: through valleys and over ridges with real height changes |
+| Tue Nov 3 | PARTIAL, 11.016: generated gate heights follow sampled terrain with clearance and slope limits; the existing horizontal stadium does not deliberately route through valleys and over ridges. **NEEDS DANIEL:** choose how much the horizontal line may bend within its bounds to seek those features while retaining existing gate spacing, the 75° turn limit and theme features. |
 | Wed Nov 4 | Every gated run starts in the air, lined up on gate 1. Free flight keeps its runway start (ROADMAP item 10, folded in) |
 | Thu Nov 5 | M4 scoring: time plus bonuses for flying low, close to terrain and carrying speed. New record revision, old records kept separately |
 | Fri Nov 6 | Proof flights only: headless flights and screenshots on each theme. No UI change |

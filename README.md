@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off and fly a gate run to an airborne finish. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.015**. Previous roadmap chunk: **11.014**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.016**. Previous roadmap chunk: **11.015**.
 
-Recent changes from **11.015**. Document the mission gate-spacing specification and the unresolved route geometry tradeoff.
+Recent changes from **11.016**. Set generated gate heights from terrain and retain the existing clearance and slope limits; terrain-directed horizontal routing remains incomplete.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
