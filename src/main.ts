@@ -1,3 +1,5 @@
+import { flightStart } from './systems/AirborneStart'
+import { sampleTerrainSurfaceHeightFast } from './world/terrainSample'
 import { PERFECT_LINE_SEED, PERFECT_LINE_SPEED } from './world/PerfectLine'
 import { FLIGHT_REVISION_TAG, flightRecordId, legacyFlightRecordLabel } from './core/FlightRevision'
 import { warmupShadowVariants } from './core/RendererWarmup'
@@ -1585,7 +1587,16 @@ export async function boot(): Promise<void> {
         world.mission.routeModifier,
       )
     }
-    aircraft.reset(world.spawn)
+    const gateStart = !perfectLineActive && world.mission.totalGates > 0
+      ? world.mission.firstGateApproach() : null
+    const start = flightStart(world.spawn, gateStart, sampleTerrainSurfaceHeightFast)
+    aircraft.reset(start)
+    if (gateStart) {
+      aircraft.velocity.set(Math.sin(start.yaw) * PERFECT_LINE_SPEED, 0, Math.cos(start.yaw) * PERFECT_LINE_SPEED)
+      aircraft.controls.gearDown = false
+      aircraft.controls.throttle = .5
+      aircraft.snapDisplay()
+    }
     if (perfectLineActive) {
       aircraft.velocity.set(0, 0, PERFECT_LINE_SPEED)
       aircraft.controls.gearDown = false
@@ -1594,7 +1605,7 @@ export async function boot(): Promise<void> {
       perfectLineElapsed = 0
       perfectLineFinished = false
     }
-    _stableHeading = world.spawn.yaw
+    _stableHeading = start.yaw
     supersonic.reset(aircraft.speed)
     cameras.setMode(flightReview ? 'chase' : cameraPreference, aircraft)
     crashFx.reset()
@@ -1607,7 +1618,8 @@ export async function boot(): Promise<void> {
     combo.reset()
     altitudeMilestones.reset()
     input.clearQueued()
-    input.resetFlightControls(perfectLineActive ? .5 : 0)
+    input.resetFlightControls(perfectLineActive || gateStart ? .5 : 0)
+    if (gateStart) input.sampleWithDt(0).gearDown = false
     const activeCourseId = courseId()
     if (!perfectLineActive) touchSeededRandomCourseRecord(qualityStorage, activeCourseId)
     if (!perfectLineActive) challenge.reset(
@@ -2021,7 +2033,9 @@ export async function boot(): Promise<void> {
     overlay?.classList.toggle('cockpit-clean', cameras.mode === 'cockpit')
     const debriefAction = input.sampleDebriefAction(playing && results.open && !menu.open)
     if (debriefAction) document.getElementById(debriefAction === 'choose' ? 'btn-new-world' : 'btn-retry')?.click()
-    let simLive = playing && !menu.paused && !results.open
+    const gatedLaunchLoading = !perfectLineActive && world.mission.totalGates > 0 &&
+      document.getElementById('startup-screen')?.hidden === false
+    let simLive = playing && !menu.paused && !results.open && !gatedLaunchLoading
     if (simLive && input.consumePauseToggle()) {
       menu.togglePause()
       audio.silence()

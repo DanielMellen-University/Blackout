@@ -1467,6 +1467,11 @@ export class MissionSystem {
     return this.gates[this.next]!.pos
   }
 
+  firstGateApproach(): { x: number; y: number; z: number; fwdX: number; fwdZ: number } | null {
+    const gate = this.gates[0]
+    return gate ? { x: gate.pos.x, y: gate.pos.y, z: gate.pos.z, fwdX: gate.fwd.x, fwdZ: gate.fwd.z } : null
+  }
+
   get totalGates(): number {
     return this.gates.length
   }

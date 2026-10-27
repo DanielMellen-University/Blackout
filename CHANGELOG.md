@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.017** Start gated runs in the air, aligned with the first gate; preserve Free flight runway starts and landings.
 - **11.016** Derive generated gate heights from terrain while retaining the existing route geometry and clearance limits. Terrain-directed horizontal routing remains incomplete.
 
 - **11.015** Document the mission gate-spacing specification and the unresolved route geometry tradeoff; implementation remains pending.
