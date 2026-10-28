@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.024**. Previous roadmap chunk: **11.023**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.025**. Previous roadmap chunk: **11.024**.
 
-Recent changes from **11.024**. Free flight shows LANDED for every touchdown inside the soft-landing limit. Gated runs get a tighter time allowance, a terrain bonus measured against the gate line, a faster SPEED RUN target and PRECISION CHAIN tasks again.
+Recent changes from **11.025**. Gated runs scored under the 11.024 rules start fresh best scores, history and ghosts. Earlier records are kept and shown read-only as S1 SCORE.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

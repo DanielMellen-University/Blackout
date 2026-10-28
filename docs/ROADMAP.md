@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 11.025. Score revision s2 (Daniel, Oct 27): gated runs scored under the 11.024 rules keep their best scores, history, ghosts and retention under :s2 ids. s1 records stay in storage untouched and appear read-only in the existing historical label as S1 SCORE. Free flight records are unchanged.
+
 Chunk 11.024. Gated-run tuning (Daniel, Oct 27): the time allowance is gate 1 to the last gate at 160 m/s; terrain proximity reaches zero at 1.25 x the route's median gate clearance (100 to 400 m); SPEED RUN is max(48, 5.5 s per gate); PRECISION CHAIN (three gates in a row at quality 0.82) is assigned to new gated missions again. Free flight shows LANDED for any touchdown that starts airborne and sinks at 0.5 to 6 m/s; gated runs still never announce LANDED.
 
 Chunk 11.023. Tune terrain bending in Mountain valley and Volcanic with a 0.005 m height per metre straight-line penalty and a 160 m maximum; those themes bend more often. Training orbit prefers 11 gates and retains its routes. Separate changed route records; Free flight is unchanged.
@@ -147,7 +149,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.024** is current. Previous ship: **11.023**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.025** is current. Previous ship: **11.024**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
