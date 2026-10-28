@@ -812,6 +812,7 @@ export class SortieContractTracker {
 export const ASSIGNED_CONTRACT_KINDS = [
   'clean',
   'low-level',
+  'precision',
   'deadstick',
 ] as const
 
@@ -830,6 +831,10 @@ function indexForKind(kind: SortieContractKind): number {
 function indexForSeed(seed: number): number {
   const mixed = mixSeed(seed)
   if (mixed % 11 === 0) return indexForKind('deadstick')
+  // 11.023: PRECISION CHAIN (three gates in a row within about 10 m of centre)
+  // takes a third of the CLEAN CIRCUIT and TERRAIN HUGGER seeds. mixSeed is
+  // even for integer seeds, so read higher bits rather than another LINE_KINDS slot.
+  if ((mixed >>> 3) % 3 === 0) return indexForKind('precision')
   return indexForKind(LINE_KINDS[mixed % LINE_KINDS.length]!)
 }
 
