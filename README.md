@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.020**. Previous roadmap chunk: **11.019**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.021**. Previous roadmap chunk: **11.020**.
 
-Recent changes from **11.020**. Gated runs drop the runway alignment contract; generated routes place 8 to 20 gates 0.8 to 2.5 km apart and bend gently toward lower ground.
+Recent changes from **11.021**. Gated-run copy now matches airborne starts and finishes: DEADSTICK completes at fuel out, engine-out no longer says glide to base, and courses describe 8 to 20 gates.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
