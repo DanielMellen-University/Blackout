@@ -1246,41 +1246,15 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBeUndefined()
   })
 
-  it('does not invent runway alignment for the deferred precision-approach contract', () => {
+  it('assigns no runway-alignment contract to gated runs', () => {
     const run = new ChallengeRun(null)
-    let approachSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:approach-contract', 1, 'balanced', seed, true)
-      if (run.contractLabel === 'CONTRACT PRECISION APPROACH') {
-        approachSeed = seed
-        break
+      for (const catalog of [false, true]) {
+        run.reset('seed:approach-contract', 5, 'balanced', seed, catalog)
+        expect(run.contractLabel).not.toBe('CONTRACT PRECISION APPROACH')
+        expect(run.contractDetail).not.toContain('LAND')
       }
     }
-    expect(approachSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:approach-contract', 1, 'balanced', approachSeed, true)
-    run.recordGate(1)
-    const result = run.finishAirborne()!
-    expect(result.contractKind).toBe('approach')
-    expect(result.contractComplete).toBe(false)
-    expect(result.contractScore).toBeUndefined()
-  })
-
-  it('wires runway alignment forecast into PRECISION APPROACH', () => {
-    const run = new ChallengeRun(null)
-    let approachSeed = -1
-    for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:approach-live', 5, 'balanced', seed, true)
-      if (run.contractLabel === 'CONTRACT PRECISION APPROACH') {
-        approachSeed = seed
-        break
-      }
-    }
-    expect(approachSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:approach-live', 5, 'balanced', approachSeed, true)
-    run.recordApproachPreview(320)
-    expect(run.contractProgress).toBeCloseTo(320 / 360)
-    expect(run.contractDetail).toContain('PREVIEW 320')
-    expect(run.contractComplete).toBe(false)
   })
 
   it('persists cumulative contract wins and repairs oversized counts', () => {

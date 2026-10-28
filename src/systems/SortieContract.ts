@@ -1,6 +1,6 @@
 import { MIN_MISSION_GATES } from './MissionGates'
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour' | 'traffic-watch' | 'traffic-dodge' | 'thermal-surf'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour' | 'traffic-watch' | 'traffic-dodge' | 'thermal-surf'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -19,8 +19,6 @@ const SPEED_BAND_MIN_MPS = 160
 const SPEED_BAND_MAX_MPS = 320
 const SPEED_BAND_TARGET_SECONDS = 12
 const WEATHER_TARGET_SECONDS = 14
-const APPROACH_TARGET_SCORE = 360
-const APPROACH_DETAIL = 'LAND CENTERED AND ALIGNED'
 const WATER_TARGET_SECONDS = 12
 const BRAKE_MIN_MPS = 220
 const BRAKE_TARGET_SECONDS = 5
@@ -90,7 +88,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'biome', label: 'BIOME TOUR', target: BIOME_TARGET_COUNT },
   { kind: 'speed-band', label: 'ENERGY BAND', target: SPEED_BAND_TARGET_SECONDS },
   { kind: 'weather', label: 'STORM RUN', target: WEATHER_TARGET_SECONDS },
-  { kind: 'approach', label: 'PRECISION APPROACH', target: APPROACH_TARGET_SCORE },
+  { kind: 'clean', label: 'CLEAN CIRCUIT', target: 1 }, // Retain legacy catalog indices.
   { kind: 'water', label: 'WATER RUN', target: WATER_TARGET_SECONDS },
   { kind: 'brake', label: 'BRAKE CHECK', target: BRAKE_TARGET_SECONDS },
   { kind: 'heat', label: 'THERMAL CONTROL', target: HEAT_TARGET_SECONDS },
@@ -571,17 +569,6 @@ export class SortieContractTracker {
     this.detailValue = `${this.detailBaseValue} / ELAPSED ${bucket}S`
   }
 
-  /** Show runway alignment progress without completing before touchdown. */
-  recordApproachPreview(score: number): void {
-    if (this.definition?.kind !== 'approach' || this.completeValue || !Number.isFinite(score)) return
-    const safeScore = Math.max(0, Math.min(this.definition.target * 2, score))
-    this.progressValue = clamp01(safeScore / this.definition.target)
-    const bucket = Math.floor(safeScore / 20)
-    if (bucket === this.detailProgressBucket) return
-    this.detailProgressBucket = bucket
-    this.detailValue = `${APPROACH_DETAIL} / PREVIEW ${Math.round(safeScore)}`
-  }
-
   /** Accumulate bounded time in a low-altitude airborne band for the terrain-hugger contract. */
   recordLowLevel(altitudeM: number, dt: number, airborne = true): void {
     if (this.definition?.kind !== 'low-level' || this.completeValue || airborne !== true) return
@@ -769,7 +756,7 @@ export class SortieContractTracker {
   }
 
   /** Resolve contracts whose success depends on final-gate telemetry. */
-  finish(elapsedSec: number, fuelFraction: number, approachScore = 0): number {
+  finish(elapsedSec: number, fuelFraction: number): number {
     if (!this.definition || this.completeValue) return this.completeValue ? MAX_CONTRACT_SCORE : 0
     if (this.definition.kind === 'pace') {
       this.completeValue = Number.isFinite(elapsedSec) && elapsedSec <= this.definition.target
@@ -781,10 +768,6 @@ export class SortieContractTracker {
       this.progressValue = Number.isFinite(fuelFraction)
         ? clamp01(fuelFraction / this.definition.target)
         : 0
-    } else if (this.definition.kind === 'approach') {
-      const safeApproach = Number.isFinite(approachScore) ? Math.max(0, approachScore) : 0
-      this.completeValue = safeApproach >= this.definition.target
-      this.progressValue = clamp01(safeApproach / this.definition.target)
     } else if (this.definition.kind === 'range') {
       this.completeValue = this.rangeMeters >= this.definition.target
     }
@@ -828,11 +811,10 @@ export class SortieContractTracker {
 export const ASSIGNED_CONTRACT_KINDS = [
   'clean',
   'low-level',
-  'approach',
   'deadstick',
 ] as const
 
-const LINE_KINDS = ['clean', 'low-level', 'approach', 'clean'] as const
+const LINE_KINDS = ['clean', 'low-level', 'low-level', 'clean'] as const
 
 function mixSeed(seed: number): number {
   const safe = Math.trunc(seed)
@@ -854,7 +836,7 @@ function legacyIndexForSeed(seed: number): number {
   const mixed = mixSeed(seed)
   // Preserve the original five-contract mapping for existing seeds while
   // reserving deterministic slices for terrain-hugger, biome-tour,
-  // energy-band, storm-run, precision-approach, brake-check, thermal-control,
+  // energy-band, storm-run, retired precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
   // night-flight, dry-run, radar-run, gust-rider, range-run,
@@ -945,7 +927,6 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'biome': return `SURVEY ${Math.round(target)} DISTINCT BIOMES`
     case 'speed-band': return `HOLD ${Math.round(SPEED_BAND_MIN_MPS * 1.943844492)}-${Math.round(SPEED_BAND_MAX_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'weather': return `FLY IN RAIN OR SNOW FOR ${Math.round(target)}S`
-    case 'approach': return APPROACH_DETAIL
     case 'water': return `FLY OVER WATER FOR ${Math.round(target)}S`
     case 'brake': return `DEPLOY BRAKE ABOVE ${Math.round(BRAKE_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'heat': return `KEEP HEAT BELOW ${Math.round(HEAT_MAX_FRACTION * 100)}% ABOVE ${Math.round(HEAT_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
@@ -972,7 +953,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'traffic-watch': return TRAFFIC_WATCH_DETAIL
     case 'traffic-dodge': return TRAFFIC_DODGE_DETAIL
     case 'thermal-surf': return THERMAL_SURF_DETAIL
-    default: return 'LAND CENTERED AND ALIGNED'
+    default: return ''
   }
 }
 

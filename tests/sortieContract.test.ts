@@ -12,7 +12,7 @@ describe('sortie contracts', () => {
   it('previews deterministic seeded tasks without assigning Free flight a contract', () => {
     expect(sortieContractLabelForSeed(undefined)).toBe('')
     const label = sortieContractLabelForSeed(42)
-    expect(['CLEAN CIRCUIT', 'TERRAIN HUGGER', 'PRECISION APPROACH', 'DEADSTICK']).toContain(label)
+    expect(['CLEAN CIRCUIT', 'TERRAIN HUGGER', 'DEADSTICK']).toContain(label)
     expect(label).not.toBe('PRECISION CHAIN')
     expect(sortieContractDetailForSeed(42).length).toBeGreaterThan(0)
     expect(sortieContractDetailForSeed(undefined)).toBe('')
@@ -35,8 +35,8 @@ describe('sortie contracts', () => {
     expect(sortieContractDetailForSeed(115, 5, true)).toContain('HOLD RIDGE ALT')
     expect(sortieContractLabelForSeed(31, 5, true)).toBe('TRAFFIC DODGE')
     expect(sortieContractDetailForSeed(31, 5, true)).toContain('120M SEPARATION')
-    expect(sortieContractLabelForSeed(127, 5, true)).toBe('PRECISION APPROACH')
-    expect(sortieContractDetailForSeed(127, 5, true)).toContain('LAND CENTERED')
+    expect(sortieContractLabelForSeed(127, 5, true)).toBe('CLEAN CIRCUIT')
+    expect(sortieContractDetailForSeed(127, 5, true)).toContain('CLEAR EVERY GATE')
     expect(sortieContractLabelForSeed(394, 5, true)).toBe('COMBO RUN')
     expect(sortieContractDetailForSeed(394, 5, true)).toContain('BUILD COMBO X3')
     expect(sortieContractLabelForSeed(463, 5, true)).toBe('NIGHT FLIGHT')
@@ -326,16 +326,12 @@ describe('sortie contracts', () => {
         tracker.recordLevelFlight(180, 5)
         tracker.recordLevelFlight(198, 5)
       }
-      const score = tracker.finish(
-        0,
-        1,
-        tracker.kind === 'approach' ? 500 : 0,
-      )
+      const score = tracker.finish(0, 1)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge', 'thermal-surf']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge', 'thermal-surf']))
   })
 
   it('turns sustained thermal lift into a bounded THERMAL SURF objective', () => {
@@ -767,46 +763,17 @@ describe('sortie contracts', () => {
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
   })
 
-  it('turns centered touchdown quality into a precision-approach contract', () => {
-    const tracker = new SortieContractTracker()
-    let approachSeed = -1
-    for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5, true)
-      if (tracker.kind === 'approach') {
-        approachSeed = seed
-        break
+  it('never assigns the retired runway-alignment contract to a gated run', () => {
+    for (const catalog of [false, true]) {
+      for (let seed = 0; seed < 4_096; seed += 1) {
+        const tracker = new SortieContractTracker()
+        tracker.reset(seed, 5, catalog)
+        expect(tracker.label).not.toBe('PRECISION APPROACH')
+        expect(tracker.detail).not.toContain('LAND')
+        expect(sortieContractLabelForSeed(seed, 5, catalog)).not.toBe('PRECISION APPROACH')
+        expect(sortieContractDetailForSeed(seed, 5, catalog)).not.toContain('LAND')
       }
     }
-    expect(approachSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(approachSeed, 5, true)
-    expect(tracker.label).toBe('PRECISION APPROACH')
-    expect(tracker.detail).toBe('LAND CENTERED AND ALIGNED')
-    expect(tracker.finish(99, 1, 359)).toBe(0)
-    expect(tracker.complete).toBe(false)
-    expect(tracker.progress).toBeCloseTo(359 / 360)
-    expect(tracker.finish(99, 1, 500)).toBe(MAX_CONTRACT_SCORE)
-    expect(tracker.complete).toBe(true)
-    expect(tracker.progress).toBe(1)
-  })
-
-  it('shows runway alignment forecast without completing PRECISION APPROACH early', () => {
-    const tracker = new SortieContractTracker()
-    let approachSeed = -1
-    for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5, true)
-      if (tracker.kind === 'approach') {
-        approachSeed = seed
-        break
-      }
-    }
-    expect(approachSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(approachSeed, 5, true)
-    tracker.recordApproachPreview(320)
-    expect(tracker.progress).toBeCloseTo(320 / 360)
-    expect(tracker.detail).toContain('PREVIEW 320')
-    expect(tracker.complete).toBe(false)
-    expect(tracker.finish(99, 1, 500)).toBe(MAX_CONTRACT_SCORE)
-    expect(tracker.complete).toBe(true)
   })
 
   it('accumulates only high-speed airborne time with the speed brake open', () => {

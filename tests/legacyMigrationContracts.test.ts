@@ -69,7 +69,6 @@ for(const course of COURSE_LIBRARY.filter(c=>c.seed!==null&&c.contractCatalog&&!
    }
    case 'speed-band':again(()=>tracker.recordSpeedBand(250,5,true));break
    case 'weather':again(()=>tracker.recordWeather(1,0,5,true));break
-   case 'approach':break
    case 'water':case 'water-skim':{
     let water=false
     for(let right=500;right<=2600;right+=100)for(let forward=-500;forward<=2600;forward+=100){const g=sample(right,forward);water||=g.height<g.waterLevel}

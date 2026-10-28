@@ -1256,12 +1256,6 @@ export class ChallengeRun {
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
   }
 
-  /** Record a cached runway-alignment forecast for PRECISION APPROACH. */
-  recordApproachPreview(score: number): void {
-    if (this.phase === 'complete' || this.phase === 'failed') return
-    this.contract.recordApproachPreview(score)
-  }
-
   /** Record one distinct rendered waterway family for WATERWAY TOUR. */
   recordWaterBody(body: string | undefined, airborne = true): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
@@ -1358,7 +1352,7 @@ export class ChallengeRun {
     const landingQuality = 0
     const landingScore = 0
     const deadstickScore = 0
-    this.contract.finish(elapsedSec, fuelFraction, approachScore)
+    this.contract.finish(elapsedSec, fuelFraction)
     const contractComplete = this.contract.enabled && this.contract.complete
     const history = this.readHistory()
     const previousRunStreak = history.runStreak ?? 0
