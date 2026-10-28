@@ -1,5 +1,5 @@
 import { buildPerfectLine } from '../world/PerfectLine'
-import { MAX_MISSION_GATES, MIN_MISSION_GATES, distributeMissionGates } from './MissionGates'
+import { MAX_MISSION_GATES, MIN_MISSION_GATES, bendRouteTowardValleys, distributeMissionGates } from './MissionGates'
 import { generateMission } from './MissionGenerator'
 import { getTerrainProfile, generatedThemeForProfile } from '../world/TerrainProfile'
 import {
@@ -420,7 +420,13 @@ export function buildMissionRoute(
     // Keep the seeded horizontal course and gate count, but place its vertical
     // line against the actual surface rather than arbitrary runway-relative heights.
     // The corridor and slope passes below raise this baseline wherever needed.
-    points = generateMission(getWorldSeed(), generatedTheme, safeProfile === 'orbit').course.map(point => {
+    const seeded = generateMission(getWorldSeed(), generatedTheme, safeProfile === 'orbit').course
+    // Moderate terrain bending (Daniel, Oct 27): gentle sideways nudges toward
+    // lower ground. Waterway keeps its river and lake gates where they are.
+    const bent = generatedTheme === 'waterway-run'
+      ? seeded
+      : bendRouteTowardValleys(seeded, safeSpawnX, safeSpawnZ, sampleTerrainSurfaceHeightFast)
+    points = bent.map(point => {
       const ground = sampleTerrainSurfaceHeightFast(point.x, point.z)
       return { ...point, y: Number.isFinite(ground) ? ground + ROUTE_CLEARANCE + 4 : point.y }
     })

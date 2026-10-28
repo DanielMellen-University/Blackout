@@ -124,7 +124,8 @@ it.each([42, 73, 808, 1337, 2026, 9001])('keeps a wide low valley corridor betwe
 })
 
 import { settlementAnchorCells, settlementForCell } from '../src/world/SettlementPlan'
-import { getOpsPad } from '../src/world/terrainSample'
+import { getOpsPad, sampleTerrainSurfaceHeightFast } from '../src/world/terrainSample'
+import { MAX_ROUTE_BEND_M } from '../src/systems/MissionGates'
 
 it('invalidates settlement and anchor caches when the same seed and pad change theme', () => {
   const desert = generateMission(42, 'desert-run'), valley = generateMission(42, 'mountain-valley-run')
@@ -143,18 +144,37 @@ it('invalidates settlement and anchor caches when the same seed and pad change t
   } finally { setTerrainProfile(null); clearOpsPad() }
 })
 
-it.each([42, 1337, 9001])('uses terrain-derived heights without changing seeded gate positions on seed %s', seed => {
+it.each([42, 1337, 9001])('uses terrain-derived heights and bends gates at most 160 m toward lower ground on seed %s', seed => {
   try {
+    let bentGates = 0
     for (const theme of MISSION_THEMES) {
       const spec = generateMission(seed, theme), pad = spec.landingRunway
       setWorldSeed(seed); setTerrainProfile(spec.terrain); setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
       const route = buildMissionRoute(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, spec.profile)
       expect(route).toHaveLength(spec.course.length)
       for (let i = 0; i < route.length; i++) {
-        expect(route[i]!.x).toBe(spec.course[i]!.x)
-        expect(route[i]!.z).toBe(spec.course[i]!.z)
+        const shift = Math.hypot(route[i]!.x - spec.course[i]!.x, route[i]!.z - spec.course[i]!.z)
+        // Gate 1, the two runway-axis gates and every Waterway gate stay seeded.
+        if (i === 0 || i >= route.length - 2 || theme === 'waterway-run') expect(shift).toBe(0)
+        expect(shift).toBeLessThanOrEqual(MAX_ROUTE_BEND_M + 1e-6)
+        if (shift > 0) {
+          bentGates++
+          const seeded = sampleTerrainSurfaceHeightFast(spec.course[i]!.x, spec.course[i]!.z)
+          expect(sampleTerrainSurfaceHeightFast(route[i]!.x, route[i]!.z)).toBeLessThan(seeded)
+        }
+      }
+      let x = spec.start.x, z = spec.start.z, hx = Math.sin(spec.start.yaw), hz = Math.cos(spec.start.yaw)
+      for (const [index, point] of route.entries()) {
+        const dx = point.x - x, dz = point.z - z, leg = Math.hypot(dx, dz)
+        if (index > 0) {
+          expect(leg).toBeGreaterThanOrEqual(800)
+          expect(leg).toBeLessThanOrEqual(2500)
+        }
+        expect(Math.acos(Math.min(1, (dx * hx + dz * hz) / leg)) * 180 / Math.PI).toBeLessThan(75)
+        hx = dx / leg; hz = dz / leg; x = point.x; z = point.z
       }
       expect(route.some((point, i) => Math.abs(point.y - spec.course[i]!.y) > 5)).toBe(true)
     }
+    expect(bentGates).toBeGreaterThan(0)
   } finally { setTerrainProfile(null); clearOpsPad() }
 })

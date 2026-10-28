@@ -44,3 +44,61 @@ export function distributeMissionGates(anchors: readonly Point[], count: number,
   }
   return result
 }
+
+/** Daniel, Oct 27 2026: terrain bending is moderate only. */
+export const MAX_ROUTE_BEND_M = 160
+const BEND_STEPS = [-1, -.5, 0, .5, 1] as const
+const BEND_TURN_LIMIT_DEG = 72
+/** Metres of ground saved per metre of bend before a gate leaves the line. */
+const BEND_STRAIGHT_BIAS = .05
+
+/** Nudge interior gates sideways, at most MAX_ROUTE_BEND_M from the seeded
+ * line, toward lower ground: gentle curves through valleys and saddles. Gate 1
+ * and the last two runway-axis gates stay put.
+ * Spacing stays 0.8 to 2.5 km and every turn, from the spawn heading on,
+ * stays under the 75 degree limit. Pure apart from the ground callback. */
+export function bendRouteTowardValleys<T extends Point>(
+  gates: readonly T[], spawnX: number, spawnZ: number,
+  ground: (x: number, z: number) => number,
+): T[] {
+  const out = gates.map(p => ({ ...p }))
+  const turn = (ax: number, az: number, bx: number, bz: number, cx: number, cz: number): number => {
+    const ux = bx - ax, uz = bz - az, vx = cx - bx, vz = cz - bz
+    const lu = Math.hypot(ux, uz), lv = Math.hypot(vx, vz)
+    if (lu < 1e-6 || lv < 1e-6) return 180
+    return Math.acos(Math.max(-1, Math.min(1, (ux * vx + uz * vz) / (lu * lv)))) * 180 / Math.PI
+  }
+  const at = (i: number): { x: number; z: number } => i < 0 ? { x: spawnX, z: spawnZ } : out[i]!
+  const fits = (i: number): boolean => {
+    for (const leg of [i, i + 1]) {
+      if (leg < 1 || leg >= out.length) continue
+      const length = Math.hypot(out[leg]!.x - out[leg - 1]!.x, out[leg]!.z - out[leg - 1]!.z)
+      if (length < MIN_GATE_SPACING_M || length > MAX_GATE_SPACING_M) return false
+    }
+    for (const j of [i - 1, i, i + 1]) {
+      if (j < 0 || j >= out.length - 1) continue
+      const a = at(j - 1), b = out[j]!, c = out[j + 1]!
+      if (turn(a.x, a.z, b.x, b.z, c.x, c.z) >= BEND_TURN_LIMIT_DEG) return false
+    }
+    return true
+  }
+  for (let i = 1; i < out.length - 2; i++) {
+    const before = out[i - 1]!, after = gates[i + 1]!
+    const dx = after.x - before.x, dz = after.z - before.z, length = Math.hypot(dx, dz)
+    if (length < 1e-6) continue
+    const nx = dz / length, nz = -dx / length
+    const base = gates[i]!
+    let best = { x: base.x, z: base.z }, bestCost = Number.POSITIVE_INFINITY
+    for (const step of BEND_STEPS) {
+      const x = base.x + nx * step * MAX_ROUTE_BEND_M, z = base.z + nz * step * MAX_ROUTE_BEND_M
+      const height = ground(x, z)
+      if (!Number.isFinite(height)) continue
+      out[i]!.x = x; out[i]!.z = z
+      if (!fits(i)) continue
+      const cost = height + Math.abs(step) * MAX_ROUTE_BEND_M * BEND_STRAIGHT_BIAS
+      if (cost < bestCost) { bestCost = cost; best = { x, z } }
+    }
+    out[i]!.x = best.x; out[i]!.z = best.z
+  }
+  return out
+}
