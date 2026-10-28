@@ -117,27 +117,27 @@ export const COURSE_LIBRARY = [
   },
   {
     id: 'desert-run', label: 'Desert run',
-    detail: 'A new seeded desert world. Race 15 to 100 low gates through dunes and dry washes, finishing at the final gate.',
+    detail: 'A new seeded desert world. Race 8 to 20 low gates through dunes and dry washes, finishing at the final gate.',
     seed: null, profile: 'generated-desert', weather: 'clear', timeOfDay: .46,
   },
   {
     id: 'mountain-valley-run', label: 'Mountain valley run',
-    detail: 'A new seeded giant valley between immense mountains. Thread 15 to 100 gates along the wide valley floor, finishing at the final gate.',
+    detail: 'A new seeded giant valley between immense mountains. Thread 8 to 20 gates along the wide valley floor, finishing at the final gate.',
     seed: null, profile: 'generated-valley', weather: 'clear', timeOfDay: .5,
   },
   {
     id: 'coastal-island-run', label: 'Coastal island run',
-    detail: 'Follow 15 to 100 gates along beaches and sea cliffs, cross open island channels, finishing at the final gate.',
+    detail: 'Follow 8 to 20 gates along beaches and sea cliffs, cross open island channels, finishing at the final gate.',
     seed: null, profile: 'generated-coastal', weather: 'clear', timeOfDay: .48,
   },
   {
     id: 'generated-volcanic-run', label: 'Volcanic run (generated)',
-    detail: 'Thread 15 to 100 gates between giant volcanic cones, dark lava fields and calderas, finishing at the final gate.',
+    detail: 'Thread 8 to 20 gates between giant volcanic cones, dark lava fields and calderas, finishing at the final gate.',
     seed: null, profile: 'generated-volcanic', weather: 'clear', timeOfDay: .44,
   },
   {
     id: 'waterway-run', label: 'Waterway',
-    detail: 'Fly 15 to 100 gates along inland river valleys and lake channels, finishing at the final gate.',
+    detail: 'Fly 8 to 20 gates along inland river valleys and lake channels, finishing at the final gate.',
     seed: null, profile: 'generated-waterway', weather: 'clear', timeOfDay: .48,
   },
   {
@@ -186,7 +186,7 @@ export const COURSE_LIBRARY = [
   {
     id: 'contour-circuit',
     label: 'Contour circuit',
-    detail: 'Follow 15 to 100 terrain-shaped gates, beat the clock, and finish at the final gate. Replay a seed to race your best.',
+    detail: 'Follow 8 to 20 terrain-shaped gates, beat the clock, and finish at the final gate. Replay a seed to race your best.',
     seed: 42,
     profile: 'contour',
     weather: 'clear',
@@ -254,7 +254,7 @@ export const COURSE_LIBRARY = [
   {
     id: 'volcanic-run',
     label: 'Volcanic run',
-    detail: 'Circuit of 15 to 100 gates between volcanic cones and dark lava fields',
+    detail: 'Circuit of 8 to 20 gates between volcanic cones and dark lava fields',
     seed: 8,
     profile: 'volcanic',
   },
@@ -366,7 +366,7 @@ export const COURSE_LIBRARY = [
   {
     id: 'saltflat-run',
     label: 'Desert basin run',
-    detail: 'Circuit of 15 to 100 gates over a dry desert basin',
+    detail: 'Circuit of 8 to 20 gates over a dry desert basin',
     seed: 21,
     profile: 'saltflat',
   },

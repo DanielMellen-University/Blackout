@@ -150,3 +150,8 @@ it('previews the actual replay/period count and avoids a five-gate time target f
     expect(courseGateCountPreview(course)).toBe(generateMission(course.seed!, course.terrainTheme!).goals.gates)
   }
 })
+
+it('describes generated courses with the 8 to 20 gate rule', () => {
+  for (const course of COURSE_LIBRARY) expect(course.detail).not.toContain('15 to 100')
+  expect(courseDefinitionForId('desert-run').detail).toContain('8 to 20')
+})
