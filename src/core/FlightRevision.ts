@@ -2,7 +2,10 @@
 export const FLIGHT_REVISION = 32
 export const FLIGHT_REVISION_TAG = `r${FLIGHT_REVISION}`
 
-export const SCORE_REVISION_TAG = 's1'
+/** s2 (11.025): gated runs scored under the 11.024 time allowance and terrain bonus. */
+export const SCORE_REVISION_TAG = 's2'
+/** Earlier score families, kept stored and shown read-only beside current records. */
+const PREVIOUS_SCORE_REVISIONS: readonly (readonly [tag: string, label: string])[] = [['s1', 'S1 SCORE']]
 
 /** A new score family, while retaining the existing physics and route identity. */
 export function scoreRecordId(id: string): string {
@@ -31,7 +34,11 @@ export function legacyFlightRecordLabel(storage: Pick<Storage, 'getItem'> | null
     // pre-b30 historical UI for both route generations.
     const oldRoute = previousScoreId.replace(/:q(1?[45][6-9])(?=:|$)/, (_, q: string) =>
       `:q${Number(q) - (Number(q) % 100 >= 56 ? 20 : 10)}`)
-    return [...(oldRoute !== previousScoreId ? [[oldRoute, 'PRE-B30']] : []), [base, 'PRE-B20'], [base.replace(/^(seed:-?\d+:[a-z-]+|random-world|free-flight)(?=:|$)/, '$1:r31'), 'B20 R31']].map(([id, label]) => {
+    const scored = currentId.includes(`:${SCORE_REVISION_TAG}`)
+    const previousScores = scored
+      ? PREVIOUS_SCORE_REVISIONS.map(([tag, label]) => [currentId.replace(`:${SCORE_REVISION_TAG}`, `:${tag}`), label])
+      : []
+    return [...previousScores, ...(oldRoute !== previousScoreId ? [[oldRoute, 'PRE-B30']] : []), [base, 'PRE-B20'], [base.replace(/^(seed:-?\d+:[a-z-]+|random-world|free-flight)(?=:|$)/, '$1:r31'), 'B20 R31']].map(([id, label]) => {
       const score = Number(storage?.getItem(`blackout.best.${id}`) ?? 0)
       const rawHistory = storage?.getItem(`blackout.history.${id}`)
       const history = rawHistory ? JSON.parse(rawHistory) as { completionCount?: number } : null

@@ -27,8 +27,9 @@ describe('gated flying bonus sampling', () => {
 it('scores time and the sampled bonuses while keeping a prior record untouched', async () => {
   const { courseSessionId } = await import('../src/systems/CourseLibrary')
   const id = courseSessionId('training-orbit', 1, 'orbit')
-  const oldId = id.replace(':s1', '')
-  const values = new Map([[`blackout.best.${oldId}`, '99999']])
+  const oldId = id.replace(':s2', '')
+  const s1Id = id.replace(':s2', ':s1')
+  const values = new Map([[`blackout.best.${oldId}`, '99999'], [`blackout.best.${s1Id}`, '88888']])
   const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value) } }
   const run = new ChallengeRun(storage)
   run.reset(id, 1, 'balanced', undefined, false, 10)
@@ -38,5 +39,6 @@ it('scores time and the sampled bonuses while keeping a prior record untouched',
   expect(result.totalScore).toBe(105_000)
   expect(result.flyingBonuses).toEqual({ lowScore: 10_000, terrainScore: 10_000, speedScore: 10_000 })
   expect(values.get(`blackout.best.${oldId}`)).toBe('99999')
+  expect(values.get(`blackout.best.${s1Id}`)).toBe('88888')
   expect(values.get(`blackout.best.${id}`)).toBe('105000')
 })
