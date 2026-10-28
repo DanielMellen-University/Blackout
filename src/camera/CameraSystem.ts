@@ -30,6 +30,7 @@ const _toCam = new Vector3()
 const _groundSample = new Vector3()
 const _aircraftDelta = new Vector3()
 const _headingQuat = new Quaternion()
+const _orbitTurn = new Vector3()
 const _bearingDelta = new Vector3()
 const _bearingInverse = new Quaternion()
 const _cameraRollInverse = new Quaternion()
@@ -142,7 +143,7 @@ export class CameraSystem {
 
   /** Orbit yaw relative to aircraft heading (chase) or world (orbit). */
   private yaw = 0
-  /** Aircraft heading captured when orbit opens, so yaw 0 starts behind the jet. */
+  /** Aircraft heading the orbit rig sits behind; followed every frame with no lag. */
   private orbitHeading = 0
   private pitch = 0.28
   private distance = 20
@@ -604,6 +605,23 @@ export class CameraSystem {
     } else if (cfg.yawOnly) {
       _offsetWorld.applyQuaternion(_headingQuat)
     } else if (this.mode === 'orbit') {
+      // Orbit stays locked directly behind the jet: follow its heading every
+      // frame with no lag. Carry the current lens and look point around the
+      // pivot by the heading change, so the follow lerp below still eases
+      // zoom and speed framing but never trails a turn.
+      const orbitTarget = this.aircraftHeading(aircraft)
+      if (!snap && dt > 0) {
+        const turn = deltaAngle(this.orbitHeading, orbitTarget)
+        if (turn !== 0) {
+          _orbitTurn.subVectors(this.camera.position, _pivot).applyAxisAngle(_Y_UP, turn)
+          this.camera.position.copy(_pivot).add(_orbitTurn)
+          if (this.lookReady) {
+            _orbitTurn.subVectors(this.lookSmoothed, _pivot).applyAxisAngle(_Y_UP, turn)
+            this.lookSmoothed.copy(_pivot).add(_orbitTurn)
+          }
+        }
+      }
+      this.orbitHeading = orbitTarget
       _offsetWorld.applyAxisAngle(_Y_UP, this.orbitHeading)
     }
     // Orbit: leave offset in world spherical space around the pivot

@@ -108,6 +108,45 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
+  it('keeps orbit locked directly behind and chase rigid at every zoom through an A/D turn', () => {
+    const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() }
+    vi.stubGlobal('window', target)
+    const fly = (mode: 'chase' | 'orbit', distance?: number) => {
+      const cameras = new CameraSystem({ ...target, style: {} } as unknown as HTMLCanvasElement)
+      const aircraft = new Aircraft()
+      try {
+        aircraft.reset({ x: 0, y: 3000, z: 0, yaw: 0 })
+        aircraft.controls.gearDown = false; aircraft.controls.throttle = 0.8
+        aircraft.velocity.copy(new Vector3(0, 0, 1).applyQuaternion(aircraft.orientation)).multiplyScalar(180)
+        aircraft.snapDisplay()
+        cameras.setMode(mode, aircraft); cameras.update(aircraft, 1 / 60)
+        if (distance) (cameras as unknown as { distance: number }).distance = distance
+        let worstBearing = 0
+        let worstUp = 0
+        for (let f = 1; f <= 300; f++) {
+          const t = f / 60
+          aircraft.capturePrevious()
+          aircraft.controls.yaw = t > .5 && t <= 2 ? 1 : t > 2 && t <= 3.5 ? -1 : 0
+          aircraft.step(1 / 60); aircraft.present(1); cameras.update(aircraft, 1 / 60)
+          const back = new Vector3(0, 0, -1).applyQuaternion(aircraft.displayOrientation).setY(0).normalize()
+          const toCam = cameras.camera.position.clone().sub(aircraft.displayPosition).setY(0).normalize()
+          worstBearing = Math.max(worstBearing, Math.abs(Math.atan2(back.x * toCam.z - back.z * toCam.x, back.dot(toCam))))
+          if (mode === 'chase') worstUp = Math.max(worstUp, cameras.camera.up.distanceTo(new Vector3(0, 1, 0).applyQuaternion(aircraft.displayOrientation)))
+          else worstUp = Math.max(worstUp, Math.abs(cameras.camera.up.y - 1))
+        }
+        return { worstBearing, worstUp }
+      } finally { cameras.dispose(); aircraft.dispose() }
+    }
+    for (const distance of [undefined, 19, 24]) {
+      const chase = fly('chase', distance)
+      expect(chase.worstBearing).toBeLessThan(1e-3)
+      expect(chase.worstUp).toBe(0)
+    }
+    const orbit = fly('orbit')
+    expect(orbit.worstBearing).toBeLessThan(1e-3)
+    expect(orbit.worstUp).toBe(0)
+  })
+
   it('opens behind and a bit above the jet after a cockpit toggle', () => {
     const target = {
       addEventListener: vi.fn(),
