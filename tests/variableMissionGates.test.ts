@@ -155,3 +155,7 @@ it('describes generated courses with the 8 to 20 gate rule', () => {
   for (const course of COURSE_LIBRARY) expect(course.detail).not.toContain('15 to 100')
   expect(courseDefinitionForId('desert-run').detail).toContain('8 to 20')
 })
+
+it('describes Training orbit as gate practice now that runs finish in the air', () => {
+  expect(courseDefinitionForId('training-orbit').detail).toBe('Gentle circuit and gate practice')
+})

@@ -177,7 +177,7 @@ export const COURSE_LIBRARY = [
   {
     id: 'training-orbit',
     label: 'Training orbit',
-    detail: 'Gentle circuit and approach practice',
+    detail: 'Gentle circuit and gate practice',
     seed: 1,
     profile: 'orbit',
     weather: 'clear',
