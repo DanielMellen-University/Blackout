@@ -76,7 +76,7 @@ it.each([42, 73, 808])('flies the desert recipe through the existing mission and
     expect(mission.routeProfile).toBe(spec.profile)
     expect(mission.totalGates).toBe(spec.goals.gates)
     expect(mission.routeFallbackUsed).toBe(false)
-    expect(mission.timeAllowanceSec).toBeGreaterThan(80)
+    expect(mission.timeAllowanceSec).toBeGreaterThan(55)
     const replay = resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed)
     const record = courseRunId(replay)
     expect(record).toBe(`seed:${seed}:generated-desert:r32:l33:q56:s1`)

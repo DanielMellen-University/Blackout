@@ -139,6 +139,12 @@ describe('r9 proof flights: every theme, airborne start to airborne finish', () 
         expect(value).toBeGreaterThanOrEqual(0); expect(value).toBeLessThanOrEqual(10_000)
       }
       expect(bonus.lowScore + bonus.terrainScore + bonus.speedScore).toBeGreaterThan(0)
+      // 11.023: the allowance is the gate line at 160 m/s. The proof pilot flies
+      // it at about 134 to 141 m/s, so it loses time points; full time needs nitro.
+      expect(result.timeAllowanceSec).toBeGreaterThan(0)
+      expect(flight.elapsed).toBeGreaterThan(result.timeAllowanceSec!)
+      expect(result.timeScore).toBeLessThan(75_000)
+      expect(result.timeScore).toBeGreaterThan(65_000)
       const raw = result.timeScore + bonus.lowScore + bonus.terrainScore + bonus.speedScore
       expect(result.totalScore).toBeGreaterThan(0); expect(result.totalScore).toBeLessThanOrEqual(raw)
       expect(result.medal).toBeTruthy()

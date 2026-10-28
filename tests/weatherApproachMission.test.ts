@@ -39,7 +39,7 @@ describe('Weather approach', () => {
       mission.start(x,y,z,pad.yaw,'weather','steady')
       expect(mission.routeFallbackUsed).toBe(false)
       expect(mission.routeProfile).toBe('weather')
-      expect(mission.timeAllowanceSec).toBeGreaterThan(80)
+      expect(mission.timeAllowanceSec).toBeGreaterThan(30)
       mission.dispose()
     } finally { clearOpsPad() }
   }, 30_000)

@@ -37,7 +37,7 @@ describe('Contour circuit', () => {
       expect(mission.routeProfile).toBe('contour')
       expect(mission.totalGates).toBe(15)
       expect(mission.routeFallbackUsed).toBe(false)
-      expect(mission.timeAllowanceSec).toBeGreaterThan(45)
+      expect(mission.timeAllowanceSec).toBeGreaterThan(20)
       mission.dispose()
     } finally {clearOpsPad()}
   },30_000)

@@ -49,6 +49,8 @@ interface Gate {
 }
 
 const AUTHORED_ANCHOR_COUNT = 5
+/** Gate-line pace that earns the full time score (11.023). */
+const TIME_ALLOWANCE_SPEED_MPS = 160
 const GATE_RADIUS = 38
 const GATE_SIZE_SCALE = 1.5
 const ROUTE_RADIUS = 980
@@ -1285,11 +1287,11 @@ export class MissionSystem {
     const route = resolution.route
     const summary = resolution.summary
     const last = route.at(-1)
-    // Cruise at 150 m/s plus a 45-second departure/approach allowance.
+    // Runs start in the air lined up on gate 1 and finish at the last gate,
+    // so the allowance covers gate 1 to the last gate at
+    // TIME_ALLOWANCE_SPEED_MPS, with no departure or return leg.
     // This is scoring only; the route, gate pool and flight clock stay unchanged.
-    this.timeAllowanceSec = last ? 45 + (summary.lengthMeters + Math.hypot(
-      last.x - safeSpawnX, last.y - safeSpawnY, last.z - safeSpawnZ,
-    )) / 150 : 0
+    this.timeAllowanceSec = last ? gateLineLength(route) / TIME_ALLOWANCE_SPEED_MPS : 0
     const validation = resolution.validation
     if (!validation.valid) {
       this.status = 'idle'
@@ -1725,4 +1727,14 @@ export function gateBeaconDistanceOpacitySquared(distanceSquared: number): numbe
 function clamp01(value: number): number {
   if (!Number.isFinite(value)) return 0
   return value < 0 ? 0 : value > 1 ? 1 : value
+}
+
+/** Distance along the gates from gate 1 to the last gate. */
+function gateLineLength(route: readonly { x: number; y: number; z: number }[]): number {
+  let length = 0
+  for (let i = 1; i < route.length; i++) {
+    const a = route[i - 1]!, b = route[i]!
+    length += Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z)
+  }
+  return length
 }
