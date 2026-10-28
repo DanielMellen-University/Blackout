@@ -1,6 +1,6 @@
 # Blackout
 
-Browser arcade flight game. Pilot an F-35, take off and fly a gate run to an airborne finish. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
+Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
 Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.020**. Previous roadmap chunk: **11.019**.
 

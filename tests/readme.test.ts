@@ -13,6 +13,7 @@ describe('README pitch', () => {
     expect(readme).toContain('from launch until the final gate or a crash')
     expect(readme).toContain('Pass the last gate to finish and bank your score in the air')
     expect(readme).not.toContain('land or crash')
+    expect(readme).toContain('gate runs that start and finish in the air, or take off and land in Free flight')
     expect(readme).toMatch(/retry the same course/i)
     expect(readme.split('\n').length).toBeLessThan(80)
     expect(readme).not.toMatch(/\bsorties?\b/i)
@@ -31,6 +32,8 @@ describe('current mission documentation', () => {
     }
     const overview = readFileSync(new URL('../docs/PROJECT_OVERVIEW.md', import.meta.url), 'utf8')
     expect(overview).toContain('retrying the same course starts another mission')
+    expect(overview).toContain('from launch until the final gate or a crash')
+    expect(overview).not.toContain('A landing scores the run')
     expect(overview).not.toContain('Touch-capable browsers get a pointer-captured flight deck')
   })
 })
