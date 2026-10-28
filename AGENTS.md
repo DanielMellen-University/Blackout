@@ -15,6 +15,7 @@
 - Nitro has no speed or acceleration cap while active (5 s drain, 20 s refill, gate top-ups). Speed decays naturally after release. Do not reintroduce a nitro cap.
 - Gates are 50% larger (GATE_SIZE_SCALE 1.5 for ring, tube and trigger radius). Keep visual and trigger sizes scaled together.
 - The featured top row is exactly Free flight, Training orbit and Daily challenge. Do not touch UI unless the user asks.
+- LOCKED by Daniel Oct 28 2026: do not add/remove/rename/reorder featured cards unless Daniel explicitly asks. The Flight Plan top row shows only Free flight, Training orbit and Daily challenge, in that order (FEATURED_MISSION_IDS in src/ui/MissionPickerLayout.ts, guarded by tests/missionPickerLayout.test.ts). Other missions such as Contour circuit and Weather approach stay in the course grid.
 - No landings anywhere (Oct 24 2026). No mission, mode, run, contract or medal may require or score a landing. Runs finish in the air. Existing landing code is being removed in approved steps; do not add new landing requirements.
 - Mission overhaul direction is A+C (Oct 24 2026): 8 to 20 gates, 0.8 to 2.5 km apart, routed through valleys and over ridges with real height changes, plus scored flying (bonuses for flying low, close to terrain and carrying speed). This replaces the Oct 22 rule of 15 to 100 gates. Work it only in approved daily slices; see docs/gameplay/mission-overhaul.md.
 - Every new feature, mission type or roadmap item needs the user's approval first. Fixes to shipped features within approved scope are fine.

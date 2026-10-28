@@ -1,5 +1,9 @@
 import type { CourseId } from '../systems/CourseLibrary'
 
+/**
+ * Flight Plan featured top row: exactly Free flight, Training orbit, Daily challenge.
+ * LOCKED by Daniel Oct 28 2026: do not add/remove/rename/reorder featured cards unless Daniel explicitly asks.
+ */
 export const FEATURED_MISSION_IDS = ['free-flight', 'training-orbit', 'daily-ops'] as const
 export const HIDDEN_MISSION_IDS: readonly string[] = ['weekly-ops', 'monthly-ops']
 

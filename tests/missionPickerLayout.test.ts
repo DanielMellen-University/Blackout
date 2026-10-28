@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { browsingMissionId, dailyChallengeCountdown, featuredMissionNavigationIndex as move } from '../src/ui/MissionPickerLayout'
+import { browsingMissionId, dailyChallengeCountdown, FEATURED_MISSION_IDS, featuredMissionNavigationIndex as move } from '../src/ui/MissionPickerLayout'
 
 describe('mission picker layout', () => {
+  // LOCKED by Daniel Oct 28 2026: do not add/remove/rename/reorder featured cards unless Daniel explicitly asks.
+  it('keeps the Flight Plan featured row exactly Free flight, Training orbit, Daily challenge', () => {
+    expect([...FEATURED_MISSION_IDS]).toEqual(['free-flight', 'training-orbit', 'daily-ops'])
+    expect(FEATURED_MISSION_IDS).not.toContain('contour-circuit')
+    expect(FEATURED_MISSION_IDS).not.toContain('weather-approach')
+  })
+
   it('repairs only ordinary saved legacy selections', () => {
     expect(browsingMissionId('weekly-ops')).toBe('training-orbit')
     expect(browsingMissionId('monthly-ops')).toBe('training-orbit')
