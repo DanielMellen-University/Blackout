@@ -30,8 +30,6 @@ const _toCam = new Vector3()
 const _groundSample = new Vector3()
 const _aircraftDelta = new Vector3()
 const _headingQuat = new Quaternion()
-const _farYawFix = new Quaternion()
-const _farRigidQuat = new Quaternion()
 const _bearingDelta = new Vector3()
 const _bearingInverse = new Quaternion()
 const _cameraRollInverse = new Quaternion()
@@ -106,12 +104,6 @@ const MAX_EXTERNAL_BANK = 0.62
 const EXTERNAL_BANK_STIFFNESS = 8
 /** Recover an occluded chase rig gently after a ridge/building clears. */
 const OCCLUSION_RECOVERY_STIFFNESS = 6
-/**
- * Wheel-zoomed-out chase only: ease the rig's heading behind A/D yaw instead
- * of locking it rigidly. Blends in from the default distance (no easing, the
- * middle view is unchanged) to full easing at the furthest wheel zoom.
- */
-const FAR_CHASE_YAW_STIFFNESS = 4
 /** Keep depth precision focused on the streamed world and cloud envelope. */
 const CAMERA_FAR_MARGIN = CHUNK_SIZE * (FOG_MARGIN_CHUNKS + 2)
 /** Keep the default camera aligned with the full High-quality fog envelope. */
@@ -152,8 +144,6 @@ export class CameraSystem {
   private yaw = 0
   /** Aircraft heading captured when orbit opens, so yaw 0 starts behind the jet. */
   private orbitHeading = 0
-  /** Eased chase heading used only while the chase view is wheel-zoomed out. */
-  private farChaseHeading = 0
   private pitch = 0.28
   private distance = 20
 
@@ -532,27 +522,6 @@ export class CameraSystem {
   }
 
   /**
-   * Rigid chase orientation. At the default distance (and closer) this is the
-   * airframe orientation itself. Zoomed out past it, the heading part eases
-   * toward the jet's heading (frame-rate independent), so A/D yaw swings the
-   * long rig smoothly; pitch and Q/E roll stay rigid.
-   */
-  private farChaseOrientation(aircraft: Aircraft, cfg: ModeConfig, dt: number, snap: boolean): Quaternion {
-    const span = cfg.maxDist - cfg.defaultDistance
-    const weight = span > 0 ? MathUtils.clamp((this.distance - cfg.defaultDistance) / span, 0, 1) : 0
-    const heading = headingFromOrientation(aircraft.displayOrientation, this.farChaseHeading)
-    if (weight <= 0 || snap || dt <= 0) {
-      this.farChaseHeading = heading
-      return aircraft.displayOrientation
-    }
-    this.farChaseHeading = lerpAngle(this.farChaseHeading, heading, 1 - Math.exp(-FAR_CHASE_YAW_STIFFNESS * dt))
-    const lag = deltaAngle(heading, this.farChaseHeading) * weight
-    if (lag === 0) return aircraft.displayOrientation
-    _farYawFix.setFromAxisAngle(_Y_UP, lag)
-    return _farRigidQuat.multiplyQuaternions(_farYawFix, aircraft.displayOrientation)
-  }
-
-  /**
    * Aircraft heading around world Y from body +Z forward.
    */
   private aircraftHeading(aircraft: Aircraft): number {
@@ -629,10 +598,9 @@ export class CameraSystem {
     // pitch and yaw carry the whole rig, so there is no stabilizer lag or
     // bank cap fighting the input (the old source of the jerk).
     const rigid = cfg.yawOnly === true && finiteQuaternion(aircraft.displayOrientation)
-    const rigidQuat = rigid ? this.farChaseOrientation(aircraft, cfg, dt, snap) : aircraft.displayOrientation
     if (rigid) {
-      _offsetWorld.applyQuaternion(rigidQuat)
-      this.camera.up.copy(_Y_UP).applyQuaternion(rigidQuat)
+      _offsetWorld.applyQuaternion(aircraft.displayOrientation)
+      this.camera.up.copy(_Y_UP).applyQuaternion(aircraft.displayOrientation)
     } else if (cfg.yawOnly) {
       _offsetWorld.applyQuaternion(_headingQuat)
     } else if (this.mode === 'orbit') {
@@ -669,7 +637,7 @@ export class CameraSystem {
     if (cfg.yawOnly) {
       _look.copy(cfg.lookOffset)
       _look.z = MathUtils.lerp(_look.z, flightConfig.boostChaseLookOffsetZ, this.boostFraming)
-      _look.applyQuaternion(rigid ? rigidQuat : _headingQuat)
+      _look.applyQuaternion(rigid ? aircraft.displayOrientation : _headingQuat)
     } else {
       _look.copy(cfg.lookOffset)
     }
