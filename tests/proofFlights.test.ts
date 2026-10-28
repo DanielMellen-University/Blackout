@@ -6,8 +6,8 @@ import { refillNitroAtGate } from '../src/aircraft/NitroSystem'
 import { CollisionSystem } from '../src/systems/Collision'
 import { flightStart } from '../src/systems/AirborneStart'
 import { ChallengeRun } from '../src/systems/ChallengeRun'
-import { COURSE_LIBRARY, courseDefinitionForId, resolveCourseDefinition, type CourseDefinition } from '../src/systems/CourseLibrary'
-import { generateLegacyMission } from '../src/systems/LegacyMissionGenerator'
+import { DAILY_OPS_COURSE_ID, courseDefinitionForId, dailyOpsDayKey, resolveCourseDefinition, type CourseDefinition } from '../src/systems/CourseLibrary'
+import { generateLegacyMission, generateLegacyTerrain } from '../src/systems/LegacyMissionGenerator'
 import { MissionSystem } from '../src/systems/Mission'
 import { generateMission } from '../src/systems/MissionGenerator'
 import { PERFECT_LINE_SPEED } from '../src/world/PerfectLine'
@@ -38,6 +38,9 @@ export interface ProofFlight {
 }
 
 function setup(course: CourseDefinition, seed: number) {
+  // Resolved catalog and Ops courses carry their terrain theme, as World.reseed uses it.
+  if (course.terrainTheme) return { spec: generateLegacyTerrain(seed, course.terrainTheme), modifier: course.missionModifier,
+    contractSeed: course.contractSeed ?? seed, profile: course.profile! }
   const theme = generatedThemeForProfile(course.profile)
   if (theme) return { spec: generateMission(seed, theme), modifier: undefined, contractSeed: seed, profile: course.profile! }
   const adapted = generateLegacyMission(course, seed)!
@@ -141,4 +144,27 @@ describe('r9 proof flights: every theme, airborne start to airborne finish', () 
       expect(result.medal).toBeTruthy()
     }, 120_000)
   }
+})
+
+describe('r9 proof: Daily challenge is the same flight for everyone on a UTC day', () => {
+  const daily = courseDefinitionForId(DAILY_OPS_COURSE_ID)
+  it.each([Date.UTC(2026, 9, 27), Date.UTC(2026, 10, 6), Date.UTC(2027, 0, 1)])('day %s resolves and flies identically', dayStart => {
+    const morning = resolveCourseDefinition(daily, dayStart + 60_000)
+    const evening = resolveCourseDefinition(daily, dayStart + 23 * 3_600_000)
+    expect(evening).toEqual(morning)
+    expect(morning.seed).not.toBeNull()
+    expect(morning.terrainTheme).toBeTruthy()
+    expect(dailyOpsDayKey(dayStart + 60_000)).toBe(dailyOpsDayKey(dayStart + 23 * 3_600_000))
+    const first = flyProof(morning, morning.seed!), second = flyProof(evening, evening.seed!)
+    expect(first.complete).toBe(true)
+    expect(first.crashed).toBeNull()
+    expect(first.everOnGround).toBe(false)
+    expect(first.passes).toEqual([...Array(first.gates).keys()])
+    expect(second.elapsed).toBe(first.elapsed)
+    expect(second.passes).toEqual(first.passes)
+    expect(second.result!.totalScore).toBe(first.result!.totalScore)
+    expect(second.result!.flyingBonuses).toEqual(first.result!.flyingBonuses)
+    const nextDay = resolveCourseDefinition(daily, dayStart + 24 * 3_600_000 + 60_000)
+    expect(nextDay.seed).not.toBe(morning.seed)
+  }, 120_000)
 })
