@@ -2649,7 +2649,7 @@ export async function boot(): Promise<void> {
     prevAfterburnerHeatLockout = afterburnerHeatLocked
 
     const fuelAvailable = aircraft.engineState.fuelAvailable
-    const fuelOutBanner = engineFuelAvailabilityBanner(prevFuelAvailable, fuelAvailable)
+    const fuelOutBanner = engineFuelAvailabilityBanner(prevFuelAvailable, fuelAvailable, activeSortie.course.profile === 'free')
     if (
       fuelOutBanner &&
       simLive &&

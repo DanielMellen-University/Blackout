@@ -1033,12 +1033,15 @@ export function stabilityAssistLabel(active: unknown): string {
   return active === true ? 'TRIM ON' : 'TRIM OFF'
 }
 
-/** Announce the single transition from powered flight to a fuel-out glide. */
+/** Announce the single transition from powered flight to a fuel-out glide.
+ * Only Free flight can land, so gated runs drop the glide-to-base cue. */
 export function engineFuelAvailabilityBanner(
   previousAvailable: boolean,
   available: boolean,
+  glideHome = true,
 ): string | null {
-  return previousAvailable && !available ? 'ENGINE OUT / GLIDE TO BASE' : null
+  if (!previousAvailable || available) return null
+  return glideHome ? 'ENGINE OUT / GLIDE TO BASE' : 'ENGINE OUT'
 }
 
 export class HUD {

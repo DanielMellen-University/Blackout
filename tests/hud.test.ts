@@ -485,6 +485,9 @@ describe('HUD value formatting', () => {
     expect(engineFuelAvailabilityBanner(false, false)).toBeNull()
     expect(engineFuelAvailabilityBanner(false, true)).toBeNull()
     expect(engineFuelAvailabilityBanner(true, true)).toBeNull()
+    // Gated runs finish in the air, so only Free flight is told to glide home.
+    expect(engineFuelAvailabilityBanner(true, false, false)).toBe('ENGINE OUT')
+    expect(engineFuelAvailabilityBanner(false, false, false)).toBeNull()
   })
 
   it('announces only worsening return-fuel pressure', () => {
