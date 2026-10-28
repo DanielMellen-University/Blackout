@@ -90,6 +90,21 @@ describe('r9 proof: Free flight keeps its runway start, takeoff and landing', ()
     } finally { aircraft.dispose(); mission.dispose() }
   })
 
+  // A wider sweep guards against regressions without pinning every seed.
+  // Misses are not crashes: a few seeds touch down away from the pad, and a
+  // touchdown sinking faster than about 1.2 m/s can resolve as a rollout
+  // without LANDED (see docs/reviews/proof-r9/findings.md).
+  it('lands most of 16 more seeds and never crashes', () => {
+    const seeds = [1, 2, 3, 5, 11, 17, 23, 31, 64, 101, 256, 777, 1234, 4242, 31415, 65535]
+    const flights = seeds.map(seed => ({ seed, ...freeFlight(seed) }))
+    for (const flight of flights) {
+      expect(flight.startOnGround).toBe(true)
+      expect(flight.crashed).toBeNull()
+      expect(flight.finish).toBeNull()
+    }
+    expect(flights.filter(f => f.banners.length === 1 && f.stopped).length).toBeGreaterThanOrEqual(12)
+  }, 240_000)
+
   it('keeps the LANDED banner wired to touchdown in the game loop', () => {
     expect(MAIN).toContain("const freeFlightCourse = !perfectLineActive && activeSortie.course.profile === 'free'")
     expect(MAIN).toMatch(/const announce = announcesLanding\(freeFlightCourse, touch, wasAirborne, aircraft\.status\)\s*aircraft\.markLanded\(\)\s*wasAirborne = false\s*if \(announce\) \{\s*audio\.playCue\('landed'\)\s*showBanner\('LANDED', 2800, 'success'\)/)
