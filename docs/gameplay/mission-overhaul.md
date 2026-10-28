@@ -4,7 +4,7 @@ Status: direction **A+C picked** by Daniel on Oct 24 2026 (wide lines plus score
 
 ## Current mission rules (11.022)
 
-- **Gates:** generated gated runs have 8 to 20 gates with centres 0.8 to 2.5 km apart and every turn under 75°. Interior gates bend at most 160 m toward lower ground. Constants are in [MissionGates.ts](../../src/systems/MissionGates.ts) and placement is in [MissionGenerator.ts](../../src/systems/MissionGenerator.ts). Waterway keeps one gate on the river and one over the lake.
+- **Gates:** generated gated runs have 8 to 20 gates with centres 0.8 to 2.5 km apart and every turn under 75°. Interior gates bend at most 160 m toward lower ground. Constants are in [MissionGates.ts](../../src/systems/MissionGates.ts) and placement is in [MissionGenerator.ts](../../src/systems/MissionGenerator.ts). Training orbit prefers 11 gates and produces 11 to 14 on the 2,000-seed regression sample. Waterway keeps one gate on the river and one over the lake.
 - **Start and finish:** gated and scored runs start in the air lined up on gate 1 ([AirborneStart.ts](../../src/systems/AirborneStart.ts)) and finish in the air at the last gate. There is no return-and-land step, no landing score and no LANDED banner.
 - **Free flight:** unchanged. It starts on the runway, and you can take off, land (with the LANDED banner) and take off again.
 - **Proof:** [tests/proofFlights.test.ts](../../tests/proofFlights.test.ts) flies every theme, [tests/proofRoutes.test.ts](../../tests/proofRoutes.test.ts) checks spacing, turns, width and bending over 60 seeds per theme, and [tests/proofFreeFlight.test.ts](../../tests/proofFreeFlight.test.ts) checks the Free flight circuit and landing. The results are in [r9 findings](../reviews/proof-r9/findings.md).

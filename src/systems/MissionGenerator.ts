@@ -86,9 +86,10 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme, tra
   // the 75 degree turn limit. A seeded preference picks the count; the nearest
   // count that fits the loop wins. Narrow loops may widen past their seeded
   // bounds when no count fits (Waterway keeps its river and lake gates).
+  const countRoll = random() // Keep the seeded stream unchanged for Training orbit.
   const preferredGates = training
-    ? MIN_GENERATED_GATES + Math.floor(random() * 3)
-    : MIN_GENERATED_GATES + Math.floor(random() * (MAX_GENERATED_GATES - MIN_GENERATED_GATES + 1))
+    ? 11
+    : MIN_GENERATED_GATES + Math.floor(countRoll * (MAX_GENERATED_GATES - MIN_GENERATED_GATES + 1))
   // Route-only revisions: +10 for b30, +10 more for the M0 spacing. Keep
   // landscape generation and b20 physics unchanged.
   terrain.routeRevision += 20

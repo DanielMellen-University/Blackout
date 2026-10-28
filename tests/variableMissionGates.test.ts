@@ -159,3 +159,15 @@ it('describes generated courses with the 8 to 20 gate rule', () => {
 it('describes Training orbit as gate practice now that runs finish in the air', () => {
   expect(courseDefinitionForId('training-orbit').detail).toBe('Gentle circuit and gate practice')
 })
+
+it('keeps Training orbit routes unchanged while preferring 11 gates', async () => {
+  const { createHash } = await import('node:crypto')
+  const routes = Array.from({ length: 2000 }, (_, i) => {
+    const spec = generateMission(i * 101 + 11, 'desert-run', true)
+    expect(spec.goals.gates).toBeGreaterThanOrEqual(11)
+    expect(spec.goals.gates).toBeLessThanOrEqual(14)
+    return spec.course
+  })
+  expect(createHash('sha256').update(JSON.stringify(routes)).digest('hex'))
+    .toBe('1b27b457d91744b8e9535f90346ce1d90c0101ecef0bff2fbf720e33391c3725')
+}, 120_000)
