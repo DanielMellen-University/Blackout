@@ -1,5 +1,7 @@
 > Superseded by [fun-exploration.md](fun-exploration.md), b31 / 10.998. Daniel rejected this audit as a plan for fun. Retained for history; its proposals are not the current direction or implementation approval.
 
+> **Current rules (Oct 27 2026, 11.022).** Gated and scored runs use 8 to 20 gates spaced 0.8 to 2.5 km apart, with a 75° turn limit ([MissionGates.ts](../../src/systems/MissionGates.ts), [MissionGenerator.ts](../../src/systems/MissionGenerator.ts)). They start in the air lined up on gate 1 and finish in the air at the last gate. There is no return-and-land step and no landing score. Free flight is unchanged: it starts on the runway, and you can take off, land and take off again. See the [mission overhaul roadmap](mission-overhaul.md). The 15 to 100 gate rule, home-runway return, landing completion and landing scoring described below are **superseded**. They are kept as the October 22 reasoning.
+
 # Gameplay overhaul scope, 10.994
 
 ## 1. Status and goals
@@ -8,7 +10,7 @@ Plan only. Daniel approved this docs-only scope on October 22, 2026 via CoS, b29
 
 Goals proposed for approval:
 
-- Make the existing loop clear: choose a mission, understand its goal, take off, fly 15 to 100 ordered gates, return, land, review the result, and choose a meaningful retry or next mission.
+- Make the existing loop clear: choose a mission, understand its goal, take off, fly 15 to 100 ordered gates, return, land, review the result, and choose a meaningful retry or next mission. *(Superseded: runs now start and finish in the air with 8 to 20 gates.)*
 - Make progression understandable and compatible with generated worlds and bounded existing records.
 - Explain what earns score and medals, including the difference between a gate split and a complete-circuit time.
 - Give briefing, flight and debrief consistent priorities without adding mission types, themes or systems.
@@ -65,7 +67,7 @@ Recommendation: retain weights, medal thresholds, bonus rules and the ceiling fo
 Each item is a candidate design direction requiring separate Daniel approval:
 
 - Briefing: prioritize the existing primary objective, conditions, takeoff controls and one current target. Keep launch explicit and preserve keyboard/gamepad access.
-- Flight: use Daniel's approved 15 to 100 ordered gates (October 22, 2026), nitro refills, home-runway return and landing completion. Use existing navigation, instruments and guidance. Preserve Free flight's open, unscored loop.
+- Flight: use Daniel's approved 15 to 100 ordered gates (October 22, 2026), nitro refills, home-runway return and landing completion. Use existing navigation, instruments and guidance. Preserve Free flight's open, unscored loop. *(Superseded Oct 24 to 27 2026: 8 to 20 gates 0.8 to 2.5 km apart, airborne start and finish, no landing. Free flight's loop is still preserved.)*
 - Debrief: prioritize completion/failure, medal and score comparison, landing feedback, then the current next target; keep detailed existing metrics available. Retain retry and choose-mission actions.
 - Ops rotation: retain captured active/retry identities, deterministic shared periods and historical replay. Resolve countdown wording versus reset semantics before touching either.
 - Records: retain the distinction between best score, fastest complete circuit, gate splits and best-score ghost. Preserve current family bounds and historical compatibility.
