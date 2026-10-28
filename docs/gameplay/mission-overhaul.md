@@ -34,9 +34,11 @@ Generate 8–20 gates on the existing seeded stadium routes, with consecutive ga
 
 Acceptance: verify the count and spacing on generated and migrated routes across themes and seeds, including the final route after terrain clearance; check route clearance and flyability, and capture and inspect a gated run. Verify Free flight still starts on the runway and can land. The open runway-alignment contract question in landing-removal step 6.4 remains unchanged.
 
-**Status: partial; no generator change shipped.** A bounded search through 161 arc-length samples per existing stadium, with 805–2,300 m horizontal legs and turns below 74°, failed to find a route for 72 of 500 theme/seed cases. It is a discrete search, not a proof that no placement exists. A trial widening narrow loops to 1,700 m found placements in 25,000 theme/seed cases, but exceeded the original width for some seeds. Sparse Waterway placements also missed the river or lake in 11 of 36 checked seeds. A later search requiring the last two gates to stay on the runway axis found placements for 2,500 theme/seed cases; the combined implementation has not passed the full checks.
+**Status: done in 11.020.** Daniel, Oct 27: narrow routes may go wider than their seeded bounds. Each route tries its seeded loop, then rounder outbound arcs, then widens in 50 m steps until 8 to 20 gates fit 0.8 to 2.5 km apart with every turn under 70° in the generator (75° limit). Waterway instead pins one gate on the river crossing and one near the lake centre. The last two gates stay on the runway axis. 0 of 500 theme/seed cases lack a placement, all 72 migrated missions pass the geometry audit and all 36 Waterway checks keep river and lake. Route revision +10 keeps earlier records and ghosts separate.
 
-**NEEDS DANIEL:** May narrow seeded routes extend beyond their original width to support the 800 m minimum spacing while retaining the 75° turn limit, with Waterway placements adjusted to retain both river and lake? Alternatively, retain each seed's original bounds and investigate a different placement method; the sampled search did not establish a solution. Course identities and the 75° check remain unchanged. This does not resolve the separate step 6.4 runway-alignment contract question.
+Earlier analysis (11.015): A bounded search through 161 arc-length samples per existing stadium, with 805–2,300 m horizontal legs and turns below 74°, failed to find a route for 72 of 500 theme/seed cases. It is a discrete search, not a proof that no placement exists. A trial widening narrow loops to 1,700 m found placements in 25,000 theme/seed cases, but exceeded the original width for some seeds. Sparse Waterway placements also missed the river or lake in 11 of 36 checked seeds. A later search requiring the last two gates to stay on the runway axis found placements for 2,500 theme/seed cases; the combined implementation has not passed the full checks.
+
+Resolved Oct 27: widening allowed (above). Step 6.4's runway alignment check is dropped for gated runs.
 
 ## Week 2 daily slices (approved Oct 24 2026)
 
@@ -44,8 +46,8 @@ Daniel approved this list on Oct 24 2026, without the in-flight bonus readout. I
 
 | Day | Slice |
 |---|---|
-| Mon Nov 2 | PARTIAL, 11.015: M0 spec documented; gate spacing awaits the route decision above |
-| Tue Nov 3 | PARTIAL, 11.016: generated gate heights follow sampled terrain with clearance and slope limits; the existing horizontal stadium does not deliberately route through valleys and over ridges. **NEEDS DANIEL:** choose how much the horizontal line may bend within its bounds to seek those features while retaining existing gate spacing, the 75° turn limit and theme features. |
+| Mon Nov 2 | DONE, 11.015 spec and 11.020 spacing: 8 to 20 gates 0.8 to 2.5 km apart, narrow loops widened, Waterway river and lake kept |
+| Tue Nov 3 | DONE, 11.016 heights and 11.020 bending: gate heights follow sampled terrain; interior gates bend at most 160 m sideways toward lower ground (Daniel, Oct 27: moderate only), keeping spacing and the 75° limit. Waterway's river and lake line stays seeded |
 | Wed Nov 4 | DONE, 11.017: gated runs start in the air, lined up on gate 1. Free flight keeps its runway start and landings (ROADMAP item 10, folded in). |
 | Thu Nov 5 | DONE, 11.019: time and flying bonuses, results breakdown and separate score-record revision; checked with a controls-only gated flight and a scripted Free flight touchdown. |
 | Fri Nov 6 | Proof flights only: headless flights and screenshots on each theme. No UI change |

@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off and fly a gate run to an airborne finish. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.019**. Previous roadmap chunk: **11.018**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.020**. Previous roadmap chunk: **11.019**.
 
-Recent changes from **11.019**. Gated runs score time plus bonuses for low flying, terrain proximity and speed, with separate records for the new formula.
+Recent changes from **11.020**. Gated runs drop the runway alignment contract; generated routes place 8 to 20 gates 0.8 to 2.5 km apart and bend gently toward lower ground.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

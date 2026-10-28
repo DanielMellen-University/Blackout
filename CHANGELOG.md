@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.020** Drop the runway alignment contract and stale approach lines from gated runs; space generated gates 0.8 to 2.5 km apart (8 to 20 per route) and bend routes gently toward lower ground. Free flight is unchanged.
 - **11.019** Score gated runs on time and flying bonuses, show the breakdown in results, and keep prior records separate. Free flight is unchanged.
 - **11.018** Add a tested time-weighted flying bonus calculation; M4 integration and record separation remain pending.
 - **11.017** Start gated runs in the air, aligned with the first gate; preserve Free flight runway starts and landings.
