@@ -1,16 +1,18 @@
 # Finding the fun, b31 / 10.998
 
+> **Current rules (Oct 27 2026, 11.022):** direction A+C was picked on Oct 24. Gated runs have 8 to 20 gates 0.8 to 2.5 km apart, a 75° turn limit, and an airborne start and finish with no landing. Free flight is unchanged, with a ground start and landing. See the [mission overhaul roadmap](mission-overhaul.md). Below is the b31 exploration as written, with superseded facts marked inline.
+
 The original b31 brief was exploration only. This replaces the rejected [10.994 scope](overhaul-scope.md). Daniel has not chosen the game yet. Every new feature and any prototype needs his explicit approval before code. b31 built nothing.
 
 The shared core: **the joy of flying through terrain**. Low and fast through canyons and valleys, around ridgelines, under arches and bridges, choosing near-misses and linking flowing lines. Mastery means reading terrain and knowing when to boost, brake, bank or climb. Terrain is the activity, not scenery beside gates. None of these directions ends with a return to the airfield or a home-runway landing.
 
 ## What we can honestly reuse
 
-The [mission generator](../../src/systems/MissionGenerator.ts) supplies repeatable seeds and 15 to 100 gates, but currently makes a circuit aimed back at a runway. [Landforms](../../src/world/Landforms.ts) shape terrain separately: the mountain valley is several kilometres wide, not a tight flying line. More gates alone cannot make this fun.
+The [mission generator](../../src/systems/MissionGenerator.ts) supplies repeatable seeds. At b31 it made 15 to 100 gates on a circuit aimed back at a runway *(superseded: since 11.020 it places 8 to 20 gates 0.8 to 2.5 km apart within the 75° turn limit, see [MissionGates.ts](../../src/systems/MissionGates.ts))*. [Landforms](../../src/world/Landforms.ts) shape terrain separately: the mountain valley is several kilometres wide, not a tight flying line. More gates alone cannot make this fun.
 
 [Terrain geometry](../../src/world/TerrainGeometry.ts) and [contact sampling](../../src/world/TerrainSystem.ts) use a height field. Canyons, passes and ridges fit it; overhanging arches do not. Existing road bridges are not guaranteed flyable openings. Arches and reliable bridge openings need separately approved geometry, placement and collision checks, including undersides at speed. Cheapest tests omit them. Vegetation and removed rock props stay excluded; bridge work that reopens the closed city/roads redesign needs explicit approval.
 
-[b20 physics](../../src/aircraft/FlightModel.ts) already provides banking, braking, stall recovery and turn-energy loss. [b21 nitro](../../src/aircraft/NitroSystem.ts) provides 12 seconds of boost, 45 seconds of passive refill and b30's scaled accepted-gate awards. Gate-free options keep passive refill; near-misses grant no nitro. The [current scored finish](../../src/systems/ChallengeRun.ts) requires landing, so an airborne finish is real integration work, not a text change. Prototype results must stay separate from existing medals and saves.
+[b20 physics](../../src/aircraft/FlightModel.ts) already provides banking, braking, stall recovery and turn-energy loss. [b21 nitro](../../src/aircraft/NitroSystem.ts) provides 12 seconds of boost, 45 seconds of passive refill and b30's scaled accepted-gate awards. Gate-free options keep passive refill; near-misses grant no nitro. At b31 the [scored finish](../../src/systems/ChallengeRun.ts) required a landing, so an airborne finish was real integration work, not a text change *(superseded: gated and scored runs start in the air since 11.017 and finish in the air at the last gate since 11.010, with no return-and-land step; Free flight still starts on the runway and can land and take off again)*. Prototype results must stay separate from existing medals and saves.
 
 Costs are rough Codex effort, not dollar or quota forecasts. A pass includes implementation, checks, build and focused flight review. Estimates include terrain and start/finish work; polished UI, permanent progression and arches/bridges cost extra. These are alternatives.
 
