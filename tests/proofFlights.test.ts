@@ -139,9 +139,9 @@ describe('r9 proof flights: every theme, airborne start to airborne finish', () 
         expect(value).toBeGreaterThanOrEqual(0); expect(value).toBeLessThanOrEqual(10_000)
       }
       expect(bonus.lowScore + bonus.terrainScore + bonus.speedScore).toBeGreaterThan(0)
-      // 11.023: the terrain bonus is measured against the gate line, so flying the line scores some.
+      // 11.024: the terrain bonus is measured against the gate line, so flying the line scores some.
       expect(bonus.terrainScore).toBeGreaterThan(500)
-      // 11.023: the allowance is the gate line at 160 m/s. The proof pilot flies
+      // 11.024: the allowance is the gate line at 160 m/s. The proof pilot flies
       // it at about 134 to 141 m/s, so it loses time points; full time needs nitro.
       expect(result.timeAllowanceSec).toBeGreaterThan(0)
       expect(flight.elapsed).toBeGreaterThan(result.timeAllowanceSec!)

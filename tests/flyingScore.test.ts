@@ -19,7 +19,7 @@ describe('flying score', () => {
   })
 
   it('measures terrain proximity against the gate line', () => {
-    // 11.023: zero at 1.25 x the median gate clearance (at least 100 m, at most 400 m).
+    // 11.024: zero at 1.25 x the median gate clearance (at least 100 m, at most 400 m).
     const line = new FlyingScore(140)
     line.sample(1, 0, 175, 150)
     line.sample(1, 0, 140, 150)

@@ -92,7 +92,7 @@ describe('r9 proof: Free flight keeps its runway start, takeoff and landing', ()
 
   // A wider sweep guards against regressions without pinning every seed.
   // Misses are not crashes: seeds 23 and 1234 touch down away from the pad.
-  // Since 11.023 any touchdown inside the soft-landing limit raises LANDED.
+  // Since 11.024 any touchdown inside the soft-landing limit raises LANDED.
   it('lands at least 14 of 16 more seeds and never crashes', () => {
     const seeds = [1, 2, 3, 5, 11, 17, 23, 31, 64, 101, 256, 777, 1234, 4242, 31415, 65535]
     const flights = seeds.map(seed => ({ seed, ...freeFlight(seed) }))

@@ -49,7 +49,7 @@ interface Gate {
 }
 
 const AUTHORED_ANCHOR_COUNT = 5
-/** Gate-line pace that earns the full time score (11.023). */
+/** Gate-line pace that earns the full time score (11.024). */
 const TIME_ALLOWANCE_SPEED_MPS = 160
 const GATE_RADIUS = 38
 const GATE_SIZE_SCALE = 1.5

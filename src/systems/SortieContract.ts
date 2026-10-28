@@ -831,7 +831,7 @@ function indexForKind(kind: SortieContractKind): number {
 function indexForSeed(seed: number): number {
   const mixed = mixSeed(seed)
   if (mixed % 11 === 0) return indexForKind('deadstick')
-  // 11.023: PRECISION CHAIN (three gates in a row within about 10 m of centre)
+  // 11.024: PRECISION CHAIN (three gates in a row within about 10 m of centre)
   // takes a third of the CLEAN CIRCUIT and TERRAIN HUGGER seeds. mixSeed is
   // even for integer seeds, so read higher bits rather than another LINE_KINDS slot.
   if ((mixed >>> 3) % 3 === 0) return indexForKind('precision')
@@ -919,7 +919,7 @@ function contractTargetFor(
   contract: Omit<SortieContractDefinition, 'detail'>,
   safeGates: number,
 ): number {
-  // 11.023: 5.5 s per gate for 8 to 20 gates 0.8 to 2.5 km apart. A cruising
+  // 11.024: 5.5 s per gate for 8 to 20 gates 0.8 to 2.5 km apart. A cruising
   // pilot needs 5.7 to 7.7 s per gate, so SPEED RUN takes nitro and tight lines.
   return contract.kind === 'pace' ? Math.max(48, Math.round(safeGates * SPEED_RUN_SECONDS_PER_GATE)) : contract.target
 }

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.024** Gated-run tuning from proof data (8 courses x 6 seeds): time allowance is gate 1 to the last gate at 160 m/s (was 45 s plus runway legs at 150 m/s; the proof pilot's time score falls from 75,000 to about 71,100-71,600); terrain proximity reaches zero at 1.25 x the median gate clearance, clamped 100-400 m (was a fixed 100 m; flying the gate line now earns 1,271-2,182); SPEED RUN target is max(48, 5.5 s per gate) (was 53 + 3 s per gate); PRECISION CHAIN (three gates in a row at gate-centre quality 0.82, about 10 m) is assigned to about a third of new gated missions. Free flight: a touchdown that starts airborne lands anywhere in the grounded envelope, so LANDED shows for every sink rate from 0.5 to 6 m/s (was 20-60%). Gated runs still never announce LANDED.
 - **11.023** Tune terrain bending: reduce the Mountain valley and Volcanic straight-line penalty from 0.05 to 0.005 m height per metre of bend while keeping the 160 m maximum; Training orbit prefers 11 gates and retains its 11–14 gate routes. Separate changed route records. Free flight is unchanged.
 
 - **11.022** Add r9 proof flights for every theme, flown-route spacing and bending, Waterway river and lake, Daily determinism and Free flight landing; announce LANDED only in Free flight. Free flight is otherwise unchanged.

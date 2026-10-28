@@ -47,7 +47,7 @@ describe('classifyContact', () => {
   it('lands a firm touchdown that ends inside the grounded envelope', () => {
     const base = { impact: null, onPad: true, gearDown: true, groundSpeed: 50, pitch: 0.05, roll: 0, upY: 1,
       obstacle: false, surface: 'land' as const, surfaceNormalY: 1 }
-    // Before 11.023 a step ending 0 to 0.18 m above the gear floor read as a rollout.
+    // Before 11.024 a step ending 0 to 0.18 m above the gear floor read as a rollout.
     for (const vy of [-0.8, -2, -4, -5.8]) {
       expect(classifyContact({ ...base, airborne: false, vy, touchdown: true })).toBe('landed')
       expect(classifyContact({ ...base, airborne: false, vy, touchdown: false })).toBe('roll')

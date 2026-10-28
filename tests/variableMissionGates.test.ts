@@ -38,7 +38,7 @@ for (const theme of MISSION_THEMES) it.each([6, 20, 42, 67, 1337, 9001])(`${them
     mission.start(p.x, p.y, p.z, p.yaw, spec.profile)
     expect(mission.totalGates).toBe(spec.goals.gates)
     expect(mission.routeFallbackUsed).toBe(false)
-    // 11.023: the allowance is gate 1 to the last gate at 160 m/s.
+    // 11.024: the allowance is gate 1 to the last gate at 160 m/s.
     let gateLine = 0
     for (let i = 1; i < route.length; i++) gateLine += Math.hypot(route[i]!.x - route[i-1]!.x, route[i]!.y - route[i-1]!.y, route[i]!.z - route[i-1]!.z)
     expect(mission.timeAllowanceSec).toBeCloseTo(gateLine / 160, 0)

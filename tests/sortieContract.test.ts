@@ -140,7 +140,7 @@ describe('sortie contracts', () => {
   })
 
   it('sets SPEED RUN at 5.5 s per gate for 8 to 20 gates', () => {
-    // 11.023: the controls-only proof pilot needs 5.7 to 7.7 s per gate at cruise.
+    // 11.024: the controls-only proof pilot needs 5.7 to 7.7 s per gate at cruise.
     for (const [gates, seconds] of [[8, 48], [12, 66], [14, 77], [20, 110]] as const) {
       const tracker = new SortieContractTracker()
       tracker.reset(0, gates, true)
@@ -1322,7 +1322,7 @@ describe('sortie contracts', () => {
     expect(seen.has('speed-band')).toBe(false)
     expect(seen.has('gust')).toBe(false)
     expect(seen.has('traffic-watch')).toBe(false)
-    // 11.023: gated precision is back beside CLEAN CIRCUIT and TERRAIN HUGGER.
+    // 11.024: gated precision is back beside CLEAN CIRCUIT and TERRAIN HUGGER.
     expect(seen.has('precision')).toBe(true)
     expect(seen.has('clean')).toBe(true)
     expect(seen.has('low-level')).toBe(true)
