@@ -9,7 +9,7 @@ describe('approved seeded mission generator', () => {
       expect(generateMission(seed, theme)).toEqual(spec)
       expect(spec.theme).toBe(theme)
       expect(spec.course).toHaveLength(spec.goals.gates)
-      expect(spec.goals).toMatchObject({ landingRequired: true, scoring: 'existing-medals' })
+      expect(spec.goals).toEqual({ gates: spec.course.length })
       expect(spec.landingRunway.yaw).toBe(spec.start.yaw)
       expect(Math.hypot(spec.landingRunway.x - spec.start.x, spec.landingRunway.z - spec.start.z)).toBeCloseTo(45)
       for (const point of [spec.start, spec.landingRunway, ...spec.course])

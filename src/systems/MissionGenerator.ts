@@ -11,7 +11,7 @@ export interface GeneratedMissionSpec {
   start: GeneratedPoint & { yaw: number }
   landingRunway: GeneratedPoint & { yaw: number; length: number; width: number }
   course: readonly GeneratedPoint[]
-  goals: { gates: number; landingRequired: true; scoring: 'existing-medals'; referenceSpeed: number }
+  goals: { gates: number }
 }
 /** Pure seeded recipe. No mutable world state, clock, random calls or terrain cache. */
 export function generateMission(seed: number, requestedTheme?: MissionTheme, training = false): GeneratedMissionSpec {
@@ -128,7 +128,7 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme, tra
   const gateCount = course.length
   return { seed: normalized, theme, profile: theme === 'desert-run' ? 'generated-desert' : theme === 'coastal-island-run' ? 'generated-coastal' : theme === 'volcanic-run' ? 'generated-volcanic' : theme === 'waterway-run' ? 'generated-waterway' : 'generated-valley', terrain, start: { ...start, x: start.x - Math.sin(start.yaw) * 45, y: start.y + flightConfig.gearHeight, z: start.z - Math.cos(start.yaw) * 45 },
     landingRunway: { ...start, length: 120, width: 18 }, course,
-    goals: { gates: gateCount, landingRequired: true, scoring: 'existing-medals', referenceSpeed: 150 } }
+    goals: { gates: gateCount } }
 }
 
 interface LocalPoint { right: number; forward: number; height: number }
