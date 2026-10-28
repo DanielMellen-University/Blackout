@@ -91,10 +91,9 @@ describe('r9 proof: Free flight keeps its runway start, takeoff and landing', ()
   })
 
   // A wider sweep guards against regressions without pinning every seed.
-  // Misses are not crashes: a few seeds touch down away from the pad, and a
-  // touchdown sinking faster than about 1.2 m/s can resolve as a rollout
-  // without LANDED (see docs/reviews/proof-r9/findings.md).
-  it('lands most of 16 more seeds and never crashes', () => {
+  // Misses are not crashes: seeds 23 and 1234 touch down away from the pad.
+  // Since 11.023 any touchdown inside the soft-landing limit raises LANDED.
+  it('lands at least 14 of 16 more seeds and never crashes', () => {
     const seeds = [1, 2, 3, 5, 11, 17, 23, 31, 64, 101, 256, 777, 1234, 4242, 31415, 65535]
     const flights = seeds.map(seed => ({ seed, ...freeFlight(seed) }))
     for (const flight of flights) {
@@ -102,7 +101,7 @@ describe('r9 proof: Free flight keeps its runway start, takeoff and landing', ()
       expect(flight.crashed).toBeNull()
       expect(flight.finish).toBeNull()
     }
-    expect(flights.filter(f => f.banners.length === 1 && f.stopped).length).toBeGreaterThanOrEqual(12)
+    expect(flights.filter(f => f.banners.length === 1 && f.stopped).length).toBeGreaterThanOrEqual(14)
   }, 240_000)
 
   it('keeps the LANDED banner wired to touchdown in the game loop', () => {

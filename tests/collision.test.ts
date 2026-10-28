@@ -14,11 +14,17 @@ import {
   setGroundHeightSampler,
   setGroundSurfaceSampler,
 } from '../src/world/ground'
+import { flightConfig } from '../src/aircraft/flightConfig'
+import { setTerrainProfile } from '../src/world/TerrainProfile'
+import { setWorldSeed } from '../src/world/noise'
+import { clearOpsPad, findPlayableSpawn, setOpsPad } from '../src/world/terrainSample'
 
 afterEach(() => {
   setContactHeightSampler(null)
   setGroundHeightSampler(null)
   setGroundSurfaceSampler(null)
+  setTerrainProfile(null)
+  clearOpsPad()
 })
 
 function impact(partial: Partial<AircraftImpact>): AircraftImpact {
@@ -38,6 +44,44 @@ function impact(partial: Partial<AircraftImpact>): AircraftImpact {
 }
 
 describe('classifyContact', () => {
+  it('lands a firm touchdown that ends inside the grounded envelope', () => {
+    const base = { impact: null, onPad: true, gearDown: true, groundSpeed: 50, pitch: 0.05, roll: 0, upY: 1,
+      obstacle: false, surface: 'land' as const, surfaceNormalY: 1 }
+    // Before 11.023 a step ending 0 to 0.18 m above the gear floor read as a rollout.
+    for (const vy of [-0.8, -2, -4, -5.8]) {
+      expect(classifyContact({ ...base, airborne: false, vy, touchdown: true })).toBe('landed')
+      expect(classifyContact({ ...base, airborne: false, vy, touchdown: false })).toBe('roll')
+    }
+    // Past the soft-landing limit it stays a rollout, and gentle settles stay rollouts.
+    expect(classifyContact({ ...base, airborne: false, vy: -7, touchdown: true })).toBe('roll')
+    expect(classifyContact({ ...base, airborne: false, vy: -0.3, touchdown: true })).toBe('roll')
+    // Gear up never lands.
+    expect(classifyContact({ ...base, gearDown: false, airborne: false, vy: -2, touchdown: true })).toBe('roll')
+  })
+
+  it('reports LANDED for every sink rate inside the soft-landing limit on a real runway', () => {
+    setWorldSeed(42); setTerrainProfile(null); clearOpsPad()
+    const pad = findPlayableSpawn()!
+    setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
+    for (const sink of [0.8, 2, 4, 5.8]) {
+      for (let k = 0; k < 8; k++) {
+        const aircraft = new Aircraft(), collision = new CollisionSystem()
+        aircraft.reset({ x: pad.x, y: pad.y + flightConfig.gearHeight + 0.6 + k * 0.0137, z: pad.z, yaw: pad.yaw })
+        aircraft.controls.gearDown = true
+        aircraft.controls.throttle = 0
+        aircraft.velocity.set(Math.sin(pad.yaw) * 50, -sink, Math.cos(pad.yaw) * 50)
+        let touch = 'air'
+        for (let step = 0; step < 300 && touch === 'air'; step++) {
+          aircraft.velocity.y = Math.min(aircraft.velocity.y, -sink)
+          aircraft.step(1 / 60, step * 1000 / 60)
+          touch = collision.check(aircraft)
+        }
+        expect(`${sink}:${touch}`).toBe(`${sink}:landed`)
+        aircraft.dispose()
+      }
+    }
+  })
+
   it('rejects an inverted touchdown as a crash', () => {
     const result = classifyContact({
       airborne: true,

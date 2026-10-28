@@ -109,6 +109,7 @@ export class FlightModel {
     // square root entirely while preserving the exact grounded behavior.
     const groundSpeed = onGround ? Math.hypot(velocity.x, velocity.z) : 0
     const startedAirborne = !onGround
+    aircraft.stepStartedAirborne = startedAirborne
     aircraft.impactVy = 0
     aircraft.impact = null
 

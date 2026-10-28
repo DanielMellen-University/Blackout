@@ -40,6 +40,8 @@ export interface ContactClassification {
   surface: ContactSurfaceKind
   /** Upward ground-normal component for non-impact grounded rolls. */
   surfaceNormalY?: number
+  /** A step that began in the air and ended inside the grounded envelope. */
+  touchdown?: boolean
 }
 
 const _fwd = new Vector3()
@@ -73,6 +75,7 @@ export class CollisionSystem {
     obstacle: false,
     surface: 'land',
     surfaceNormalY: 1,
+    touchdown: false,
   }
   /** Reused outcome record for the fixed-step collision path. */
   private readonly outcome: ContactOutcome = { result: 'air', reason: null }
@@ -148,6 +151,7 @@ export class CollisionSystem {
     contact.obstacle = obstacle
     contact.surface = surface
     contact.surfaceNormalY = aircraft.groundNormalY
+    contact.touchdown = !impact && grounded && aircraft.stepStartedAirborne
     const outcome = classifyContactOutcomeInto(contact, this.outcome)
     this.failureReasonValue = outcome.reason
     return outcome.result
@@ -223,8 +227,11 @@ export function classifyContactOutcomeInto(
   if (airborne && !gearDown && gs > 28) return setContactOutcome(out, 'crash', 'gear')
   if (airborne && gs > C.maxLandingSpeed) return setContactOutcome(out, 'crash', 'overspeed')
 
+  // A touchdown counts when the step began airborne, wherever it ends in the
+  // grounded envelope, so firm but safe sink rates (down to softLandingVy)
+  // land instead of rolling. This only turns a rollout into a landing.
   if (
-    airborne &&
+    (airborne || input.touchdown === true) &&
     gearDown &&
     vy < -0.5 &&
     vy > C.softLandingVy &&

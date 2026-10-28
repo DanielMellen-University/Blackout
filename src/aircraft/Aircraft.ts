@@ -143,6 +143,8 @@ export class Aircraft {
    * 0 if we did not newly contact. Collision reads this, not post-clamp vy.
    */
   impactVy = 0
+  /** True when the last fixed step began airborne; Collision reads it to spot touchdowns. */
+  stepStartedAirborne = false
   controls: ControlState = createDefaultControls()
 
   mass = flightConfig.mass
@@ -308,6 +310,7 @@ export class Aircraft {
     resetEngineHeat(this.engineHeat)
     this.loadFactor = 1
     this.impactVy = 0
+    this.stepStartedAirborne = false
     this.impact = null
     this.groundNormalY = 1
     this.groundCacheValid = false
@@ -500,6 +503,7 @@ export class Aircraft {
     this.loadFactor = 0
     this.thermalLift = 0
     this.impactVy = 0
+    this.stepStartedAirborne = false
     this.impact = null
     this.groundNormalY = 1
     this.groundCacheValid = false
