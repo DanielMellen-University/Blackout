@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 11.023. Tune terrain bending in Mountain valley and Volcanic with a 0.005 m height per metre straight-line penalty and a 160 m maximum; those themes bend more often. Training orbit prefers 11 gates and retains its routes. Separate changed route records; Free flight is unchanged.
+
 Chunk 11.022. r9 proof flights: every theme flown controls-only from an airborne start through every gate to a scored airborne finish; flown routes keep 0.8 to 2.5 km spacing, the 75° turn limit, widened loops and bends of at most 160 m on 60 seeds per theme, with Waterway's river and lake; Daily challenge flies identically across a UTC day; Free flight keeps its runway start, takeoff and LANDED touchdown. Fix: LANDED is announced only in Free flight. Findings in [r9 findings](reviews/proof-r9/findings.md).
 
 Chunk 11.021. Harden gated-run copy after the airborne start and finish: DEADSTICK completes at fuel out, the engine-out banner drops its glide-to-base cue outside Free flight, course descriptions use the 8 to 20 gate rule, Training orbit is gate practice, and the flight manual, README and overview describe airborne starts and finishes. Remove the unused return-fuel HUD row and helpers. Free flight keeps its runway start, takeoff and landing.
@@ -143,7 +145,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.022** is current. Previous ship: **11.021**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.023** is current. Previous ship: **11.022**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 

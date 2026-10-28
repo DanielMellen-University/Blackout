@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.022**. Previous roadmap chunk: **11.021**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.023**. Previous roadmap chunk: **11.022**.
 
-Recent changes from **11.022**. Headless proof flights cover every theme from an airborne start to a scored airborne finish, plus route spacing, Daily determinism and Free flight landings. A gated-run touchdown no longer shows LANDED.
+Recent changes from **11.023**. Mountain valley and Volcanic routes bend more often toward lower ground, within the existing 160 m limit. Training orbit retains its routes with an 11-gate preference.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

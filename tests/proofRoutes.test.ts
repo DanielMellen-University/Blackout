@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { createHash } from 'node:crypto'
+import { generateLegacyTerrain } from '../src/systems/LegacyMissionGenerator'
 import { generateMission } from '../src/systems/MissionGenerator'
 import { buildMissionRoute } from '../src/systems/Mission'
 import { MAX_GATE_SPACING_M, MAX_ROUTE_BEND_M, MIN_GATE_SPACING_M } from '../src/systems/MissionGates'
@@ -52,7 +54,19 @@ describe('r9 proof: flown routes keep spacing, turn limit, width and gentle bend
         expect(bodies).toContain('river'); expect(bodies).toContain('lake')
       }
     }
-    // Bending is active where the ground offers a lower line (desert, coast).
-    if (theme === 'desert-run' || theme === 'coastal-island-run') expect(bentRoutes).toBeGreaterThan(SEEDS.length / 2)
+    // Bending remains active across the four terrain-following themes.
+    if (theme !== 'waterway-run') expect(bentRoutes).toBeGreaterThan(SEEDS.length / 2)
   }, 120_000)
 })
+
+// Compare the actual terrain-cleared Training orbit route with the pre-tuning baseline.
+it('preserves flown Training orbit routes on 200 seeds', () => {
+  const routes = Array.from({ length: 200 }, (_, i) => {
+    const seed = i * 101 + 11, spec = generateLegacyTerrain(seed, 'desert-run', true)
+    const p = spec.start, pad = spec.landingRunway
+    setWorldSeed(seed); setTerrainProfile(spec.terrain); setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
+    return buildMissionRoute(p.x, p.y, p.z, p.yaw, 'orbit')
+  })
+  expect(createHash('sha256').update(JSON.stringify(routes)).digest('hex'))
+    .toBe('bc5d18df3c7c520ef9f3b5707b4ae76ebe3f15f939fa492a250e992c96c0a6e4')
+}, 120_000)

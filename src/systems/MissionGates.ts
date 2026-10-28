@@ -1,3 +1,5 @@
+import { getTerrainProfile } from '../world/TerrainProfile'
+
 /** Approved Oct 22 2026. The original five awards are shared by this many gates. */
 export const MIN_MISSION_GATES = 15
 export const MAX_MISSION_GATES = 100
@@ -51,16 +53,20 @@ const BEND_STEPS = [-1, -.5, 0, .5, 1] as const
 const BEND_TURN_LIMIT_DEG = 72
 /** Metres of ground saved per metre of bend before a gate leaves the line. */
 const BEND_STRAIGHT_BIAS = .05
+const VALLEY_BEND_STRAIGHT_BIAS = .005
 
 /** Nudge interior gates sideways, at most MAX_ROUTE_BEND_M from the seeded
  * line, toward lower ground: gentle curves through valleys and saddles. Gate 1
  * and the last two runway-axis gates stay put.
  * Spacing stays 0.8 to 2.5 km and every turn, from the spawn heading on,
- * stays under the 75 degree limit. Pure apart from the ground callback. */
+ * stays under the 75 degree limit. The active terrain theme selects the bias. */
 export function bendRouteTowardValleys<T extends Point>(
   gates: readonly T[], spawnX: number, spawnZ: number,
   ground: (x: number, z: number) => number,
 ): T[] {
+  const theme = getTerrainProfile()?.theme
+  const straightBias = theme === 'mountain-valley-run' || theme === 'volcanic-run'
+    ? VALLEY_BEND_STRAIGHT_BIAS : BEND_STRAIGHT_BIAS
   const out = gates.map(p => ({ ...p }))
   const turn = (ax: number, az: number, bx: number, bz: number, cx: number, cz: number): number => {
     const ux = bx - ax, uz = bz - az, vx = cx - bx, vz = cz - bz
@@ -95,7 +101,7 @@ export function bendRouteTowardValleys<T extends Point>(
       if (!Number.isFinite(height)) continue
       out[i]!.x = x; out[i]!.z = z
       if (!fits(i)) continue
-      const cost = height + Math.abs(step) * MAX_ROUTE_BEND_M * BEND_STRAIGHT_BIAS
+      const cost = height + Math.abs(step) * MAX_ROUTE_BEND_M * straightBias
       if (cost < bestCost) { bestCost = cost; best = { x, z } }
     }
     out[i]!.x = best.x; out[i]!.z = best.z

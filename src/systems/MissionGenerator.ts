@@ -90,9 +90,10 @@ export function generateMission(seed: number, requestedTheme?: MissionTheme, tra
   const preferredGates = training
     ? 11
     : MIN_GENERATED_GATES + Math.floor(countRoll * (MAX_GENERATED_GATES - MIN_GENERATED_GATES + 1))
-  // Route-only revisions: +10 for b30, +10 more for the M0 spacing. Keep
+  // Route-only revisions: +10 for b30, +10 for M0 spacing, +1 for
+  // changed Mountain valley and Volcanic bending. Keep
   // landscape generation and b20 physics unchanged.
-  terrain.routeRevision += 20
+  terrain.routeRevision += theme === 'mountain-valley-run' || theme === 'volcanic-run' ? 21 : 20
   const hand = offsets[1]![0] < 0 ? -1 : 1
   const seededRadius = Math.abs(offsets[1]![0]) / 2
   const departure = offsets[0]![1], top = offsets[1]![1]

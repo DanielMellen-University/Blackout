@@ -12,7 +12,7 @@ afterEach(() => { setTerrainProfile(null); clearOpsPad() })
 it('preserves the four original landscapes and separates changed routes', () => {
   for (const { spec, samples } of baseline) {
     const current = generateMission(spec.seed, spec.theme as MissionTheme)
-    expect(current.terrain).toEqual({ ...spec.terrain, routeRevision: spec.terrain.routeRevision + 20 })
+    expect(current.terrain).toEqual({ ...spec.terrain, routeRevision: spec.terrain.routeRevision + (spec.theme === 'mountain-valley-run' || spec.theme === 'volcanic-run' ? 21 : 20) })
     expect(current.start).toEqual(spec.start)
     expect(current.landingRunway).toEqual(spec.landingRunway)
     expect(current.course).not.toEqual(spec.course)

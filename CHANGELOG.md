@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.023** Tune terrain bending: reduce the Mountain valley and Volcanic straight-line penalty from 0.05 to 0.005 m height per metre of bend while keeping the 160 m maximum; Training orbit prefers 11 gates and retains its 11–14 gate routes. Separate changed route records. Free flight is unchanged.
+
 - **11.022** Add r9 proof flights for every theme, flown-route spacing and bending, Waterway river and lake, Daily determinism and Free flight landing; announce LANDED only in Free flight. Free flight is otherwise unchanged.
 - **11.021** Match gated-run copy to airborne starts and finishes (DEADSTICK, engine-out banner, course descriptions, Training orbit, flight manual, README, overview) and remove the unused return-fuel HUD row. Free flight is unchanged.
 - **11.020** Drop the runway alignment contract and stale approach lines from gated runs; space generated gates 0.8 to 2.5 km apart (8 to 20 per route) and bend routes gently toward lower ground. Free flight is unchanged.

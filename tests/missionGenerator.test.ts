@@ -117,7 +117,7 @@ it.each([42, 73, 808, 1337, 2026, 9001])('keeps a wide low valley corridor betwe
     expect(mission.routeFallbackUsed).toBe(false)
     expect(mission.totalGates).toBe(spec.goals.gates)
     const replay = resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), seed)
-    expect(courseRunId(replay)).toBe(`seed:${seed}:generated-valley:r32:l33:q56:s1`)
+    expect(courseRunId(replay)).toBe(`seed:${seed}:generated-valley:r32:l33:q57:s1`)
     expect(courseSessionId('mountain-valley-run', seed, spec.profile)).toBe(courseRunId(replay))
     expect(courseRunId(replay)).not.toBe(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed)))
   } finally { mission.dispose(); setTerrainProfile(null); clearOpsPad() }
