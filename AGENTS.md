@@ -11,7 +11,7 @@
 
 ## Locked decisions - explicit user decisions (Oct 24 2026)
 
-- Camera views are final as of 11.009. Third person follows Q/E roll rigidly like first person, every switch opens behind and a bit above the jet, and the middle view distance is 14. Do not change camera views, framing, smoothing or defaults without an explicit user request.
+- Camera views are final as of 11.009. Third person follows Q/E roll rigidly like first person, every switch opens behind and a bit above the jet, and the middle view distance is 14. Do not change camera views, framing, smoothing or defaults without an explicit user request. Since 11.027 (Daniel, Oct 28) orbit follows the jet's heading with no lag and stays directly behind; chase is rigid at every zoom.
 - Nitro has no speed or acceleration cap while active (5 s drain, 20 s refill, gate top-ups). Speed decays naturally after release. Do not reintroduce a nitro cap.
 - Gates are 50% larger (GATE_SIZE_SCALE 1.5 for ring, tube and trigger radius). Keep visual and trigger sizes scaled together.
 - The featured top row is exactly Free flight, Training orbit and Daily challenge. Do not touch UI unless the user asks.

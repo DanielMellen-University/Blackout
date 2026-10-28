@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.026**. Previous roadmap chunk: **11.025**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.027**. Previous roadmap chunk: **11.026**.
 
-Recent changes from **11.026**. With the chase view zoomed out on the mouse wheel, A and D yaw now swing the camera smoothly instead of locking it rigidly to the jet.
+Recent changes from **11.027**. The orbit view stays directly behind the jet through every turn, and the chase view is rigidly behind the jet at every zoom again.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
