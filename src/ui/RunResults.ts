@@ -481,10 +481,6 @@ export class RunResults {
       ? Math.max(0, Math.floor(result.deadstickScore!))
       : 0
     if (deadstickScore > 0) scoreParts.push(`DEADSTICK +${deadstickScore.toLocaleString()}`)
-    const approachScore = Number.isFinite(result.approachScore)
-      ? Math.max(0, Math.floor(result.approachScore!))
-      : 0
-    if (approachScore > 0) scoreParts.push(`APPROACH +${approachScore.toLocaleString()}`)
     const weatherScore = Number.isFinite(result.weatherScore)
       ? Math.max(0, Math.floor(result.weatherScore!))
       : 0
@@ -604,9 +600,6 @@ export class RunResults {
     if (Number.isFinite(result.courseBestPeakAltitudeM) && result.courseBestPeakAltitudeM! > (result.peakAltitudeM ?? 0)) {
       scoreParts.push(`COURSE ALT ${Math.max(0, Math.round(result.courseBestPeakAltitudeM!)).toLocaleString()}M`)
     }
-    if (Number.isFinite(result.courseBestApproachScore) && result.courseBestApproachScore! > (result.approachScore ?? 0)) {
-      scoreParts.push(`COURSE APPROACH +${Math.max(0, Math.floor(result.courseBestApproachScore!)).toLocaleString()}`)
-    }
     if (result.freeFlight && Number.isFinite(result.courseBestLandingQuality) && result.courseBestLandingQuality! > result.landingQuality) {
       scoreParts.push(`COURSE LAND ${Math.round(Math.max(0, Math.min(1, result.courseBestLandingQuality!)) * 100)}%`)
     }
@@ -624,7 +617,6 @@ export class RunResults {
       result.newNegativeGRecord ? 'NEG G' : '',
       result.newStuntRecord ? 'ROLLS' : '',
       result.newComboRecord ? 'COMBO' : '',
-      result.newApproachRecord ? 'APPROACH' : '',
       result.freeFlight && result.newLandingQualityRecord ? 'LANDING' : '',
       result.newFuelRecord ? 'FUEL' : '',
       result.newMedalRecord ? 'MEDAL' : '',

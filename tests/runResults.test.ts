@@ -372,7 +372,6 @@ describe('run results focus flow', () => {
       landingQuality: 0.96,
       landingLabel: 'BUTTER',
       bestPrecisionStreak: 3,
-      approachScore: 460,
     })
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
       .toContain('STYLE PRECISION · GATE STREAK X3')
@@ -498,7 +497,6 @@ describe('run results focus flow', () => {
       bestCombo: 4,
       comboScore: 900,
       fuelScore: 720,
-      approachScore: 500,
       landingQuality: 0.8,
       weatherScore: 400,
       nightScore: 350,
@@ -524,7 +522,6 @@ describe('run results focus flow', () => {
       deadstickScore: 1_500,
       courseMasteryTier: 'ace',
       courseMasteryTierLabel: 'ACE',
-      courseBestApproachScore: 650,
       courseBestLandingQuality: 0.95,
       courseBestFuelRemainingPercent: 90,
       courseBestCombo: 6,
@@ -561,7 +558,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO +900')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('FUEL +720')
-    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('APPROACH +500')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).not.toContain('APPROACH +')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('WEATHER +400')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('NIGHT +350')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEST X3')
@@ -579,7 +576,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT STREAK X3')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE CONTRACT STREAK X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TIER ACE')
-    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).not.toContain('COURSE APPROACH')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).not.toContain('COURSE LAND')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE FUEL 90%')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
@@ -606,7 +603,6 @@ describe('run results focus flow', () => {
       newPositiveGRecord: true,
       newNegativeGRecord: true,
       newComboRecord: true,
-      newApproachRecord: true,
       newLandingQualityRecord: true,
       newFuelRecord: true,
       newMedalRecord: true,
@@ -619,7 +615,7 @@ describe('run results focus flow', () => {
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / FUEL / MEDAL / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / FUEL / MEDAL / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
     )
     results.dispose()
     vi.unstubAllGlobals()

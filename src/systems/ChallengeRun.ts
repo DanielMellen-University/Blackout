@@ -158,8 +158,6 @@ export interface ChallengeResult {
   fuelScore?: number
   /** Capped score bonus awarded for consecutive completed sorties. */
   runStreakScore?: number
-  /** Capped score bonus awarded for a centered, aligned home-strip approach. */
-  approachScore?: number
   /** Capped score bonus awarded for landing through active weather. */
   weatherScore?: number
   /** Capped score bonus awarded for a clean night or dusk touchdown. */
@@ -236,10 +234,6 @@ export interface ChallengeResult {
   courseBestSortieStyle?: SortieStyleId
   /** Whether this sortie changed the persisted best-score style identity. */
   newSortieStyleRecord?: boolean
-  /** Best centered, aligned home-strip approach bonus recorded for this course. */
-  courseBestApproachScore?: number
-  /** Whether this sortie set a new course approach record. */
-  newApproachRecord?: boolean
   /** Best touchdown-quality score retained for this course. */
   courseBestLandingQuality?: number
   /** Whether this sortie set a new course touchdown-quality record. */
@@ -1340,7 +1334,6 @@ export class ChallengeRun {
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     const fuelRemainingPercent = Math.round(clamp01(fuelFraction) * 100)
     const fuelUsedPercent = 100 - fuelRemainingPercent
-    const approachScore = 0
     const gateQuality =
       this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
     const gateScore = 0
@@ -1397,7 +1390,6 @@ export class ChallengeRun {
     const previousPeakAltitudeM = history.peakAltitudeM ?? 0
     const previousStuntRolls = history.stuntRolls ?? 0
     const previousCombo = history.combo ?? 0
-    const previousApproachScore = history.approachScore ?? 0
     const previousLandingQuality = history.landingQuality ?? 0
     const previousFuelRemainingPercent = history.fuelRemainingPercent ?? 0
     const previousDestinationCount = history.destinations ?? 0
@@ -1418,8 +1410,6 @@ export class ChallengeRun {
     const courseBestStuntRolls = Math.max(previousStuntRolls, this.stuntRollCount)
     const newComboRecord = this.bestCombo > previousCombo
     const courseBestCombo = Math.max(previousCombo, this.bestCombo)
-    const newApproachRecord = approachScore > previousApproachScore
-    const courseBestApproachScore = Math.max(previousApproachScore, approachScore)
     const newLandingQualityRecord = landingQuality > previousLandingQuality
     const courseBestLandingQuality = Math.max(previousLandingQuality, landingQuality)
     const newFuelRecord = fuelRemainingPercent > previousFuelRemainingPercent
@@ -1452,7 +1442,6 @@ export class ChallengeRun {
       freeFlight: this.freeFlight,
       landingQuality,
       bestPrecisionStreak: this.bestGateQualityStreak,
-      approachScore,
       destinationCount: this.destinationCount,
       biomeCount: this.surveyedBiomeCount,
       peakSpeedKts,
@@ -1472,7 +1461,6 @@ export class ChallengeRun {
     if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
     if (courseBestStuntRolls > 0) history.stuntRolls = courseBestStuntRolls
     if (courseBestCombo > 0) history.combo = courseBestCombo
-    if (courseBestApproachScore > 0) history.approachScore = courseBestApproachScore
     if (courseBestLandingQuality > 0) history.landingQuality = courseBestLandingQuality
     if (courseBestFuelRemainingPercent > 0) history.fuelRemainingPercent = courseBestFuelRemainingPercent
     if (courseBestDestinationCount > 0) history.destinations = courseBestDestinationCount
@@ -1577,7 +1565,6 @@ export class ChallengeRun {
       comboScore: undefined,
       fuelScore: undefined,
       runStreakScore: undefined,
-      approachScore: approachScore > 0 ? approachScore : undefined,
       destinationScore: undefined,
       destinationCount: this.destinationCount > 0 ? this.destinationCount : undefined,
       courseBestDestinationCount: courseBestDestinationCount > 0 ? courseBestDestinationCount : undefined,
@@ -1614,8 +1601,6 @@ export class ChallengeRun {
       sortieStyleDetail: sortieStyle.detail,
       courseBestSortieStyle,
       newSortieStyleRecord,
-      courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
-      newApproachRecord,
       courseBestLandingQuality: courseBestLandingQuality > 0 ? courseBestLandingQuality : undefined,
       newLandingQualityRecord,
       courseBestFuelRemainingPercent: courseBestFuelRemainingPercent > 0 ? courseBestFuelRemainingPercent : undefined,
