@@ -63,6 +63,11 @@ describe('pilot reference pages', () => {
     expect(manual).toContain('two white / two red')
     expect(manual).toContain('Water contact is a crash, not a landing')
     expect(manual).toContain('no cockpit frame or instruments')
+    // Gated runs start airborne at gate 1 and never return to base; Free flight keeps its runway copy.
+    expect(manual).toContain('Gated runs start in the air, lined up with gate 1')
+    expect(manual).toContain('<span>START IN THE AIR</span>')
+    expect(manual).not.toContain('gate-and-return')
+    expect(manual).toContain('land, and take off again whenever you like')
     expect(manual).not.toMatch(/blackout\/redout|blackout veil|redout|vegetation|stall warning|go-around warning/i)
   })
 
