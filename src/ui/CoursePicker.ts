@@ -45,8 +45,6 @@ export interface CoursePickerItem {
   altitude?: number
   /** Persisted best clean-flight combo used only by the optional combo sort. */
   combo?: number
-  /** Persisted best runway approach score used only by the optional approach sort. */
-  approach?: number
   /** Persisted best stunt-roll count used only by the optional stunts sort. */
   stunts?: number
   /** Persisted distinct discovery total used only by the optional discoveries sort. */
@@ -105,7 +103,7 @@ function isCoursePickerCategory(value: unknown): value is CoursePickerCategory {
   return typeof value === 'string' && COURSE_PICKER_CATEGORY_SET.has(value)
 }
 
-const COURSE_PICKER_SORT_VALUES = ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'positiveG', 'negativeG', 'precision', 'difficulty', 'mastery', 'name'] as const
+const COURSE_PICKER_SORT_VALUES = ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'altitude', 'combo', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'positiveG', 'negativeG', 'precision', 'difficulty', 'mastery', 'name'] as const
 export type CoursePickerSort = typeof COURSE_PICKER_SORT_VALUES[number]
 const COURSE_PICKER_SORT_SET = new Set<string>(COURSE_PICKER_SORT_VALUES)
 
@@ -151,7 +149,6 @@ const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   fuel: 'Fuel reserve',
   altitude: 'Highest altitude',
   combo: 'Best combo',
-  approach: 'Best approach',
   stunts: 'Most stunts',
   discoveries: 'Most discoveries',
   contracts: 'Most contract wins',
@@ -367,10 +364,6 @@ export function sortCoursePickerItems(
       const aCombo = finiteCombo(a.combo)
       const bCombo = finiteCombo(b.combo)
       if (aCombo !== bCombo) return bCombo - aCombo
-    } else if (safeSort === 'approach') {
-      const aApproach = finiteApproach(a.approach)
-      const bApproach = finiteApproach(b.approach)
-      if (aApproach !== bApproach) return bApproach - aApproach
     } else if (safeSort === 'stunts') {
       const aStunts = finiteStunts(a.stunts)
       const bStunts = finiteStunts(b.stunts)
@@ -623,9 +616,6 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   }
   if (Number.isFinite(history.fuelRemainingPercent) && history.fuelRemainingPercent! > 0) {
     parts.push(`FUEL ${Math.min(100, Math.floor(history.fuelRemainingPercent!))}%`)
-  }
-  if (Number.isFinite(history.approachScore) && history.approachScore! > 0) {
-    parts.push(`APP +${Math.min(500, Math.floor(history.approachScore!))}`)
   }
   if (Number.isFinite(history.destinations) && history.destinations! > 0) {
     parts.push(`DEST X${Math.min(6, Math.floor(history.destinations!))}`)
@@ -1244,10 +1234,6 @@ function finiteAltitude(value: number | undefined): number {
 
 function finiteCombo(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(20, Math.floor(value!))) : 0
-}
-
-function finiteApproach(value: number | undefined): number {
-  return Number.isFinite(value) ? Math.max(0, Math.min(500, Math.floor(value!))) : 0
 }
 
 function finiteStunts(value: number | undefined): number {
