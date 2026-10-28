@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 11.019. Complete M4 scoring: time plus low, terrain-proximity and speed bonuses, result breakdown, and a separate score-record revision. Verify a controls-only gated finish and Free flight runway start and scripted touchdown.
+
 Chunk 11.018. M4 partial: add a tested time-weighted flying bonus calculation. Formula integration, score-record separation, results and end-to-end verification remain pending.
 
 Chunk 11.017. Start gated runs airborne and aligned with gate 1; retain Free flight runway starts and landings.
@@ -135,7 +137,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.018** is current. Previous ship: **11.017**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.019** is current. Previous ship: **11.018**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
@@ -358,7 +360,7 @@ Every new feature, mission type, system or ROADMAP item needs Daniel's approval 
    1. **DONE, d1 / 11.010.** Run finish: every gated run (course library, Daily/Weekly/Monthly ops, Training orbit, generated missions) ends in the air the moment the last gate is passed, like Perfect Line. Remove the return-to-base phase, base navigation and landing preview.
    2. **DONE, d1 / 11.010.** Score: remove the landing, approach, weather-landing, night-landing and deadstick terms. Base gate/time budgets are balanced 30k/70k, gates 40k/60k, pace 24k/76k, legacy landing focus 40k/60k; bronze/silver/gold remain 64k/76k/88k.
    3. **DONE, 11.011.** Retheme Pattern approach, Crosswind approach, Weather approach, Precision landing and Butter landing as gate-only runs. Keep their slots, identities, weather and seeds.
-   4. **PARTIAL, 11.012.** BUTTER LANDING dropped; FUEL SAVER, SPEED RUN and Range run resolve at the final gate. **NEEDS DANIEL:** define how runway alignment is measured at the airborne final gate; its former touchdown forecast has no live source.
+   4. **PARTIAL, 11.012.** BUTTER LANDING dropped; FUEL SAVER, SPEED RUN and Range run resolve at the final gate. **NEEDS DANIEL:** define how runway alignment is measured at the airborne final gate; its former touchdown forecast has no live source. The existing Precision Approach contract can still show landing instructions during a gated run; this remains unresolved.
    5. **DONE, 11.013.** Progression: remove landing quality from rank tiers and retire the Landing Ace and Approach Ace badges.
    6. **DONE, 11.014.** UI text: remove landing lines from results, course cards, the Best landing sort, touchdown-based flight style labels and briefing copy.
    Free flight and the ability to touch down on runways stay; nothing requires them.
@@ -366,8 +368,8 @@ Every new feature, mission type, system or ROADMAP item needs Daniel's approval 
 
 **Further out (proposed Oct 24, each needs Daniel's approval before work starts):**
 
-8. **Mission overhaul: IN PROGRESS, M0 and spacing partial in 11.015; M1 heights partial in 11.016; M4 calculation partial in 11.018; direction A+C picked (Oct 24).** Daniel, Oct 24: the missions are not fun and the gates are too close together. Picked: A wide lines (8 to 20 gates, 0.8 to 2.5 km apart, through valleys and over ridges with real height changes) plus C scored flying (bonuses for low, near-terrain and high-speed flying). Replaces the Oct 22 15 to 100 gate rule. Starts after item 6 as daily slices, each slice list approved first. Week 2 (Nov 2 to 6) approved Oct 24: gate spacing, terrain routes, airborne starts, scoring, proof flights. No in-flight bonus readout. **NEEDS DANIEL:** the spacing implementation needs a decision on widening narrow seeded routes beyond their original width while retaining the 75° turn check and Waterway route features. Plan, phases and usage: [mission overhaul roadmap](gameplay/mission-overhaul.md).
-9. **Time-based results after landing removal.** With every run finishing in the air, medals, records and ghosts key on finish time, gates and nitro use only. Separate a new record revision so older landing-era records stay intact.
+8. **Mission overhaul: IN PROGRESS, M0 and spacing partial in 11.015; M1 heights partial in 11.016; M4 scoring done in 11.019; direction A+C picked (Oct 24).** Daniel, Oct 24: the missions are not fun and the gates are too close together. Picked: A wide lines (8 to 20 gates, 0.8 to 2.5 km apart, through valleys and over ridges with real height changes) plus C scored flying (bonuses for low, near-terrain and high-speed flying). Replaces the Oct 22 15 to 100 gate rule. Starts after item 6 as daily slices, each slice list approved first. Week 2 (Nov 2 to 6) approved Oct 24: gate spacing, terrain routes, airborne starts, scoring, proof flights. No in-flight bonus readout. **NEEDS DANIEL:** the spacing implementation needs a decision on widening narrow seeded routes beyond their original width while retaining the 75° turn check and Waterway route features. Plan, phases and usage: [mission overhaul roadmap](gameplay/mission-overhaul.md).
+9. **Time-based results after landing removal: superseded in part by M4.** Gated scores now use time and flying bonuses, with separate score, history and ghost records. Prior records remain stored.
 10. **Airborne starts: DONE, 11.017.** Gated runs start in the air aligned with gate 1. Free flight retains its runway start and landings.
 11. **Known performance debt.** Fix the seed-1337 synchronous hydrology look-ahead stall and re-verify the 10.989 frame-spike numbers. No budget changes.
 12. **Course readability.** Clearer next-gate line-up on tight sections using the existing gate model and HUD, no new UI elements unless approved.
