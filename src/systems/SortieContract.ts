@@ -44,6 +44,7 @@ const SETTLEMENT_TOUR_DETAIL = 'VISIT ONE CITY AND ONE VILLAGE'
 const COMBO_TARGET = 3
 const COMBO_RUN_DETAIL = 'BUILD COMBO X3'
 const PRECISION_CHAIN_TARGET = 3
+const SPEED_RUN_SECONDS_PER_GATE = 5.5
 const PRECISION_GATE_THRESHOLD = 0.82
 const NIGHT_MAX_DAYLIGHT = 0.38
 const NIGHT_TARGET_SECONDS = 12
@@ -913,7 +914,9 @@ function contractTargetFor(
   contract: Omit<SortieContractDefinition, 'detail'>,
   safeGates: number,
 ): number {
-  return contract.kind === 'pace' ? Math.max(48, 53 + safeGates * 3) : contract.target
+  // 11.023: 5.5 s per gate for 8 to 20 gates 0.8 to 2.5 km apart. A cruising
+  // pilot needs 5.7 to 7.7 s per gate, so SPEED RUN takes nitro and tight lines.
+  return contract.kind === 'pace' ? Math.max(48, Math.round(safeGates * SPEED_RUN_SECONDS_PER_GATE)) : contract.target
 }
 
 function contractDetailFor(kind: SortieContractKind, target: number): string {

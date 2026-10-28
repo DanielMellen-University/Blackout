@@ -63,7 +63,7 @@ describe('sortie contracts', () => {
     expect(sortieContractLabelForSeed(33, 5, true)).toBe('SKYLINE')
     expect(sortieContractDetailForSeed(33, 5, true)).toContain('3,000M')
     expect(sortieContractLabelForSeed(20, 5, true)).toBe('SPEED RUN')
-    expect(sortieContractDetailForSeed(20, 5, true)).toContain('FINISH UNDER 68S')
+    expect(sortieContractDetailForSeed(20, 5, true)).toContain('FINISH UNDER 48S')
     expect(sortieContractLabelForSeed(46, 5, true)).toBe('TERRAIN HUGGER')
     expect(sortieContractDetailForSeed(46, 5, true)).toContain('24-360M')
     expect(sortieContractLabelForSeed(38, 5, true)).toBe('FUEL SAVER')
@@ -139,13 +139,24 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
   })
 
+  it('sets SPEED RUN at 5.5 s per gate for 8 to 20 gates', () => {
+    // 11.023: the controls-only proof pilot needs 5.7 to 7.7 s per gate at cruise.
+    for (const [gates, seconds] of [[8, 48], [12, 66], [14, 77], [20, 110]] as const) {
+      const tracker = new SortieContractTracker()
+      tracker.reset(0, gates, true)
+      expect(tracker.kind).toBe('pace')
+      expect(tracker.detail).toBe(`FINISH UNDER ${seconds}S`)
+      expect(tracker.finish(seconds + 0.1, 1)).toBe(0)
+    }
+  })
+
   it('shows elapsed SPEED RUN budget without completing before the final gate', () => {
     const tracker = new SortieContractTracker()
     tracker.reset(0, 5, true)
     expect(tracker.kind).toBe('pace')
-    expect(tracker.detail).toBe('FINISH UNDER 68S')
+    expect(tracker.detail).toBe('FINISH UNDER 48S')
     tracker.recordPace(12.8)
-    expect(tracker.progress).toBeCloseTo(12.8 / 68)
+    expect(tracker.progress).toBeCloseTo(12.8 / 48)
     expect(tracker.detail).toContain('ELAPSED 12S')
     expect(tracker.complete).toBe(false)
     expect(tracker.finish(40, 1)).toBe(MAX_CONTRACT_SCORE)

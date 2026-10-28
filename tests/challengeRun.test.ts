@@ -585,7 +585,7 @@ describe('ChallengeRun', () => {
     run.update(4, 8)
     run.update(5, 8)
     run.update(3, 8)
-    expect(run.contractProgress).toBeCloseTo(12 / 68)
+    expect(run.contractProgress).toBeCloseTo(12 / 48)
     expect(run.contractDetail).toContain('ELAPSED 12S')
     expect(run.contractComplete).toBe(false)
   })
