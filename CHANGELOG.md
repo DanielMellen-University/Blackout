@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **11.022** Add r9 proof flights for every theme, flown-route spacing and bending, Waterway river and lake, Daily determinism and Free flight landing; announce LANDED only in Free flight. Free flight is otherwise unchanged.
 - **11.021** Match gated-run copy to airborne starts and finishes (DEADSTICK, engine-out banner, course descriptions, Training orbit, flight manual, README, overview) and remove the unused return-fuel HUD row. Free flight is unchanged.
 - **11.020** Drop the runway alignment contract and stale approach lines from gated runs; space generated gates 0.8 to 2.5 km apart (8 to 20 per route) and bend routes gently toward lower ground. Free flight is unchanged.
 - **11.019** Score gated runs on time and flying bonuses, show the breakdown in results, and keep prior records separate. Free flight is unchanged.
