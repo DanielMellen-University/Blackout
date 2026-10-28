@@ -29,3 +29,8 @@ export function flightStart<T extends { x: number; y: number; z: number; yaw: nu
 ) {
   return gate ? airborneStart(gate, groundHeight) : runway
 }
+
+/** Only Free flight lands: a gated run's ground contact is never announced as LANDED. */
+export function announcesLanding(freeFlightCourse: boolean, touch: string, wasAirborne: boolean, status: string): boolean {
+  return freeFlightCourse && touch === 'landed' && wasAirborne && status === 'ok'
+}

@@ -1,4 +1,4 @@
-import { flightStart } from './systems/AirborneStart'
+import { flightStart, announcesLanding } from './systems/AirborneStart'
 import { sampleTerrainSurfaceHeightFast } from './world/terrainSample'
 import { PERFECT_LINE_SEED, PERFECT_LINE_SPEED } from './world/PerfectLine'
 import { FLIGHT_REVISION_TAG, flightRecordId, legacyFlightRecordLabel } from './core/FlightRevision'
@@ -2296,11 +2296,16 @@ export async function boot(): Promise<void> {
           if (aircraft.onGround && (touch === 'roll' || touch === 'landed')) {
             landingFx.scrub(aircraft.position, aircraft.velocity, dt)
           }
+          const freeFlightCourse = !perfectLineActive && activeSortie.course.profile === 'free'
           if (!perfectLineActive && touch === 'landed' && wasAirborne && aircraft.status === 'ok') {
+            // Gated runs keep the same ground state but never announce a landing.
+            const announce = announcesLanding(freeFlightCourse, touch, wasAirborne, aircraft.status)
             aircraft.markLanded()
             wasAirborne = false
-            audio.playCue('landed')
-            showBanner('LANDED', 2800, 'success')
+            if (announce) {
+              audio.playCue('landed')
+              showBanner('LANDED', 2800, 'success')
+            }
           }
         }
 

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import { CollisionSystem } from '../src/systems/Collision'
-import { flightStart } from '../src/systems/AirborneStart'
+import { announcesLanding, flightStart } from '../src/systems/AirborneStart'
 import { ChallengeRun } from '../src/systems/ChallengeRun'
 import { MissionSystem } from '../src/systems/Mission'
 import { setTerrainProfile } from '../src/world/TerrainProfile'
@@ -54,8 +54,8 @@ function freeFlight(seed: number) {
       const touch = collision.check(aircraft)
       if (touch === 'crash' || touch === 'ditch') { out.crashed = `${touch}:${collision.failureReason}`; break }
       run.update(dt, aircraft.speed, Math.max(0, aircraft.position.y - spawn.y), 0, 0, false, !aircraft.onGround)
-      // main.ts: a touchdown after flight on an ok aircraft marks LANDED.
-      if (touch === 'landed' && wasAirborne && aircraft.status === 'ok') {
+      // main.ts: a Free flight touchdown after flight on an ok aircraft marks LANDED.
+      if (announcesLanding(true, touch, wasAirborne, aircraft.status)) {
         aircraft.markLanded(); wasAirborne = false; out.banners.push('LANDED'); out.landedAt = step / 60
       }
       if (out.landedAt >= 0 && aircraft.speed < 5) { out.stopped = true; break }
@@ -97,6 +97,8 @@ describe('r9 proof: Free flight keeps its runway start, takeoff and landing', ()
   })
 
   it('keeps the LANDED banner wired to touchdown in the game loop', () => {
-    expect(MAIN).toMatch(/touch === 'landed' && wasAirborne && aircraft\.status === 'ok'\) \{\s*aircraft\.markLanded\(\)\s*wasAirborne = false\s*audio\.playCue\('landed'\)\s*showBanner\('LANDED', 2800, 'success'\)/)
+    expect(MAIN).toContain("const freeFlightCourse = !perfectLineActive && activeSortie.course.profile === 'free'")
+    expect(MAIN).toMatch(/const announce = announcesLanding\(freeFlightCourse, touch, wasAirborne, aircraft\.status\)\s*aircraft\.markLanded\(\)\s*wasAirborne = false\s*if \(announce\) \{\s*audio\.playCue\('landed'\)\s*showBanner\('LANDED', 2800, 'success'\)/)
+    expect(MAIN.match(/showBanner\('LANDED'/g)).toHaveLength(1)
   })
 })

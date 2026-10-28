@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { airborneStart, flightStart } from '../src/systems/AirborneStart'
+import { airborneStart, announcesLanding, flightStart } from '../src/systems/AirborneStart'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import { setContactHeightSampler } from '../src/world/ground'
 
@@ -27,5 +27,16 @@ describe('free flight runway reset', () => {
     expect(aircraft.controls.gearDown).toBe(true)
     aircraft.dispose()
     setContactHeightSampler(null)
+  })
+})
+
+describe('landing announcement', () => {
+  it('announces LANDED only for a Free flight touchdown after flight', () => {
+    expect(announcesLanding(true, 'landed', true, 'ok')).toBe(true)
+    // Gated runs finish in the air: ground contact is never a landing.
+    expect(announcesLanding(false, 'landed', true, 'ok')).toBe(false)
+    expect(announcesLanding(true, 'landed', false, 'ok')).toBe(false)
+    expect(announcesLanding(true, 'roll', true, 'ok')).toBe(false)
+    expect(announcesLanding(true, 'landed', true, 'landed')).toBe(false)
   })
 })
