@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk 11.026. Orbit camera yaw follow (Daniel, Oct 28): the wide orbit view eases its frame toward the jet's heading with a frame-rate independent 1.6/s damp, so A/D yaw turns the view smoothly instead of leaving it fixed. Chase, cockpit, mouse look and Free flight are unchanged.
+Chunk 11.026. Far chase yaw easing (Daniel, Oct 28): with the chase view wheel-zoomed past its default 14 m, the rig's heading eases behind A/D yaw (frame-rate independent damp at 4/s, full at the 24 m furthest zoom) instead of locking rigidly. Pitch and Q/E roll stay rigid. The default middle view, orbit and cockpit are unchanged. A first attempt that made orbit follow heading was reverted.
 
 Chunk 11.025. Score revision s2 (Daniel, Oct 27): gated runs scored under the 11.024 rules keep their best scores, history, ghosts and retention under :s2 ids. s1 records stay in storage untouched and appear read-only in the existing historical label as S1 SCORE. Free flight records are unchanged.
 

@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35 through gate runs that start and finis
 
 Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.026**. Previous roadmap chunk: **11.025**.
 
-Recent changes from **11.026**. The wide orbit view now swings smoothly behind the jet when you yaw with A and D.
+Recent changes from **11.026**. With the chase view zoomed out on the mouse wheel, A and D yaw now swing the camera smoothly instead of locking it rigidly to the jet.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

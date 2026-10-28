@@ -108,6 +108,55 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
+  it('eases A/D yaw only in the wheel-zoomed-out chase view; middle and orbit views stay rigid/unchanged', () => {
+    const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() }
+    vi.stubGlobal('window', target)
+    const fly = (mode: 'chase' | 'orbit', fps: number, distance?: number) => {
+      const cameras = new CameraSystem({ ...target, style: {} } as unknown as HTMLCanvasElement)
+      const aircraft = new Aircraft()
+      try {
+        aircraft.reset({ x: 0, y: 3000, z: 0, yaw: 0 })
+        aircraft.controls.gearDown = false; aircraft.controls.throttle = 0.8
+        aircraft.velocity.copy(new Vector3(0, 0, 1).applyQuaternion(aircraft.orientation)).multiplyScalar(180)
+        aircraft.snapDisplay()
+        cameras.setMode(mode, aircraft); cameras.update(aircraft, 1 / fps)
+        const state = cameras as unknown as { distance: number; orbitHeading: number }
+        if (distance) state.distance = distance
+        const orbitHeading = state.orbitHeading
+        const yaw: number[] = []
+        const dir = new Vector3()
+        let acc = 0
+        let rigidError = 0
+        for (let f = 0; f < fps * 3; f++) {
+          const t = f / fps
+          acc += 1 / fps
+          while (acc >= 1 / 60) { acc -= 1 / 60; aircraft.capturePrevious(); aircraft.controls.yaw = t > .5 && t < 2 ? 1 : 0; aircraft.step(1 / 60) }
+          aircraft.present(acc * 60)
+          cameras.update(aircraft, 1 / fps)
+          const up = new Vector3(0, 1, 0).applyQuaternion(aircraft.displayOrientation)
+          rigidError = Math.max(rigidError, cameras.camera.up.distanceTo(up))
+          cameras.camera.getWorldDirection(dir)
+          yaw.push(Math.atan2(dir.x, dir.z))
+        }
+        const rate = yaw.slice(1).map((v, i) => (v - yaw[i]!) * fps)
+        const jerk = Math.max(...rate.slice(1).map((v, i) => Math.abs(v - rate[i]!) * fps))
+        return { jerk, rigidError, orbitDrift: Math.abs(state.orbitHeading - orbitHeading), finalYaw: yaw[Math.round(2.5 * fps) - 1]! }
+      } finally { cameras.dispose(); aircraft.dispose() }
+    }
+    // Middle (default chase) view stays rigid to the airframe, exactly as before.
+    const middle = fly('chase', 60)
+    expect(middle.rigidError).toBe(0)
+    expect(middle.jerk).toBeGreaterThan(10)
+    // Orbit keeps its heading captured on open.
+    expect(fly('orbit', 60).orbitDrift).toBe(0)
+    // Furthest wheel zoom eases the swing and is frame-rate independent.
+    const far60 = fly('chase', 60, 24)
+    const far144 = fly('chase', 144, 24)
+    expect(far60.jerk).toBeLessThan(4)
+    expect(far144.jerk).toBeLessThan(4)
+    expect(far144.finalYaw).toBeCloseTo(far60.finalYaw, 2)
+  })
+
   it('opens behind and a bit above the jet after a cockpit toggle', () => {
     const target = {
       addEventListener: vi.fn(),
