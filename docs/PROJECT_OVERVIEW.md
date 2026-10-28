@@ -65,8 +65,6 @@ Settlement-tour and waterway-tour contracts now acknowledge each distinct city, 
 
 Missed gate crossings also remain visible in the live HUD and its accessible route-progress label until the mission resets.
 
-During a return or engine-out glide, the HUD compares endurance to a conservative runway estimate and reports HOME OK, HOME TIGHT, or HOME LOW.
-
 ## A mission
 
 A mission is one flight attempt, from launch until the final gate or a crash. A course defines its route and conditions; retrying the same course starts another mission. Existing saved records and replay links remain compatible with the terminology change.

@@ -2948,7 +2948,6 @@ export async function boot(): Promise<void> {
       hudFrame.airbrake = aircraft.controls.airbrake
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
-      hudFrame.fuelHomeSeconds = null
       hudFrame.refueling = refueling
       hudFrame.landingPreview = null
       hudFrame.thermalLift = aircraft.thermalLift
