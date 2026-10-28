@@ -104,8 +104,6 @@ const MAX_EXTERNAL_BANK = 0.62
 const EXTERNAL_BANK_STIFFNESS = 8
 /** Recover an occluded chase rig gently after a ridge/building clears. */
 const OCCLUSION_RECOVERY_STIFFNESS = 6
-/** Orbit swings lazily behind the jet as A/D (or any turn) changes heading. */
-const ORBIT_HEADING_STIFFNESS = 1.6
 /** Keep depth precision focused on the streamed world and cloud envelope. */
 const CAMERA_FAR_MARGIN = CHUNK_SIZE * (FOG_MARGIN_CHUNKS + 2)
 /** Keep the default camera aligned with the full High-quality fog envelope. */
@@ -606,12 +604,6 @@ export class CameraSystem {
     } else if (cfg.yawOnly) {
       _offsetWorld.applyQuaternion(_headingQuat)
     } else if (this.mode === 'orbit') {
-      // Ease the orbit frame toward the jet's heading, frame-rate independent,
-      // so yaw input turns the wide view smoothly instead of leaving it fixed.
-      if (!snap && dt > 0) {
-        const target = this.aircraftHeading(aircraft)
-        this.orbitHeading = lerpAngle(this.orbitHeading, target, 1 - Math.exp(-ORBIT_HEADING_STIFFNESS * dt))
-      }
       _offsetWorld.applyAxisAngle(_Y_UP, this.orbitHeading)
     }
     // Orbit: leave offset in world spherical space around the pivot

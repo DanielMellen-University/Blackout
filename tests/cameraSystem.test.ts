@@ -108,39 +108,6 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
-  it('eases the orbit view behind the jet after a yaw, independent of frame rate', () => {
-    const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() }
-    vi.stubGlobal('window', target)
-    const run = (fps: number): number[] => {
-      const cameras = new CameraSystem({ ...target, style: {} } as unknown as HTMLCanvasElement)
-      const aircraft = new Aircraft()
-      try {
-        aircraft.position.set(0, 15000, 0); aircraft.snapDisplay()
-        cameras.setMode('orbit', aircraft)
-        cameras.update(aircraft, 1 / fps)
-        aircraft.orientation.setFromAxisAngle(new Vector3(0, 1, 0), 1); aircraft.snapDisplay()
-        const state = cameras as unknown as { orbitHeading: number }
-        const start = state.orbitHeading
-        const samples: number[] = []
-        let prevStep = Infinity
-        for (let i = 1; i <= fps * 3; i++) {
-          cameras.update(aircraft, 1 / fps)
-          const step = Math.abs(state.orbitHeading - start)
-          if (i % (fps / 2) === 0) samples.push(step)
-          prevStep = step
-        }
-        expect(prevStep).toBeGreaterThan(0.9)
-        return samples
-      } finally { cameras.dispose(); aircraft.dispose() }
-    }
-    const slow = run(30)
-    const fast = run(120)
-    // No snap on the first half second, then a steady swing behind the jet.
-    expect(slow[0]).toBeGreaterThan(0.4)
-    expect(slow[0]).toBeLessThan(0.7)
-    for (let i = 0; i < slow.length; i++) expect(fast[i]).toBeCloseTo(slow[i]!, 2)
-  })
-
   it('opens behind and a bit above the jet after a cockpit toggle', () => {
     const target = {
       addEventListener: vi.fn(),
