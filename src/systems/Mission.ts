@@ -1125,6 +1125,8 @@ export class MissionSystem {
     maxAltitudeMeters: 0,
   }
   timeAllowanceSec = 0
+  /** Median gate height above terrain; the terrain bonus is measured against it. */
+  gateLineClearanceM = 0
   private routeBriefingText = 'ROUTE ORBIT / APPROACH / STEADY / BALANCED / STANDARD / MIN CLR 120M / TURN 0° / TOP 0M'
   private readonly hudState: MissionHud = {
     status: 'idle',
@@ -1292,6 +1294,7 @@ export class MissionSystem {
     // TIME_ALLOWANCE_SPEED_MPS, with no departure or return leg.
     // This is scoring only; the route, gate pool and flight clock stay unchanged.
     this.timeAllowanceSec = last ? gateLineLength(route) / TIME_ALLOWANCE_SPEED_MPS : 0
+    this.gateLineClearanceM = medianGateClearance(route)
     const validation = resolution.validation
     if (!validation.valid) {
       this.status = 'idle'
@@ -1737,4 +1740,12 @@ function gateLineLength(route: readonly { x: number; y: number; z: number }[]): 
     length += Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z)
   }
   return length
+}
+
+/** Median height of the gates above the terrain under them. */
+function medianGateClearance(route: readonly { x: number; y: number; z: number }[]): number {
+  if (route.length === 0) return 0
+  const clearances = route.map(gate => Math.max(0, gate.y - sampleTerrainSurfaceHeightFast(gate.x, gate.z))).sort((a, b) => a - b)
+  const mid = clearances.length >> 1
+  return clearances.length % 2 ? clearances[mid]! : (clearances[mid - 1]! + clearances[mid]!) / 2
 }

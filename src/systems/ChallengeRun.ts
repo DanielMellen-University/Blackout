@@ -956,6 +956,7 @@ export class ChallengeRun {
     contractSeed?: number,
     catalog = false,
     timeAllowanceSec = 0,
+    gateLineClearanceM = 0,
   ): void {
     this.courseId = courseId
     this.totalGates = Math.max(0, Math.floor(totalGates))
@@ -963,7 +964,7 @@ export class ChallengeRun {
     this.scoringFocus = scoringFocus
     this.freeFlight = courseId === 'free-flight' || courseId === flightRecordId('free-flight')
     this.altitudeMilestone = 0
-    this.flyingScore = new FlyingScore()
+    this.flyingScore = new FlyingScore(gateLineClearanceM)
     this.phase = 'ready'
     this.elapsedSec = 0
     this.gatesPassed = 0

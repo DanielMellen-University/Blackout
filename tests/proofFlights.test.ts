@@ -69,7 +69,7 @@ export function flyProof(course: CourseDefinition, seed: number, maxSeconds = 42
     aircraft.controls.throttle = .5
     aircraft.snapDisplay()
     const run = new ChallengeRun(null)
-    run.reset(`proof:${course.id}`, mission.totalGates, mission.scoringFocus, contractSeed, course.contractCatalog === true, mission.timeAllowanceSec)
+    run.reset(`proof:${course.id}`, mission.totalGates, mission.scoringFocus, contractSeed, course.contractCatalog === true, mission.timeAllowanceSec, mission.gateLineClearanceM)
     const challenge = { phase: 'running' }
     const window: any = {}
     const make = new Function('window', 'aircraft', 'world', 'attitudeFromOrientation', 'challenge', 'activeSortie', 'b21Ground', 'wasAirborne', PILOT + '\nreturn window.__training')
@@ -139,6 +139,8 @@ describe('r9 proof flights: every theme, airborne start to airborne finish', () 
         expect(value).toBeGreaterThanOrEqual(0); expect(value).toBeLessThanOrEqual(10_000)
       }
       expect(bonus.lowScore + bonus.terrainScore + bonus.speedScore).toBeGreaterThan(0)
+      // 11.023: the terrain bonus is measured against the gate line, so flying the line scores some.
+      expect(bonus.terrainScore).toBeGreaterThan(500)
       // 11.023: the allowance is the gate line at 160 m/s. The proof pilot flies
       // it at about 134 to 141 m/s, so it loses time points; full time needs nitro.
       expect(result.timeAllowanceSec).toBeGreaterThan(0)

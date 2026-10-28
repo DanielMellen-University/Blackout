@@ -1628,6 +1628,7 @@ export async function boot(): Promise<void> {
       courseContractSeed(activeSortie.course, world.worldSeed),
       activeSortie.course.contractCatalog === true,
       world.mission.timeAllowanceSec,
+      world.mission.gateLineClearanceM,
     )
     if (!perfectLineActive) ghost.reset(activeCourseId)
     ghost.setVisible(!perfectLineActive && playing && ghostVisible && activeSortie.course.profile !== 'free')
@@ -3096,6 +3097,7 @@ export async function boot(): Promise<void> {
         activeSortie.course.gatesOnly ? undefined : world.worldSeed,
         activeSortie.course.contractCatalog === true,
       world.mission.timeAllowanceSec,
+      world.mission.gateLineClearanceM,
       )
   syncInputContext()
   // The procedural F-35 is the immediate playable path. If an optional GLB
