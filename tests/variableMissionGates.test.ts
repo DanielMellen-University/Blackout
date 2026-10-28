@@ -16,8 +16,8 @@ afterEach(() => { setTerrainProfile(null); clearOpsPad() })
 for (const theme of MISSION_THEMES) it.each([6, 20, 42, 67, 1337, 9001])(`${theme} seed %s has deterministic bounded gates and a flyable corridor`, seed => {
   const spec = generateMission(seed, theme), p = spec.start, pad = spec.landingRunway
   expect(generateMission(seed, theme)).toEqual(spec)
-  expect(spec.goals.gates).toBeGreaterThanOrEqual(15)
-  expect(spec.goals.gates).toBeLessThanOrEqual(100)
+  expect(spec.goals.gates).toBeGreaterThanOrEqual(8)
+  expect(spec.goals.gates).toBeLessThanOrEqual(20)
   setWorldSeed(seed); setTerrainProfile(spec.terrain); setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
   const route = buildMissionRoute(p.x, p.y, p.z, p.yaw, spec.profile)
   const summary = summarizeMissionRoute(p.x, p.y, p.z, route, spec.profile, 'steady', p.yaw)
@@ -25,8 +25,12 @@ for (const theme of MISSION_THEMES) it.each([6, 20, 42, 67, 1337, 9001])(`${them
   expect(summary.maxTurnDegrees).toBeLessThan(75)
   expect(summary.maxSlopeDegrees).toBeLessThan(20)
   let previous = p
-  for (const point of route) {
-    expect(Math.hypot(point.x - previous.x, point.z - previous.z)).toBeGreaterThan(80)
+  for (const [index, point] of route.entries()) {
+    const leg = Math.hypot(point.x - previous.x, point.z - previous.z)
+    if (index > 0) {
+      expect(leg).toBeGreaterThanOrEqual(800)
+      expect(leg).toBeLessThanOrEqual(2500)
+    }
     previous = { ...point, yaw: p.yaw }
   }
   const mission = new MissionSystem(new Scene())
@@ -37,10 +41,24 @@ for (const theme of MISSION_THEMES) it.each([6, 20, 42, 67, 1337, 9001])(`${them
     expect(mission.timeAllowanceSec).toBeCloseTo(45 + (summary.lengthMeters + Math.hypot(previous.x-p.x,previous.y-p.y,previous.z-p.z))/150)
   } finally { mission.dispose() }
 })
-it('reaches both inclusive endpoints with ordinary seeds', () => {
-  expect(generateMission(67, 'desert-run').course).toHaveLength(15)
-  expect(generateMission(6, 'mountain-valley-run').course).toHaveLength(100)
-  expect(generateMission(20, 'waterway-run').course).toHaveLength(100)
+it('places 8 to 20 gates 0.8 to 2.5 km apart under the 75 degree turn limit on 500 theme and seed cases', () => {
+  for (const theme of MISSION_THEMES) for (let seed = 0; seed < 100; seed++) {
+    for (const training of theme === 'desert-run' ? [false, true] : [false]) {
+      const spec = generateMission(seed * 37 + 3, theme, training), p = spec.start
+      expect(spec.course.length).toBeGreaterThanOrEqual(8)
+      expect(spec.course.length).toBeLessThanOrEqual(20)
+      let x = p.x, z = p.z, hx = Math.sin(p.yaw), hz = Math.cos(p.yaw)
+      for (const [index, gate] of spec.course.entries()) {
+        const dx = gate.x - x, dz = gate.z - z, leg = Math.hypot(dx, dz)
+        if (index > 0) {
+          expect(leg).toBeGreaterThanOrEqual(800)
+          expect(leg).toBeLessThanOrEqual(2500)
+        }
+        expect(Math.acos(Math.min(1, (dx * hx + dz * hz) / leg)) * 180 / Math.PI).toBeLessThan(75)
+        hx = dx / leg; hz = dz / leg; x = gate.x; z = gate.z
+      }
+    }
+  }
 })
 it.each([15, 24, 55, 100])('preserves score and 125 percent uncapped nitro awards across %s gates, including stored splits', count => {
   const values = new Map<string, string>()
@@ -70,42 +88,46 @@ it('keeps pre-b30 records read-only and separate in the existing historical disp
   const values = new Map([[`blackout.best.${old}`, '90000'], [`blackout.ghost.${old}`, 'saved']])
   expect(legacyFlightRecordLabel({ getItem: key => values.get(key) ?? null }, current)).toContain('PRE-B30 BEST 90000 / GHOST SAVED')
   expect(values.has(`blackout.best.${current}`)).toBe(false)
+  const spaced = current.replace(':q146:', ':q156:')
+  expect(legacyFlightRecordLabel({ getItem: key => values.get(key) ?? null }, spaced)).toContain('PRE-B30 BEST 90000 / GHOST SAVED')
 })
 it('validates Daily, Weekly and Monthly Ops periods through ordinary gate triggers', () => {
   for (const def of COURSE_LIBRARY.filter(c => 'daily' in c || 'weekly' in c || 'monthly' in c)) {
     for (const day of [1, 22, 120]) {
       const course = resolveCourseDefinition(def, Date.UTC(2026,9,day))
       const row = auditMissionGeometry(course, course.seed!)
-      expect(row.gates).toBeGreaterThanOrEqual(15)
-      expect(row.gates).toBeLessThanOrEqual(100)
+      expect(row.gates).toBeGreaterThanOrEqual(8)
+      expect(row.gates).toBeLessThanOrEqual(20)
     }
   }
 }, 30000)
 
-it('reuses all 100 gate objects and the populated trace buffer through retries and Free flight', () => {
+it('reuses the pooled gate objects and the populated trace buffer through retries and Free flight', () => {
   const spec = generateMission(6, 'mountain-valley-run'), p = spec.start, pad = spec.landingRunway
   setWorldSeed(6); setTerrainProfile(spec.terrain); setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
   const mission = new MissionSystem(new Scene())
   try {
     mission.start(p.x, p.y, p.z, p.yaw, spec.profile)
-    const gate = mission.root.getObjectByName('gate_99')!
+    const count = spec.goals.gates
+    const gate = mission.root.getObjectByName(`gate_${count - 1}`)!
     const trace = mission.root.getObjectByName('RouteTrace') as Line
     const attribute = trace.geometry.getAttribute('position')
     const buffer = attribute.array
-    expect(trace.geometry.drawRange.count).toBe(100)
+    expect(trace.geometry.drawRange.count).toBe(count)
     const route = buildMissionRoute(p.x, p.y, p.z, p.yaw, spec.profile)
-    for (let i=0;i<100;i++) {
+    for (let i=0;i<count;i++) {
       expect(attribute.getX(i)).toBeCloseTo(route[i]!.x, 2)
       expect(attribute.getY(i)).toBeCloseTo(route[i]!.y, 2)
       expect(attribute.getZ(i)).toBeCloseTo(route[i]!.z, 2)
     }
     mission.start(p.x, p.y, p.z, p.yaw, 'orbit')
     expect(mission.totalGates).toBeLessThanOrEqual(24)
-    expect(gate.parent!.visible).toBe(false)
+    expect(gate.parent!.visible).toBe(count - 1 < mission.totalGates)
     expect(trace.geometry.getAttribute('position').array).toBe(buffer)
-    expect(mission.root.getObjectByName('gate_99')).toBe(gate)
+    expect(mission.root.getObjectByName(`gate_${count - 1}`)).toBe(gate)
     mission.start(p.x, p.y, p.z, p.yaw, 'free')
     expect(mission.totalGates).toBe(0)
+    expect(gate.parent!.visible).toBe(false)
     expect(trace.visible).toBe(false)
   } finally { mission.dispose() }
 })
@@ -118,8 +140,10 @@ it('previews the actual replay/period count and avoids a five-gate time target f
   const count = courseGateCountPreview(replay)!
   expect(count).toBe(generateMission(67, replay.terrainTheme!).goals.gates)
   expect(sortieContractDetailForSeed(replay.contractSeed, count, true)).toBe(`FINISH UNDER ${53 + count * 3}S`)
-  expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), 6))).toBe(100)
-  expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('training-orbit'), 67))).toBe(15)
+  expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), 6))).toBe(generateMission(6, 'mountain-valley-run').goals.gates)
+  const training = resolveCourseReplaySeed(courseDefinitionForId('training-orbit'), 67)
+  expect(courseGateCountPreview(training)).toBe(generateMission(67, training.terrainTheme!, true).goals.gates)
+  expect(courseGateCountPreview(training)).toBeLessThanOrEqual(20)
   expect(courseGateCountPreview(resolveCourseReplaySeed(courseDefinitionForId('free-flight'), 6))).toBe(0)
   for (const id of ['daily-ops', 'weekly-ops', 'monthly-ops']) {
     const course = resolveCourseDefinition(courseDefinitionForId(id), Date.UTC(2026,9,22))

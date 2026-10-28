@@ -20,7 +20,9 @@ for(const theme of themes){
   const shapes=specs.map(s=>s.course.map(p=>({...local(s,p),height:p.y-s.terrain.baseHeight})))
   expect(Math.max(...specs.map(s=>s.start.yaw))-Math.min(...specs.map(s=>s.start.yaw))).toBeGreaterThan(4)
   const widths=shapes.map(s=>Math.max(...s.map(p=>Math.abs(p.right))))
-  expect(Math.max(...widths)-Math.min(...widths)).toBeGreaterThan(theme === 'mountain-valley-run' ? 450 : theme === 'volcanic-run' ? 400 : 650)
+  // Narrow loops widen to about 1.5 km for 0.8 km gate spacing (Daniel, Oct 27),
+  // which narrows the coastal and volcanic width spread.
+  expect(Math.max(...widths)-Math.min(...widths)).toBeGreaterThan(theme === 'mountain-valley-run' ? 450 : theme === 'volcanic-run' ? 200 : theme === 'coastal-island-run' ? 500 : 650)
   if(theme === 'desert-run' || theme === 'mountain-valley-run')expect(new Set(shapes.map(s=>Math.sign(s[Math.floor(s.length/2)]!.right))).size).toBe(2)
   expect(new Set(shapes.map(s=>s.map(p=>Math.round(p.height)).join(','))).size).toBeGreaterThan(15)
   for(const shape of shapes){expect(Math.abs(shape.at(-2)!.right)).toBeLessThan(.001);expect(Math.abs(shape.at(-1)!.right)).toBeLessThan(.001);expect(shape.at(-1)!.forward).toBeGreaterThanOrEqual(shape.at(-2)!.forward+599.99)}

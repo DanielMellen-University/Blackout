@@ -1,4 +1,5 @@
 import { Scene } from 'three'
+import { MAX_GENERATED_GATES, MIN_GENERATED_GATES } from '../../src/systems/MissionGates'
 import { generateLegacyMission } from '../../src/systems/LegacyMissionGenerator'
 import type { CourseDefinition } from '../../src/systems/CourseLibrary'
 import { MissionSystem, buildMissionRoute, missionLegClearance, missionChallengeForProfile } from '../../src/systems/Mission'
@@ -21,7 +22,7 @@ export function auditMissionGeometry(course: CourseDefinition, seed: number) {
   try {
     mission.start(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, course.profile!, adapted.modifier)
     const route = buildMissionRoute(spec.start.x, spec.start.y, spec.start.z, spec.start.yaw, course.profile!, adapted.modifier)
-    require(!mission.routeFallbackUsed && route.length === spec.goals.gates && route.length >= 15 && route.length <= 100, 'route fallback or wrong gate count')
+    require(!mission.routeFallbackUsed && route.length === spec.goals.gates && route.length >= MIN_GENERATED_GATES && route.length <= MAX_GENERATED_GATES, 'route fallback or wrong gate count')
     // b36 (11.005) made gates 50% bigger: ring and trigger both scale by 1.5.
     const radius = (missionChallengeForProfile(course.profile!) === 'precision' ? 38 * .78 - 2 : 36) * 1.5
     require(mission.gates.every(gate => Math.abs(gate.radius - radius) < 1e-9), 'gate trigger radius drift')

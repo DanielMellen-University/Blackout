@@ -45,8 +45,10 @@ it('reshapes the shared geography paths and clears back to the original world', 
       const sample = sampleGeography(point.x, point.z)
       expect(sample.height).toBe(sampleGeographyHeight(point.x, point.z))
       expect(Math.max(sample.waterLevel, sample.height)).toBe(sampleGeographySurfaceHeight(point.x, point.z))
-      if (theme !== 'coastal-island-run' && theme !== 'waterway-run') expect(sample.height).toBeGreaterThan(spec.start.y)
-      else expect(sample.height).toBeLessThan(spec.course[1]!.y - 120)
+      // Sparse 8 to 20 gate lines: any gate shows the reshaped theme ground.
+      const ground = spec.course.map(p => sampleGeographyHeight(p.x, p.z))
+      if (theme !== 'coastal-island-run' && theme !== 'waterway-run') expect(Math.max(...ground)).toBeGreaterThan(spec.start.y)
+      else expect(spec.course.some((p, i) => ground[i]! < p.y - 120)).toBe(true)
       if (theme !== 'waterway-run') {
         expect(waterLandmarks(0, 0)).toHaveLength(0)
         expect(riverReaches(0, 0)).toHaveLength(0)
@@ -77,7 +79,7 @@ it.each([42, 73, 808])('flies the desert recipe through the existing mission and
     expect(mission.timeAllowanceSec).toBeGreaterThan(80)
     const replay = resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed)
     const record = courseRunId(replay)
-    expect(record).toBe(`seed:${seed}:generated-desert:r32:l33:q46:s1`)
+    expect(record).toBe(`seed:${seed}:generated-desert:r32:l33:q56:s1`)
     expect(courseSessionId('desert-run', seed, spec.profile)).toBe(record)
     for (let x = -12000; x <= 12000; x += 2000) {
       const sample = sampleGeography(spec.terrain.originX + x, spec.terrain.originZ + x)
@@ -115,7 +117,7 @@ it.each([42, 73, 808, 1337, 2026, 9001])('keeps a wide low valley corridor betwe
     expect(mission.routeFallbackUsed).toBe(false)
     expect(mission.totalGates).toBe(spec.goals.gates)
     const replay = resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), seed)
-    expect(courseRunId(replay)).toBe(`seed:${seed}:generated-valley:r32:l33:q46:s1`)
+    expect(courseRunId(replay)).toBe(`seed:${seed}:generated-valley:r32:l33:q56:s1`)
     expect(courseSessionId('mountain-valley-run', seed, spec.profile)).toBe(courseRunId(replay))
     expect(courseRunId(replay)).not.toBe(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed)))
   } finally { mission.dispose(); setTerrainProfile(null); clearOpsPad() }

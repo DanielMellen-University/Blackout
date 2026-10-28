@@ -2,6 +2,11 @@
 export const MIN_MISSION_GATES = 15
 export const MAX_MISSION_GATES = 100
 export const BASELINE_GATE_AWARDS = 5
+/** Mission overhaul A (Oct 24 2026, spacing decided Oct 27): generated routes. */
+export const MIN_GENERATED_GATES = 8
+export const MAX_GENERATED_GATES = 20
+export const MIN_GATE_SPACING_M = 800
+export const MAX_GATE_SPACING_M = 2_500
 
 interface Point { x: number; y: number; z: number }
 

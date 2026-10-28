@@ -27,8 +27,10 @@ export function legacyFlightRecordLabel(storage: Pick<Storage, 'getItem'> | null
   try {
     const previousScoreId = currentId.replace(`:${SCORE_REVISION_TAG}`, '')
     const base = legacyFlightRecordId(previousScoreId)
-    // b30 changes only routes. Retain the existing read-only historical UI.
-    const oldRoute = previousScoreId.replace(/:q(1?4[6-9])(?=:|$)/, (_, q: string) => `:q${Number(q) - 10}`)
+    // b30 and M0 spacing change only routes. Retain the existing read-only
+    // pre-b30 historical UI for both route generations.
+    const oldRoute = previousScoreId.replace(/:q(1?[45][6-9])(?=:|$)/, (_, q: string) =>
+      `:q${Number(q) - (Number(q) % 100 >= 56 ? 20 : 10)}`)
     return [...(oldRoute !== previousScoreId ? [[oldRoute, 'PRE-B30']] : []), [base, 'PRE-B20'], [base.replace(/^(seed:-?\d+:[a-z-]+|random-world|free-flight)(?=:|$)/, '$1:r31'), 'B20 R31']].map(([id, label]) => {
       const score = Number(storage?.getItem(`blackout.best.${id}`) ?? 0)
       const rawHistory = storage?.getItem(`blackout.history.${id}`)

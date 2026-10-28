@@ -43,8 +43,8 @@ for (const theme of themes) it.each(seeds)('validates the seeded %s corridor, re
   expect(identity).toBe(`seed:${seed}.123456:${spec.profile}:r32:l${spec.terrain.landscapeRevision}:q${spec.terrain.routeRevision}:s1`)
   expect(courseSessionId(theme, seed + .123456, spec.profile)).toBe(identity)
   expect(identity).not.toBe(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed + .123456)))
-  expect(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed))).toBe(`seed:${seed}:generated-desert:r32:l33:q46:s1`)
-  expect(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), seed))).toBe(`seed:${seed}:generated-valley:r32:l33:q46:s1`)
+  expect(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('desert-run'), seed))).toBe(`seed:${seed}:generated-desert:r32:l33:q56:s1`)
+  expect(courseRunId(resolveCourseReplaySeed(courseDefinitionForId('mountain-valley-run'), seed))).toBe(`seed:${seed}:generated-valley:r32:l33:q56:s1`)
 })
 
 it.each(seeds)('has real open sea, beaches, cliffs and a small coastal town on seed %s', seed => {

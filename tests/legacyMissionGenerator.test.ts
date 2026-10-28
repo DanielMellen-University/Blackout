@@ -82,7 +82,7 @@ it.each(['monsoon-run', 'waterway-tour'])('separates %s natural-world records an
   for (const key of ['label', 'detail', 'profile', 'weather', 'weatherShift', 'timeOfDay', 'windSide', 'contractCatalog'] as const)
     expect(replay[key]).toEqual(raw[key])
   const record = courseSessionId(id, 54, originalProfile)
-  expect(record).toBe(`seed:54:generated-waterway:r32:l136:q149:mission:${id}:s1`)
+  expect(record).toBe(`seed:54:generated-waterway:r32:l136:q159:mission:${id}:s1`)
   expect(record).not.toBe(`seed:54:${originalProfile}:r32`)
   expect(record).not.toBe(courseSessionId(id, 42, originalProfile))
 })

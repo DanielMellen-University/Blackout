@@ -66,7 +66,7 @@ for (const course of COURSE_LIBRARY.filter(c => c.seed !== null)) it.each([42, 1
     expect(mission.routeModifier).toBe(adapted.modifier)
     if (course.id === 'river-run') {
       expect(spec.course.map(p => waterBodyFromClimate(sampleGeography(p.x, p.z)))).toEqual(expect.arrayContaining(['river', 'lake']))
-      expect(legacyGeneratedRecordId(course, seed)).toContain(':generated-waterway:r32:l136:q149:mission:river-run')
+      expect(legacyGeneratedRecordId(course, seed)).toContain(':generated-waterway:r32:l136:q159:mission:river-run')
     } else {
       // The existing 71 mappings retain their theme and use the new gate distribution.
       expect(spec.course).toEqual(generateMission(seed, old.resolved.terrainTheme, course.profile === 'orbit').course)

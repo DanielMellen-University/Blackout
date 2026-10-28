@@ -109,8 +109,8 @@ describe('course session lifetime', () => {
 
   it('preserves authored, custom random, bounded random and free-flight identities', () => {
     const session = new CourseSession(utc('2026-10-06T12:00:00'))
-    expect(session.capture('training-orbit', 1, 'orbit').recordId).toBe('seed:1:generated-desert:r32:l133:q146:mission:training-orbit:s1')
-    expect(session.capture('clean-circuit-run', 9, 'desert').recordId).toBe('seed:9:generated-desert:r32:l133:q146:mission:clean-circuit-run:s1')
+    expect(session.capture('training-orbit', 1, 'orbit').recordId).toBe('seed:1:generated-desert:r32:l133:q156:mission:training-orbit:s1')
+    expect(session.capture('clean-circuit-run', 9, 'desert').recordId).toBe('seed:9:generated-desert:r32:l133:q156:mission:clean-circuit-run:s1')
     expect(session.capture('random', 99, 'ridge', true).recordId).toBe('seed:99:ridge:r32:custom:s1')
     expect(session.capture('random', 99, 'ridge').recordId).toBe(session.capture('random', 100, 'orbit').recordId)
     expect(session.capture('free-flight', 99, 'free').recordId).toBe('free-flight:r32')
@@ -127,6 +127,6 @@ describe('course session lifetime', () => {
     // Failed reseeds and retries retain this snapshot; only a successful build
     // is captured, matching the actual world rather than the menu selection.
     expect(active.course.id).toBe('training-orbit')
-    expect(active.recordId).toBe('seed:1:generated-desert:r32:l133:q146:mission:training-orbit:s1')
+    expect(active.recordId).toBe('seed:1:generated-desert:r32:l133:q156:mission:training-orbit:s1')
   })
 })
