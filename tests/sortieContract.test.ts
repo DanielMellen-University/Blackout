@@ -763,6 +763,19 @@ describe('sortie contracts', () => {
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('describes DEADSTICK by its airborne fuel-out completion, not a return to base', () => {
+    let seed = 0
+    while (sortieContractLabelForSeed(seed) !== 'DEADSTICK') seed++
+    expect(sortieContractDetailForSeed(seed)).toBe('REACH FUEL OUT IN FLIGHT')
+    const tracker = new SortieContractTracker()
+    tracker.reset(seed, 5)
+    expect(tracker.detail).not.toContain('BASE')
+    tracker.recordDeadstick(0, false)
+    expect(tracker.complete).toBe(false)
+    tracker.recordDeadstick(0, true)
+    expect(tracker.complete).toBe(true)
+  })
+
   it('never assigns the retired runway-alignment contract to a gated run', () => {
     for (const catalog of [false, true]) {
       for (let seed = 0; seed < 4_096; seed += 1) {

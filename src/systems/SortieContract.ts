@@ -932,7 +932,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'heat': return `KEEP HEAT BELOW ${Math.round(HEAT_MAX_FRACTION * 100)}% ABOVE ${Math.round(HEAT_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'crosswind': return `HOLD CROSSWIND ABOVE ${Math.round(CROSSWIND_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'g-control': return `HOLD ${Math.round(G_CONTROL_MIN_MPS * 1.943844492)}+ KTS BETWEEN ${G_CONTROL_MIN}G AND ${G_CONTROL_MAX}G FOR ${Math.round(target)}S`
-    case 'deadstick': return 'GLIDE TO BASE AFTER FUEL OUT'
+    case 'deadstick': return 'REACH FUEL OUT IN FLIGHT'
     case 'front': return `FLY DURING WEATHER SHIFT FOR ${Math.round(target)}S`
     case 'boost': return `HOLD AFTERBURNER ABOVE ${Math.round(BOOST_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'mach': return `BREAK MACH 1 FOR ${Math.round(target)}S`
