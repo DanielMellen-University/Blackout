@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.028** Grade tapered river ends downhill and align tapered ends and mouth extensions with their curved endpoint directions. Add geometry regression tests.
+
 - **11.027** Lock the orbit view directly behind the jet: it follows the jet's heading every frame with no lag (0 degrees off the tail through A/D turns), keeping its pitch, level horizon and eased zoom. Remove the 11.026 far chase yaw easing so chase is rigid behind the jet at every wheel zoom, matching 11.025. Cockpit is unchanged.
 - **11.026** Smooth A/D yaw in the furthest zoomed-out chase view: past the default 14 m wheel distance the rig's heading eases behind the jet (frame-rate independent damp at 4/s, blending to full at the 24 m maximum) instead of locking rigidly; pitch and Q/E roll stay rigid. The default middle view, orbit and cockpit are byte-for-byte unchanged. The first attempt (orbit following heading) is reverted. Lock the Flight Plan featured row to exactly Free flight, Training orbit and Daily challenge (comment, AGENTS.md rule and test); main already showed only these three since 11.001.
 - **11.025** Start score revision s2 so gated runs scored under the 11.024 rules get fresh best scores, history, ghosts and retention. s1 records are kept (no deletion or migration) and shown read-only in the existing historical label as S1 SCORE. Free flight is unchanged.
