@@ -7,6 +7,8 @@ import { sampleGeography } from '../src/world/Geography'
 import { sampleTerrainSurfaceHeightFast, waterBodyFromClimate, setOpsPad, clearOpsPad } from '../src/world/terrainSample'
 import { buildMissionRoute, missionLegClearance } from '../src/systems/Mission'
 import { coastField } from '../src/world/Coastline'
+import { waterwayDrainage } from '../src/world/WaterwayTerrain'
+import { riverSurface } from '../src/world/RiverSurface'
 
 afterEach(() => { setTerrainProfile(null); clearOpsPad() })
 it('preserves the four original landscapes and separates changed routes', () => {
@@ -20,6 +22,20 @@ it('preserves the four original landscapes and separates changed routes', () => 
     expect(spec.course.map(p => sampleGeography(p.x, p.z))).toEqual(samples)
   }
 })
+it('builds the same lake joins regardless of the first surface query', () => {
+  const profile = generateMission(42, 'waterway-run').terrain
+  const first = waterwayDrainage(profile), second = waterwayDrainage(profile)
+  let clipped = 0
+  for (let i = 0; i < first.reaches.length; i++) {
+    const withoutLake = riverSurface(first.reaches[i]!, [])
+    const withLake = riverSurface(second.reaches[i]!, second.basins)
+    if (withLake.triangles) clipped++
+    expect(withoutLake.triangles, `reach ${i}`).toEqual(withLake.triangles)
+    expect(withoutLake.sections, `reach ${i}`).toEqual(withLake.sections)
+  }
+  expect(clipped).toBeGreaterThan(0)
+})
+
 it.each([42, 1337, 9001, 31415, ...Array.from({ length: 32 }, (_, i) => i + 70)])('has reachable river and lake, a clear course and dry aligned approach on seed %s', seed => {
   const spec = generateMission(seed, 'waterway-run'), pad = spec.landingRunway
   expect(generateMission(seed, 'waterway-run')).toEqual(spec)
