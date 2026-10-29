@@ -39,6 +39,24 @@ describe('smooth physical river spans', () => {
     }
   })
 
+  it('grades tapered source and terminal caps downhill', () => {
+    const r = reach(0, 0, 500, 0)
+    r.source = true; r.terminal = true
+    const caps = riverSurface(r, []).caps
+    const heights = new Map<number, number>()
+    for (let i = 0; i < 120; i += 4) {
+      const x = caps[i]!, y = caps[i + 1]!
+      // The round terminal cap is coplanar with its endpoint; check the taper.
+      if (!heights.has(x)) heights.set(x, y)
+    }
+    const source = [...heights].filter(([x]) => x <= 0).sort((a, b) => a[0] - b[0])
+    const terminal = [...heights].filter(([x]) => x >= 500).sort((a, b) => a[0] - b[0])
+    expect(source.length).toBeGreaterThanOrEqual(4)
+    expect(terminal.length).toBeGreaterThanOrEqual(4)
+    for (const profile of [source, terminal])
+      for (let i = 1; i < profile.length; i++) expect(profile[i]![1]).toBeLessThanOrEqual(profile[i - 1]![1])
+  })
+
   it('preserves span shape far from the world origin', () => {
     const local = reach(0, 0, 500, 500), offset = 100000000
     const distant = reach(offset, -offset, offset + 500, -offset + 500)

@@ -204,9 +204,9 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
       return [vertex(x - fz * w, center[1]! + lift, z + fx * w, depth),
         vertex(x + fz * w, center[1]! + lift, z - fx * w, depth)]
     }
-    const near = section(.2, Math.max(1.2, radius * .7), .02, .06)
-    const mid = section(.5, Math.max(.8, radius * .42), .012, .035)
-    const tip = vertex(center[0]! + fx * direction * distance, center[1]! - .012,
+    const near = section(.2, Math.max(1.2, radius * .7), -direction * .006, .06)
+    const mid = section(.5, Math.max(.8, radius * .42), -direction * .012, .035)
+    const tip = vertex(center[0]! + fx * direction * distance, center[1]! - direction * .02,
       center[2]! + fz * direction * distance, .008)
     quad(left, right, near[1]!, near[0]!); quad(near[0]!, near[1]!, mid[1]!, mid[0]!)
     triangle(mid[0]!, mid[1]!, tip)
