@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 11.029. River generation fixes: preserve curved banks in streaming queries, align flow shading through curved joins, clear narrow channels through dry-corner terrain cells, improve lake-edge clipping, and use canonical basin data and shared tangents for Waterway reaches. Headless review still shows a thin line at the Waterway lake boundary and an angular regional confluence bank.
+
 Chunk 11.028. River end geometry: grade tapered ends downhill and align end extensions with curved endpoints. A headless confluence review still shows an angular bank and visible join; further river polish remains unverified.
 
 Chunk 11.027. Camera follow (Daniel, Oct 28): the orbit view follows the jet's heading every frame with no lag, so it stays directly behind through A/D turns while keeping its pitch, level horizon and zoom. The 11.026 far chase yaw easing is removed; chase is rigid behind the jet at every wheel zoom, as in 11.025. Cockpit is unchanged.
@@ -155,7 +157,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.028** is current. Previous ship: **11.027**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.029** is current. Previous ship: **11.028**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
