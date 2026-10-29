@@ -22,6 +22,16 @@ it('preserves the four original landscapes and separates changed routes', () => 
     expect(spec.course.map(p => sampleGeography(p.x, p.z))).toEqual(samples)
   }
 })
+it('shares curved cross-sections between Waterway spans outside the lake', () => {
+  const { reaches } = waterwayDrainage(generateMission(42, 'waterway-run').terrain)
+  for (let i = 0; i < 14; i++) {
+    const a = reaches[i]!, b = reaches[i + 1]!
+    expect([a.tangentBX, a.tangentBZ]).toEqual([b.tangentAX, b.tangentAZ])
+    const first = riverSurface(a, []).sections, second = riverSurface(b, []).sections
+    expect([...first.slice(-12)]).toEqual([...second.slice(0, 12)])
+  }
+})
+
 it('builds the same lake joins regardless of the first surface query', () => {
   const profile = generateMission(42, 'waterway-run').terrain
   const first = waterwayDrainage(profile), second = waterwayDrainage(profile)

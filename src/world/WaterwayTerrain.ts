@@ -17,10 +17,19 @@ export function waterwayDrainage(profile: Readonly<TerrainProfile>): { basins: W
   for (let i = 0; i < 22; i++) {
     const forward = -6500 + i * 500
     const right = (f: number) => 1100 + Math.sin(f / 1600 + profile.phase) * 130
+    const tangent = (f: number) => {
+      const slope = Math.cos(f / 1600 + profile.phase) * 130 / 1600
+      const x = Math.cos(profile.yaw) * slope + Math.sin(profile.yaw)
+      const z = -Math.sin(profile.yaw) * slope + Math.cos(profile.yaw)
+      const length = Math.hypot(x, z)
+      return { x: x / length, z: z / length }
+    }
     const a = point(right(forward), forward), b = point(right(forward + 500), forward + 500)
+    const ta = tangent(forward), tb = tangent(forward + 500)
     const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz)
     const reach: RiverReach = { ax: a.x, az: a.z, bx: b.x, bz: b.z, dx, dz, length, lengthSq: length * length,
       wa: 250, wb: 250, ya: level, yb: level, source: i === 0, terminal: i === 21,
+      tangentAX: ta.x, tangentAZ: ta.z, tangentBX: tb.x, tangentBZ: tb.z,
       id: `waterway:river:${i}` }
     registerRiverSurface(reach, basins)
     reaches.push(reach)
