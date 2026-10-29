@@ -162,14 +162,20 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
       values.unshift(...row)
     }
   }
+  const endpointDirection = (x: number | undefined, z: number | undefined): readonly [number, number] => {
+    const magnitude = Math.hypot(x ?? 0, z ?? 0)
+    return magnitude > .00001 ? [x! / magnitude, z! / magnitude] : [fx, fz]
+  }
+  const startDirection = curved ? endpointDirection(reach.tangentAX, reach.tangentAZ) : [fx, fz] as const
+  const endDirection = curved ? endpointDirection(reach.tangentBX, reach.tangentBZ) : [fx, fz] as const
   if (reach.mouth) {
     const last = values.length - 12
     const radius = Math.hypot(values[last]! - values[last + 4]!, values[last + 2]! - values[last + 6]!)
     const overlap = Math.min(80, Math.max(32, radius * 2.2))
     for (let side = 0; side < 3; side++) {
       const index = last + side * 4
-      values.push(...vertex(values[index]! + fx * overlap, values[index + 1]!,
-        values[index + 2]! + fz * overlap, Math.max(values[index + 3]!, .18)))
+      values.push(...vertex(values[index]! + endDirection[0] * overlap, values[index + 1]!,
+        values[index + 2]! + endDirection[1] * overlap, Math.max(values[index + 3]!, .18)))
     }
   }
   const triangle = (a: readonly number[], b: readonly number[], c: readonly number[]): void => { caps.push(...a, ...b, ...c) }
@@ -199,15 +205,16 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
       return
     }
     const distance = Math.max(140, radius * 3.4)
+    const [tx, tz] = direction < 0 ? startDirection : endDirection
     const section = (t: number, w: number, lift: number, depth: number): number[][] => {
-      const x = center[0]! + fx * direction * distance * t, z = center[2]! + fz * direction * distance * t
-      return [vertex(x - fz * w, center[1]! + lift, z + fx * w, depth),
-        vertex(x + fz * w, center[1]! + lift, z - fx * w, depth)]
+      const x = center[0]! + tx * direction * distance * t, z = center[2]! + tz * direction * distance * t
+      return [vertex(x - tz * w, center[1]! + lift, z + tx * w, depth),
+        vertex(x + tz * w, center[1]! + lift, z - tx * w, depth)]
     }
     const near = section(.2, Math.max(1.2, radius * .7), -direction * .006, .06)
     const mid = section(.5, Math.max(.8, radius * .42), -direction * .012, .035)
-    const tip = vertex(center[0]! + fx * direction * distance, center[1]! - direction * .02,
-      center[2]! + fz * direction * distance, .008)
+    const tip = vertex(center[0]! + tx * direction * distance, center[1]! - direction * .02,
+      center[2]! + tz * direction * distance, .008)
     quad(left, right, near[1]!, near[0]!); quad(near[0]!, near[1]!, mid[1]!, mid[0]!)
     triangle(mid[0]!, mid[1]!, tip)
   }

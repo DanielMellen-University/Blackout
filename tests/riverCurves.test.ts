@@ -39,6 +39,24 @@ describe('smooth physical river spans', () => {
     }
   })
 
+  it('aligns end extensions with the curved endpoint directions', () => {
+    const r = reach(0, 0, 500, 0)
+    r.tangentAX = 0; r.tangentAZ = 1; r.tangentBX = 0; r.tangentBZ = -1
+    r.source = true; r.terminal = true
+    const caps = riverSurface(r, []).caps
+    // The tapered source tip extends opposite its incoming tangent.
+    expect(caps[56]).toBeCloseTo(0)
+    expect(caps[58]).toBeLessThan(0)
+    // The terminal tip extends along its outgoing tangent.
+    expect(caps[116]).toBeCloseTo(500)
+    expect(caps[118]).toBeLessThan(0)
+    const mouth = { ...r, mouth: true }
+    const sections = riverSurface(mouth, []).sections
+    const before = sections.length - 24, after = sections.length - 12
+    expect(sections[after + 4]).toBeCloseTo(sections[before + 4]!)
+    expect(sections[after + 6]).toBeLessThan(sections[before + 6]!)
+  })
+
   it('grades tapered source and terminal caps downhill', () => {
     const r = reach(0, 0, 500, 0)
     r.source = true; r.terminal = true
