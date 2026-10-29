@@ -541,7 +541,12 @@ function collectRiverReachesInBounds(
         if (surface.maxX < query.expandedMinX || surface.minX > query.expandedMaxX ||
           surface.maxZ < query.expandedMinZ || surface.minZ > query.expandedMaxZ) continue
         const width = Math.max(reach.wa, reach.wb) + (reach.source ? 140 : reach.mouth ? 80 : 0)
-        if (!lineIntersectsBounds(
+        // A curved ribbon and its end caps can extend beyond the straight
+        // chord. Their actual surface bounds above are conservative; only
+        // apply the tighter chord test to uncapped, straight reaches.
+        const curved = Number.isFinite(reach.tangentAX) && Number.isFinite(reach.tangentAZ) &&
+          Number.isFinite(reach.tangentBX) && Number.isFinite(reach.tangentBZ)
+        if (!curved && !reach.source && !reach.terminal && !reach.mouth && !lineIntersectsBounds(
           reach.ax, reach.az, reach.bx, reach.bz,
           query.expandedMinX - width, query.expandedMinZ - width,
           query.expandedMaxX + width, query.expandedMaxZ + width,

@@ -6,6 +6,13 @@ import { sampleGeography } from '../src/world/Geography'
 import { clearOpsPad, findPlayableSpawn, isUsableAirfield, terrainSurfaceFromClimate } from '../src/world/terrainSample'
 
 describe('regional connected world', () => {
+  it('finds a curved river at a bank beyond its endpoint chord', () => {
+    setWorldSeed(1)
+    const x = -42255.02104560071, z = -61842.24405146175
+    const reaches = riverReachesInBounds(x - .01, z - .01, x + .01, z + .01)
+    expect(reaches.some(r => r.id === '-21:-31:0:3')).toBe(true)
+  })
+
   it('keeps actual water downhill through broad confluences and lake approaches', () => {
     let checked = 0, rises = 0
     const failures: object[] = []
