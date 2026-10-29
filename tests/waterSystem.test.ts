@@ -268,6 +268,28 @@ describe('independent water surfaces', () => {
     ;(mesh!.material as MeshStandardMaterial).dispose()
   })
 
+  it('matches flow direction at curved reach joins', () => {
+    const base: RiverReach = { ax: 100, az: 100, bx: 250, bz: 250, wa: 20, wb: 20,
+      ya: 80, yb: 80, dx: 150, dz: 150, length: Math.hypot(150, 150), lengthSq: 45000,
+      source: false, terminal: false, tangentAX: 1, tangentAZ: 0, tangentBX: 0, tangentBZ: 1 }
+    const next: RiverReach = { ...base, ax: 250, az: 250, bx: 400, bz: 400,
+      tangentAX: 0, tangentAZ: 1, tangentBX: 1, tangentBZ: 0 }
+    for (const reach of [base, next]) {
+      const mesh = buildWaterMesh(new Float32Array(4).fill(100), new Float32Array(4),
+        1, 500, 0, 0, { value: 0 }, undefined, [reach])!
+      try {
+        const p = mesh.geometry.getAttribute('position'), dir = mesh.geometry.getAttribute('waterFlowDir')
+        let found = 0
+        for (let i = 0; i < p.count; i++) if (Math.abs(p.getZ(i)) < .001 && Math.abs(p.getX(i)) < 20.001) {
+          expect(dir.getX(i)).toBeCloseTo(0, 5)
+          expect(dir.getY(i)).toBeCloseTo(1, 5)
+          found++
+        }
+        expect(found).toBeGreaterThan(2)
+      } finally { mesh.geometry.dispose(); (mesh.material as MeshStandardMaterial).dispose() }
+    }
+  })
+
   it('drops staged tributary caps below the live channel surface', () => {
     const clock = { value: 0 }
     const mesh = buildWaterMesh(

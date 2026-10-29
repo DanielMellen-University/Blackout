@@ -406,7 +406,7 @@ function* appendRiverRibbons(
   waterDrops: number[],
 ): Generator<WaterBuildPhase, void, void> {
   const half = size / 2
-  type RibbonVertex = { x: number; z: number; y: number; depth: number; kind: number; riverBlend: number; flow: number }
+  type RibbonVertex = { x: number; z: number; y: number; depth: number; kind: number; riverBlend: number; flow: number; flowX: number; flowZ: number }
   const polygonScratch: RibbonVertex[] = new Array(4)
 
   const clip = (polygon: RibbonVertex[], axis: 'x' | 'z', bound: number, keepGreater: boolean): RibbonVertex[] => {
@@ -424,6 +424,8 @@ function* appendRiverRibbons(
         kind: a.kind + (b.kind - a.kind) * t,
         riverBlend: a.riverBlend + (b.riverBlend - a.riverBlend) * t,
         flow: a.flow + (b.flow - a.flow) * t,
+        flowX: a.flowX + (b.flowX - a.flowX) * t,
+        flowZ: a.flowZ + (b.flowZ - a.flowZ) * t,
       }
     }
     let previous = polygon[polygon.length - 1]!
@@ -439,7 +441,7 @@ function* appendRiverRibbons(
   }
 
   const writePolygon = (
-    polygon: readonly RibbonVertex[], flowX: number, flowZ: number, drop: number,
+    polygon: readonly RibbonVertex[], drop: number,
   ): void => {
     const first = polygon[0]!
     for (let i = 1; i < polygon.length - 1; i++) {
@@ -448,7 +450,7 @@ function* appendRiverRibbons(
       depths.push(first.depth, second.depth, third.depth)
       flowValues.push(first.flow * first.riverBlend, second.flow * second.riverBlend,
         third.flow * third.riverBlend)
-      flowDirections.push(flowX, flowZ, flowX, flowZ, flowX, flowZ)
+      flowDirections.push(first.flowX, first.flowZ, second.flowX, second.flowZ, third.flowX, third.flowZ)
       waterKinds.push(first.kind, second.kind, third.kind)
       waterDrops.push(drop * first.riverBlend, drop * second.riverBlend, drop * third.riverBlend)
     }
@@ -456,7 +458,7 @@ function* appendRiverRibbons(
 
   const appendPolygon = (
     a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex | undefined,
-    flowX: number, flowZ: number, drop: number,
+    drop: number,
   ): void => {
     polygonScratch[0] = a
     polygonScratch[1] = b
@@ -468,7 +470,7 @@ function* appendRiverRibbons(
     polygon = clip(polygon, 'x', half, false)
     polygon = clip(polygon, 'z', -half, true)
     polygon = clip(polygon, 'z', half, false)
-    writePolygon(polygon, flowX, flowZ, drop)
+    writePolygon(polygon, drop)
   }
 
   for (const reach of reaches) {
@@ -477,6 +479,7 @@ function* appendRiverRibbons(
     const surface = yield* riverUnionSteps(reach, basins, reaches)
     const flowX = (reach.bx - reach.ax) / length, flowZ = (reach.bz - reach.az) / length
     const drop = Math.max(0, Math.min(1, (reach.ya - reach.yb) / length * 5.5))
+    const curved = [reach.tangentAX, reach.tangentAZ, reach.tangentBX, reach.tangentBZ].every(Number.isFinite)
     const nearby = basins.filter(b => b.regionalSea ? reach.mouth && reach.yb === 0 :
       b.x + waterBasinBoundsRadius(b) + 400 >= surface.minX && b.x - waterBasinBoundsRadius(b) - 400 <= surface.maxX &&
       b.z + waterBasinBoundsRadius(b) + 400 >= surface.minZ && b.z - waterBasinBoundsRadius(b) - 400 <= surface.maxZ)
@@ -499,14 +502,29 @@ function* appendRiverRibbons(
       }
       const t = Math.max(0, Math.min(1, ((x - reach.ax) * (reach.bx - reach.ax) +
         (z - reach.az) * (reach.bz - reach.az)) / (length * length)))
+      let directionX = flowX, directionZ = flowZ
+      if (curved) {
+        // Endpoint tangent planes contain each entire shared cross-section,
+        // so bank vertices agree at a join as well as the centreline does.
+        const alongStart = (x - reach.ax) * reach.tangentAX! + (z - reach.az) * reach.tangentAZ!
+        const alongEnd = (x - reach.bx) * reach.tangentBX! + (z - reach.bz) * reach.tangentBZ!
+        const denominator = alongStart - alongEnd
+        const curveT = Math.abs(denominator) > .00001 ? Math.max(0, Math.min(1, alongStart / denominator)) : t
+        const t2 = curveT * curveT, chord = -6 * t2 + 6 * curveT
+        const a = 3 * t2 - 4 * curveT + 1, b = 3 * t2 - 2 * curveT
+        const tx = chord * flowX + a * reach.tangentAX! + b * reach.tangentBX!
+        const tz = chord * flowZ + a * reach.tangentAZ! + b * reach.tangentBZ!
+        const magnitude = Math.hypot(tx, tz)
+        if (magnitude > .00001) { directionX = tx / magnitude; directionZ = tz / magnitude }
+      }
       const width = reach.wa + (reach.wb - reach.wa) * t
       const flow = Math.max(.24, Math.min(1, .24 + Math.pow(Math.min(1, width / 90), .65) * .66 + drop * .1))
       return { x: x - originX - half, y: data[index + 1]! + .04,
-        z: z - originZ - half, depth, kind, riverBlend: 1 - blend, flow }
+        z: z - originZ - half, depth, kind, riverBlend: 1 - blend, flow, flowX: directionX, flowZ: directionZ }
     }
     for (let i = 0; i < surface.triangles.length; i += 12) {
       appendPolygon(vertex(surface.triangles, i), vertex(surface.triangles, i + 4),
-        vertex(surface.triangles, i + 8), undefined, flowX, flowZ, drop)
+        vertex(surface.triangles, i + 8), undefined, drop)
       if (i % 48 === 36) yield 'river'
     }
     yield 'river'
