@@ -31,12 +31,17 @@ function clipLakeShore(sections: Float64Array, caps: Float64Array, lakes: readon
     for (const lake of lakes) {
       const da = distance(lake, a), db = distance(lake, b), dc = distance(lake, c)
       if (Math.max(da, db, dc) < -.2) { changed = true; return }
+      // A shore can cross an edge while all three corners and the centroid
+      // remain outside. Detect that case before clipping against the lake.
       const intersects = Math.min(da, db, dc) < 0 || basinDistance(lake,
-        (a[0]! + b[0]! + c[0]!) / 3, (a[2]! + b[2]! + c[2]!) / 3) < 0
+        (a[0]! + b[0]! + c[0]!) / 3, (a[2]! + b[2]! + c[2]!) / 3) < 0 ||
+        basinDistance(lake, (a[0]! + b[0]!) * .5, (a[2]! + b[2]!) * .5) < 0 ||
+        basinDistance(lake, (b[0]! + c[0]!) * .5, (b[2]! + c[2]!) * .5) < 0 ||
+        basinDistance(lake, (c[0]! + a[0]!) * .5, (c[2]! + a[2]!) * .5) < 0
       changed ||= intersects
-      if (intersects && subdivision < 3 && Math.max(
+      if (intersects && subdivision < 3 && (Math.min(da, db, dc) >= 0 || Math.max(
         Math.hypot(a[0]! - b[0]!, a[2]! - b[2]!), Math.hypot(b[0]! - c[0]!, b[2]! - c[2]!),
-        Math.hypot(c[0]! - a[0]!, c[2]! - a[2]!)) > 60) {
+        Math.hypot(c[0]! - a[0]!, c[2]! - a[2]!)) > 60)) {
         const ab = middle(a, b), bc = middle(b, c), ca = middle(c, a)
         append(a, ab, ca, subdivision + 1); append(ab, b, bc, subdivision + 1)
         append(ca, bc, c, subdivision + 1); append(ab, bc, ca, subdivision + 1)

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { type RiverReach } from '../src/world/Hydrology'
-import { riverSurface } from '../src/world/RiverSurface'
+import { type RiverReach, type WaterBasin } from '../src/world/Hydrology'
+import { riverSurface, riverSurfaceHeightAt } from '../src/world/RiverSurface'
 
 function reach(ax: number, az: number, bx: number, bz: number): RiverReach {
   const dx = bx - ax, dz = bz - az, length = Math.hypot(dx, dz)
@@ -73,6 +73,16 @@ describe('smooth physical river spans', () => {
     expect(terminal.length).toBeGreaterThanOrEqual(4)
     for (const profile of [source, terminal])
       for (let i = 1; i < profile.length; i++) expect(profile[i]![1]).toBeLessThanOrEqual(profile[i - 1]![1])
+  })
+
+  it('clips a lake crossing the middle of a river triangle edge', () => {
+    const r = reach(0, 0, 400, 0)
+    r.wa = r.wb = 80
+    const lake: WaterBasin = { x: 50, z: 80, radius: 10, aspect: 1, angle: 0, phase: 0,
+      level: 80, sea: false, pond: true, shoreRadii: new Float32Array(32).fill(10) }
+    const surface = riverSurface(r, [lake])
+    expect(riverSurfaceHeightAt(surface, 50, 79)).toBe(-Infinity)
+    expect(riverSurfaceHeightAt(surface, 70, 75)).toBeGreaterThan(-Infinity)
   })
 
   it('preserves span shape far from the world origin', () => {
