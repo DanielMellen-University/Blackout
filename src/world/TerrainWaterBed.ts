@@ -12,6 +12,7 @@ export function* shoreBedSteps(
   originX: number, originZ: number, sample: (out: BedSample, x: number, z: number) => void,
   waterLevelAt: (x: number, z: number) => number,
   preserve?: (x: number, z: number) => boolean,
+  mayContainWater?: (minX: number, minZ: number, maxX: number, maxZ: number) => boolean,
 ): Generator<void, ShoreBed, void> {
   const stride = segs + 5, cell = span / segs
   const ground = new Float32Array(stride * stride), water = new Float32Array(ground.length)
@@ -41,7 +42,9 @@ export function* shoreBedSteps(
         Math.min(water[a]!, water[b]!, water[c]!, water[d]!)
       const minDepth = Math.min(water[a]! - ground[a]!, water[b]! - ground[b]!,
         water[c]! - ground[c]!, water[d]! - ground[d]!)
-      if ((wa && wb && wc && wd && (levelRange < .05 || minDepth > levelRange + .15)) || !(wa || wb || wc || wd)) continue
+      if (wa && wb && wc && wd && (levelRange < .05 || minDepth > levelRange + .15)) continue
+      if (!(wa || wb || wc || wd) && !mayContainWater?.(originX + x * cell, originZ + z * cell,
+        originX + (x + 1) * cell, originZ + (z + 1) * cell)) continue
       let lowering = 0
       const check = (u: number, v: number, interpolated: number): void => {
         const level = waterLevelAt(originX + (x + u) * cell, originZ + (z + v) * cell)

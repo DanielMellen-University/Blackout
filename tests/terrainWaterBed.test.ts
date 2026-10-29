@@ -60,6 +60,19 @@ describe('shoreline terrain interpolation', () => {
     }
   })
 
+  it('lowers a dry-corner cell when a narrow river crosses its interior', () => {
+    const heights = new Float32Array(4).fill(10), levels = new Float32Array(4)
+    const steps = shoreBedSteps(heights, levels, 1, 100, 0, 0,
+      out => { out.height = 10; out.waterLevel = 0 },
+      (x, z) => Math.abs(x - 50) < 2 && Math.abs(z - 50) < 2 ? 5 : -Infinity,
+      undefined, (minX, minZ, maxX, maxZ) => minX <= 50 && maxX >= 50 && minZ <= 50 && maxZ >= 50)
+    let result = steps.next()
+    while (!result.done) result = steps.next()
+    const bed = result.value
+    expect(bed.heights[2 * bed.stride + 2]).toBeLessThan(5)
+    expect(bed.heights[3 * bed.stride + 3]).toBeLessThan(5)
+  })
+
   it('leaves dry land and flat deep beds unchanged', () => {
     for (const h of [50, -20]) {
       const source = new Float32Array(9).fill(h), levels = new Float32Array(9)

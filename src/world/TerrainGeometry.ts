@@ -5,6 +5,7 @@ import { hydrologyIntersectsBounds, hydrologyWaterLevelAt, prepareHydrologyInBou
   type HydrologyBuildPhase, type WaterBasin } from './Hydrology'
 import { buildWaterMeshSteps, type WaterBuildPhase } from './WaterSystem'
 import { shoreBedSteps, type ShoreBed } from './TerrainWaterBed'
+import { riverSurface } from './RiverSurface'
 
 export const CHUNK_SIZE = 420
 export type TerrainLod = 0 | 1 | 2
@@ -389,6 +390,10 @@ export function* generateTerrainGeometrySteps(
       basinsInBounds(originX - cell * 2, originZ - cell * 2, span + cell * 4).length)) {
       const probe = createClimateSample()
       const pad = getOpsPad()
+      // Include the halo used for neighboring normals: a narrow river can
+      // cross a cell even when none of its terrain vertices is wet.
+      const riverBounds = riverReachesInBounds(originX, originZ, originX + span, originZ + span, cell * 2)
+        .map(reach => riverSurface(reach, []))
       const steps = shoreBedSteps(heights, waterLevels, segs, span, originX, originZ, (out, x, z) => {
         sampleClimateInto(probe, x, z)
         out.height = probe.height; out.waterLevel = probe.waterLevel ?? 0
@@ -398,7 +403,9 @@ export function* generateTerrainGeometrySteps(
           return probe.height < (probe.waterLevel ?? 0) - .01 ? probe.waterLevel! : -Infinity
         }
         return hydrologyWaterLevelAt(x, z)
-      }, pad ? (x, z) => (x - pad.x) ** 2 + (z - pad.z) ** 2 <= OPS_PAD_INNER ** 2 : undefined)
+      }, pad ? (x, z) => (x - pad.x) ** 2 + (z - pad.z) ** 2 <= OPS_PAD_INNER ** 2 : undefined,
+      (minX, minZ, maxX, maxZ) => riverBounds.some(r =>
+        r.minX <= maxX && r.maxX >= minX && r.minZ <= maxZ && r.maxZ >= minZ))
       try {
         let result = steps.next()
         while (!result.done) { yield 'ground'; result = steps.next() }
