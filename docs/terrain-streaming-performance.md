@@ -5,6 +5,21 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 11.032 lake influence cull and near shore probes
+
+Hydrology sampling used to test every lake within `radius * 1.65 + 2000` m
+of a sample. Generated lakes with cached shore radii never reach past their
+bounds radius, so they now use `boundsRadius + shelf margin`, which is exact.
+Over 270k seed-73 wetland samples the checksum is identical and sampling is
+about 5% faster (342-345 ms against 365 ms medians; noisy). Warped analytic
+basins and the coast-field sea keep the old box.
+
+Tried and not shipped: running the shoreline bed probes on near (LOD0) tiles
+too, by lowering the `cell > 15` gate to `cell > 5`. It removes the last
+near-shore pokes (2 to 7 of 384 sampled points, at most 3 cm above water) but
+makes near tiles around the seed-73 wetland about 18% slower to build (33 to
+39 ms per tile over 70 tiles). Pokes that small are not worth that cost.
+
 ### Chunk 11.030 lake water and shoreline probe cost
 
 Two lake changes moved CPU tile build cost in opposite directions. Both were
