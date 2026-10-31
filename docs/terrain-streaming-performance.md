@@ -5,6 +5,21 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 11.030 lake water and shoreline probe cost
+
+Two lake changes moved CPU tile build cost in opposite directions. Both were
+measured locally with repeated same-seed tile builds before and after each
+change. They are rough CPU geometry numbers, not FPS or GPU frame times.
+
+- Water tiles now reject lake fan triangles that lie wholly beyond one tile
+  edge before the four clipping passes. Output bytes are unchanged (the water
+  mesh hash tests still pass). Lake-heavy water tile builds are about 19%
+  faster.
+- `shoreBedSteps` probes a lattice inside mixed shoreline cells, 3 to 7 per
+  side so spacing stays near 15 m at every LOD. This keeps banks under lake
+  water but adds about 8% to lake-heavy terrain tile builds. Dry and fully wet
+  cells skip the lattice, so tiles without lakes are unaffected.
+
 ### Chunk 10.909 settlement workload diagnostics, comparison inconclusive
 
 The development-only recorder keeps the original northeast route and adds
