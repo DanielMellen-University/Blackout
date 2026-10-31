@@ -2,6 +2,10 @@
 
 Newest first. Each section records what changed, how it was checked, and what was still visibly wrong afterwards. See [ROADMAP](ROADMAP.md) for the chunk history.
 
+## Reproducing review stills
+
+Run `npx vite --port <free port> --strictPort` and open `/dev/terrain.html?destination=wetland&seed=73` (other water destinations: `lake`, `pond`, `lakeoutlet`, `riverjoin`, `headwater`). Headless Chrome works with `--use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Software rendering streams slowly: wait 40 s for a low view and 80 to 90 s for a 5 km overview before capturing, or distant tiles are still missing. Weather is live, so compare before/after stills taken in the same session and judge water against water, not sky haze. Avoid port 5173, which is reserved for the main dev server.
+
 ## 11.031: river mouths and far freshwater
 
 Broad river mouths showed pale streaks across the water. Inlet ribbons are clipped exactly at the lake shore, so some radial shore samples across a mouth fell a hair outside every ribbon and took the 0.1 m shoreline depth, which paints the shallow colour. `basinOpticalDepth` now also probes 2.5 m outward along the radial near the shore. On the seed-73 wetland pond `lake:-3:-10`, every shore vertex across the centre of its two broad inlets now carries the channel depth (about 2 m), where some used to read 0.10 m. Seed-73 wide inlet, before (top) and after (bottom):
