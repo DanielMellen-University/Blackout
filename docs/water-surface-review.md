@@ -1,5 +1,15 @@
 # Water surface review - 10.890
 
+## 11.030: lake beds, banks and shores
+
+Lake optics now read depth from the carved bed itself. `basinBedOffset` in `Hydrology.ts` is the one profile used by terrain carving and by `basinOpticalDepth`, so the shallow tint sits over the shallow bed that is actually drawn, and the fan centre no longer uses fixed per-kind depths.
+
+Ground used to poke through near shores. A fine terrain cell spanning the shoreline interpolated its dry, rising vertex up through the water. The bed now has a 24 m drop-off lip, and `TerrainWaterBed.ts` probes mixed shoreline cells on a lattice that scales with cell size (3 to 7 per side). Headless sampling of near, mid and far LOD: ground above the surface fell from 18-33% of near-shore points to under 2% at LOD0, and from 3-6% to at most 1 in 384 at LOD2. Shoreline probes add about 8% to lake-heavy terrain tile builds.
+
+Large lake shores keep refining their cached contour until chords are near 150 m (at most 512 points); the longest sampled chord fell from 560 m to about 230 m. The Waterway lake fits one shoreline shared by water, carving and collision, which removed its thin dry inner line (124 of 256 shore points to 0). Water tiles skip fan triangles wholly outside the tile before clipping, about 19% faster for lake tiles.
+
+Still open after 11.030: the angular bank where a river meets a lake, and small wedges at pond outlet joins.
+
 ## 10.890: wetland grouping and narrow confluences
 
 The completion audit found no pond neighbours within 8 km in any of five sampled 160 km-square worlds. Moist lowland depressions now receive a higher pond-retention probability; dry-province and large-lake probability stay unchanged. Raw depression eligibility, stable overlap ownership, spill routing, bounds, minimum footprint and shared terrain/render/collision data remain in use. Spatial shore fields replace the dominant small-basin two/three-lobe harmonics. This is not a new independent water generator.
