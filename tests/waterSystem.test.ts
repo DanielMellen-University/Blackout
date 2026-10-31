@@ -185,6 +185,11 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('vec3 deepWater = vec3(0.008, 0.065, 0.12)')
       expect(shader.fragmentShader).toContain('depthDetail = 1.0 - smoothstep(450.0, 1800.0, waterPixelDistance)')
       expect(shader.vertexShader).not.toContain('depthDetail')
+      // Far freshwater uses one lighter shared tone and sky floor, never a per-kind split.
+      expect(shader.fragmentShader).toContain('float farDepthMix = mix(0.72, 1.0, seaMix)')
+      expect(shader.fragmentShader).toContain('mix(farDepthMix, 1.0 - exp(-vWaterDepth * 0.8), depthDetail)')
+      expect(shader.fragmentShader).toContain('farFreshSky = (1.0 - depthDetail) * (1.0 - seaMix)')
+      expect(shader.fragmentShader.indexOf('float seaMix')).toBeLessThan(shader.fragmentShader.indexOf('float farDepthMix'))
       expect(shader.fragmentShader).toContain('riverBankFoam')
       expect(shader.fragmentShader).toContain('shoreFoam')
       expect(shader.fragmentShader).toContain('waterPattern')

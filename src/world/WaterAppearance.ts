@@ -56,7 +56,11 @@ export function applyWaterAppearance(
       // triangles rather than useful underwater detail. Fade that optical
       // detail per pixel, without changing coverage or physical water depth.
       float depthDetail = 1.0 - smoothstep(450.0, 1800.0, waterPixelDistance);
-      float depthMix = mix(1.0, 1.0 - exp(-vWaterDepth * 0.8), depthDetail);
+      float seaMix = smoothstep(1.24, 1.92, vWaterKind);
+      // Far freshwater settles on a mid-depth tone instead of the deepest navy.
+      // Rivers and lakes share it, so mouths stay seamless from altitude.
+      float farDepthMix = mix(0.72, 1.0, seaMix);
+      float depthMix = mix(farDepthMix, 1.0 - exp(-vWaterDepth * 0.8), depthDetail);
       // High-frequency foam and riffles alias badly at flight distance. Keep
       // broad water-body breakup visible, but fade fine detail before the
       // terrain fog so distant lakes and rivers read as clean surfaces.
@@ -65,7 +69,6 @@ export function applyWaterAppearance(
       // cue, not a second teal paint layer that exposes confluence triangles.
       // Kind still distinguishes sea water; freshwater boundaries are optical,
       // not a hard river-versus-lake material switch.
-      float seaMix = smoothstep(1.24, 1.92, vWaterKind);
       vec3 shallowWater = vec3(0.03, 0.21, 0.29);
       shallowWater = mix(shallowWater, vec3(0.025, 0.18, 0.3), seaMix);
       vec3 deepWater = vec3(0.008, 0.065, 0.12);
@@ -179,7 +182,11 @@ export function applyWaterAppearance(
       #ifdef USE_FOG
         reflectedSky = fogColor * 0.85;
       #endif
-      totalEmissiveRadiance += reflectedSky * fresnel;`,
+      // Looking steeply down from altitude, Fresnel alone leaves freshwater as
+      // a flat dark hole. Add a small distance-only sky floor, shared by every
+      // freshwater kind so river mouths stay one continuous surface.
+      float farFreshSky = (1.0 - depthDetail) * (1.0 - seaMix) * 0.07;
+      totalEmissiveRadiance += reflectedSky * (fresnel + farFreshSky);`,
     )
     waterShaderSource.remember(vertexSource, fragmentSource, shader)
   }
