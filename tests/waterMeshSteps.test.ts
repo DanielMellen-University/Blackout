@@ -61,8 +61,8 @@ describe('cooperative water geometry', () => {
   // shallow basin band; sea-level raster still uses the sea material kind.
   it.each([
     ['raster', '1fa7969b58d68f92e4a12e3bbcef89f4fd5c3d0b23f58c91037508a1ab11a2dc'],
-    ['lake', '07fdb3a2538ee7ec470fa2ea929849e3275f3077cacdf85ee42fdde852e77496'],
-    ['pond', '2c5727266e23c690e1d9fbf75ac9f0bff20c8250b4764b0e6b855e895fa40e77'],
+    ['lake', '2adb8ab06b2113aa151c4f8937fbc0133c7d5550b9763a3c6a8f977617014ada'],
+    ['pond', '53b8e27b92cd17dd7a8f72d9c0445f28f372e28234271ea940b7946ea036f87a'],
     ['sea', '98c76e2cbcf5508b32305515d2bde1f4e9c4b81712bf9f6a8ae98d27bf4651a9'],
     ['river', '83b9e3680241dc85ae0bfb019e1ed243b6e294c1f403aa6a086a820d387201be'],
     ['mouth', 'd1ed702bbe236d6cfa3cb553d4d6e5084a0b5beb18dae6a5790419165d3786ea'],
@@ -121,7 +121,7 @@ describe('cooperative water geometry', () => {
     advanceTo(steps, 'river')
     steps.return(null)
     const mesh = buildWaterMesh(...argsFor('lake'))!
-    try { expect(digest(mesh)).toBe('07fdb3a2538ee7ec470fa2ea929849e3275f3077cacdf85ee42fdde852e77496') }
+    try { expect(digest(mesh)).toBe('2adb8ab06b2113aa151c4f8937fbc0133c7d5550b9763a3c6a8f977617014ada') }
     finally { dispose(mesh) }
   })
 

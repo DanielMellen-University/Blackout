@@ -148,9 +148,14 @@ export function basinDistance(b: Basin, x: number, z: number): number {
  * carving and lake optics share this one profile so the shallow tint matches
  * the bed that is actually drawn beneath the surface. */
 export function basinBedOffset(basin: Pick<WaterBasin, 'sea'>, d: number): number {
-  return d < 0
-    ? -(basin.sea ? 150 : 32) * smoothstep(0, basin.sea ? 2300 : 500, -d) + d * .012
-    : d * .065 + d * d * .000035
+  if (d >= 0) return d * .065 + d * d * .000035
+  if (basin.sea) return -150 * smoothstep(0, 2300, -d) + d * .012
+  // A lake bed must fall at least as fast as the bank rises outside (6.5 cm
+  // per metre). The shelf used to drop only 1.2 cm/m, so a fine terrain cell
+  // spanning the shoreline interpolated its rising dry vertex up through the
+  // water and showed a dashed line of ground just inside the shore. A short
+  // drop-off lip over the first 24 m keeps that interpolation below water.
+  return -32 * smoothstep(0, 500, -d) + d * .012 + Math.max(d, -24) * .055
 }
 
 function catchment(cx: number, cz: number): Catchment {
