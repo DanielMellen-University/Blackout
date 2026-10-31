@@ -247,6 +247,17 @@ export function* prepareHydrologyInBoundsSteps(minX: number, minZ: number, maxX:
   }
 }
 
+/** Half-size of the square around a basin centre beyond which its signed
+ * distance is at least `margin`. Cached shore radii never exceed the bounds
+ * radius, so those basins get an exact tight box (radial distance minus shore
+ * radius is at least margin beyond bounds + margin). Warped analytic outlines
+ * and the coast-field sea keep the old generous box. */
+function basinInfluenceLimit(basin: Basin, margin: number): number {
+  if (basin.shoreRadii && !basin.regionalSea && Number.isFinite(basin.boundsRadius))
+    return basin.boundsRadius! + margin
+  return basin.radius * 1.65 + 2000
+}
+
 /** Lakes/seas have fixed levels. River reaches grade continuously downstream. */
 export function sampleHydrology(x: number, z: number, ground: number): HydrologySample {
   return sampleHydrologyInto({
@@ -266,7 +277,7 @@ export function hydrologyWaterLevelAt(x: number, z: number): number {
   for (const reach of region.bins[binZ * BINS + binX]!)
     level = Math.max(level, riverSurfaceHeightAt(riverSurface(reach, region.basins), safeX, safeZ))
   for (const basin of region.basins) {
-    const limit = basin.radius * 1.65 + 2000
+    const limit = basinInfluenceLimit(basin, 0)
     if (Math.abs(safeX - basin.x) > limit || Math.abs(safeZ - basin.z) > limit) continue
     if (basinDistance(basin, safeX, safeZ) <= 0) level = Math.max(level, basin.level)
   }
@@ -397,12 +408,12 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   }
   let basinWaterLevel = -Infinity
   for (const basin of region.basins) {
-    const limit = basin.radius * 1.65 + 2000
-    if (Math.abs(safeX - basin.x) > limit || Math.abs(safeZ - basin.z) > limit) continue
-    const d = basinDistance(basin, safeX, safeZ)
     // Keep a readable shallow shelf, not a kilometre-wide exposed brown
     // wedge between dry terrain and the independent water surface.
     const margin = basin.sea ? 900 : basin.pond ? 360 : 780
+    const limit = basinInfluenceLimit(basin, margin)
+    if (Math.abs(safeX - basin.x) > limit || Math.abs(safeZ - basin.z) > limit) continue
+    const d = basinDistance(basin, safeX, safeZ)
     if (d >= margin) continue
     const blend = (1 - smoothstep(0, margin, Math.max(0, d))) * edgeFade
     const bed = basinBedOffset(basin, d)
