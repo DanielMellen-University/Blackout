@@ -282,6 +282,12 @@ function* appendAnalyticBasins(
     return outputCount
   }
   const appendPolygon = (input: BasinVertex[], kind: number): void => {
+    // A large lake fans hundreds of shoreline triangles into every tile it
+    // touches; most lie wholly beyond one tile edge. Reject those before the
+    // four clipping passes. Output is unchanged: clipping would drop them.
+    const a = input[0]!, b = input[1]!, c = input[2]!
+    if ((a.x < -half && b.x < -half && c.x < -half) || (a.x > half && b.x > half && c.x > half) ||
+      (a.z < -half && b.z < -half && c.z < -half) || (a.z > half && b.z > half && c.z > half)) return
     let polygon = input
     let polygonCount = 3
     polygonCount = clipInto(polygon, polygonCount, 'x', -half, true, clipScratchA)
