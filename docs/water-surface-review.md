@@ -2,16 +2,21 @@
 
 Newest first. Each section records what changed, how it was checked, and what was still visibly wrong afterwards. See [ROADMAP](ROADMAP.md) for the chunk history.
 
-## Open water issues (as of 11.032)
+## Open water issues (as of 11.033)
 
 - **Angular river-to-lake bank.** A lake contour meets a river ribbon at a hard corner, leaving a pointed spit of bank. Needs a contour flare along each joined channel in `RegionalDrainage.ts`; this changes generation hashes and fixtures.
 - **Thin land strips at some pond outlets.** Traced on seed 73: the `lake:-2:-9` outlet (reaches `-2:-9:0:7` to `:9`) leaves the shore and then runs along it at pond level, its centreline 27 to 68 m outside the shore with a 47 to 70 m half-width. Where the river edge passes within a few metres of the shore, a grass strip a few metres wide is left between two water surfaces at the same level. A fix belongs in generation (route the outlet away from the shore, or widen level outlet spans toward their source lake in both carving and ribbon), not in rendering.
 - **Far coast stair-steps.** From about 9 km up, some distant shorelines show cell-sized steps where coarse terrain meets flat water.
-- **Sun glare blob.** From altitude the sun's highlight on a large lake can clip to a broad pure-white patch (about 400 pixels in the seed-73 5 km still). Physically plausible, but it reads as a flat white blob.
 
 ## Reproducing review stills
 
 Run `npx vite --port <free port> --strictPort` and open `/dev/terrain.html?destination=wetland&seed=73` (other water destinations: `lake`, `pond`, `lakeoutlet`, `riverjoin`, `headwater`). Headless Chrome works with `--use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Software rendering streams slowly: wait 40 s for a low view and 80 to 90 s for a 5 km overview before capturing, or distant tiles are still missing. Weather is live, so compare before/after stills taken in the same session and judge water against water, not sky haze. Avoid port 5173, which is reserved for the main dev server.
+
+## 11.033: far sun glare
+
+From altitude the sun's highlight on a large lake clipped to a broad pure-white patch (408 fully white pixels in the seed-73 5 km still). Far water now raises its roughness floor from 0.2 to 0.36 between 1.8 and 6 km, a rougher average of many ripples, so the highlight widens and dims: 0 fully white pixels and 2,543 instead of 8,807 near-white ones in the same view. Before (top) and after (bottom):
+
+![Far glare before and after](reviews/far-glare-11.033.png)
 
 ## 11.031: river mouths and far freshwater
 
