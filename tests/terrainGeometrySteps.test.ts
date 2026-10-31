@@ -63,7 +63,7 @@ describe('cooperative terrain geometry', () => {
       if (result.value === 'water-grid') break
     }
     generateTerrainGeometry(-6720, -6720, 2, 32)
-    expect(digest(finish(steps), true)).toBe('f01d189eb51041b302310822c8ff09de940179ba2eec9fa1dee7e77ff566a92f')
+    expect(digest(finish(steps), true)).toBe('9cf0767321fef54c14717db191f0b7fd7be1df89116ff13a6359aad3b2c5c235')
   })
 
   // Physical hashes independently reproduced on frozen 10.923 before the
@@ -74,7 +74,7 @@ describe('cooperative terrain geometry', () => {
   it.each([
     { name: 'near', input: [0, 0, 0], expected: 'ed4cbd7c6c804a8968a9204cef20753f620e43667ad083b13aba7d8bb0c819a3' },
     { name: 'skirt', input: [0, 0, 1, 2, [true, true, true, true]], expected: '00b65dc00a2908a437ebe055bdf2a8155a0e006c572938b8f40eab4b29d2fd2b' },
-    { name: 'pond', input: [-22050, -28350, 0], expected: 'f01d189eb51041b302310822c8ff09de940179ba2eec9fa1dee7e77ff566a92f' },
+    { name: 'pond', input: [-22050, -28350, 0], expected: '9cf0767321fef54c14717db191f0b7fd7be1df89116ff13a6359aad3b2c5c235' },
     { name: 'far water', input: [-6720, -6720, 2, 32], expected: 'fbeda54e03f8635e1c287dcf19257b239c401060fa3354280c57e6c5afa670fd' },
     { name: 'far fallback', input: [-420, 420, 2, 8, [true, false, true, false], 'fallback'], expected: 'f12aa4e1ea1b80faac6a907eb2ef73515dda58a00028cf936204d8d1083538bb' },
     { name: 'runway pad', input: [0, 0, 0], pad: true, expected: 'f844a610580fc158a1eca7dc9583cc13325780ede9f76cf4d14e97ad7f75aebe' },
@@ -116,6 +116,6 @@ describe('cooperative terrain geometry', () => {
     expect(materialDispose).toHaveBeenCalledTimes(phase === 'water' ? 1 : 0)
     steps.return(undefined as never)
     expect(geometryDispose.mock.calls.length - before).toBe(phase === 'ground' ? 1 : 2)
-    expect(digest(generateTerrainGeometry(-22050, -28350, 0), true)).toBe('f01d189eb51041b302310822c8ff09de940179ba2eec9fa1dee7e77ff566a92f')
+    expect(digest(generateTerrainGeometry(-22050, -28350, 0), true)).toBe('9cf0767321fef54c14717db191f0b7fd7be1df89116ff13a6359aad3b2c5c235')
   })
 })

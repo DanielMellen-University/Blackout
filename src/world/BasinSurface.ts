@@ -1,4 +1,4 @@
-import { basinDistance, prepareHydrologyInBoundsSteps, riverReachesInBounds, waterBasinBoundsRadius,
+import { basinBedOffset, basinDistance, prepareHydrologyInBoundsSteps, riverReachesInBounds, waterBasinBoundsRadius,
   type RiverReach, type WaterBasin } from './Hydrology'
 import { riverSurface, riverSurfaceDepthAt, type RiverSurface } from './RiverSurface'
 import type { WaterBuildPhase } from './WaterSystem'
@@ -9,8 +9,13 @@ interface BasinSurface { boundary: BasinVertex[]; inner: BasinVertex[]; inlets: 
 /** Weak ownership follows the existing bounded drainage-node lifetime. */
 const surfaces = new WeakMap<WaterBasin, BasinSurface>()
 
+/** Optical depth follows the carved bed (terrain sits at least 0.1 m below
+ * the surface). The old linear 6 cm/m guess ignored the shallow shelf and
+ * ran to an unrelated fixed centre depth, so lake colour did not track the
+ * basin that is actually carved beneath it. */
 export function basinOpticalDepth(basin: WaterBasin, inlets: readonly RiverSurface[], x: number, z: number): number {
-  let depth = Math.max(.08, -basinDistance(basin, x, z) * .06)
+  const d = basinDistance(basin, x, z)
+  let depth = Number.isFinite(d) ? Math.max(.08, d < 0 ? Math.max(.1, -basinBedOffset(basin, d)) : .08) : .08
   for (const surface of inlets) depth = Math.max(depth, riverSurfaceDepthAt(surface, x, z))
   return depth
 }

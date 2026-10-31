@@ -143,6 +143,16 @@ export function basinDistance(b: Basin, x: number, z: number): number {
   return (Math.hypot(u, v) - outline) * b.radius * b.aspect
 }
 
+/** Carved bed height relative to a basin's water level at signed shore
+ * distance d: negative under water, a gentle rising bank outside. Terrain
+ * carving and lake optics share this one profile so the shallow tint matches
+ * the bed that is actually drawn beneath the surface. */
+export function basinBedOffset(basin: Pick<WaterBasin, 'sea'>, d: number): number {
+  return d < 0
+    ? -(basin.sea ? 150 : 32) * smoothstep(0, basin.sea ? 2300 : 500, -d) + d * .012
+    : d * .065 + d * d * .000035
+}
+
 function catchment(cx: number, cz: number): Catchment {
   ensureProfile()
   if (getTerrainProfile()?.dry) return dryCatchment
@@ -385,9 +395,7 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     const margin = basin.sea ? 900 : basin.pond ? 360 : 780
     if (d >= margin) continue
     const blend = (1 - smoothstep(0, margin, Math.max(0, d))) * edgeFade
-    const bed = d < 0
-      ? -(basin.sea ? 150 : 32) * smoothstep(0, basin.sea ? 2300 : 500, -d) + d * .012
-      : d * .065 + d * d * .000035
+    const bed = basinBedOffset(basin, d)
     const basinHeight = height + (basin.level + bed - height) * blend
     // Preserve an existing outlet through the bank instead of damming it shut.
     height = d > 0 ? basinHeight + (Math.min(height, basinHeight) - basinHeight) * river :

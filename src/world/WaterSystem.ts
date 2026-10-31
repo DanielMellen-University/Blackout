@@ -359,9 +359,11 @@ function* appendAnalyticBasins(
     // Generated basins share an exact polygon with collision/carving. Do not
     // bridge a concave cove with a different chord on distant LOD tiles.
     const boundaryStep = basin.shoreRadii ? 1 : Math.max(1, Math.ceil(boundary.length / desiredSamples))
+    // The fan centre takes its depth from the same carved bed as the rings,
+    // not a fixed per-kind constant that disagreed with the actual basin.
     const center: BasinVertex = {
       x: 0, z: 0, y: basin.level,
-      depth: basin.sea ? 180 : basin.pond ? 42 : 96,
+      depth: basinOpticalDepth(basin, inlets, basin.x, basin.z),
     }
     const append = (first: BasinVertex, second: BasinVertex, third: BasinVertex): void => {
       for (let index = 0; index < 3; index++) {

@@ -61,9 +61,9 @@ describe('cooperative water geometry', () => {
   // shallow basin band; sea-level raster still uses the sea material kind.
   it.each([
     ['raster', '1fa7969b58d68f92e4a12e3bbcef89f4fd5c3d0b23f58c91037508a1ab11a2dc'],
-    ['lake', 'ff8975c6ed0eb826c4c0da3abf09b4cb6a2025d74f9047f7163ba4408269a254'],
-    ['pond', 'a34fad26d5dcabe8c12c945d7bba5c913c592420238d82847c224c5617538c29'],
-    ['sea', 'acad9cb3fcf02c8e1f323ab584bb1713e431dfdaf1fb8d8582828a8ef0d3cd2b'],
+    ['lake', '07fdb3a2538ee7ec470fa2ea929849e3275f3077cacdf85ee42fdde852e77496'],
+    ['pond', '2c5727266e23c690e1d9fbf75ac9f0bff20c8250b4764b0e6b855e895fa40e77'],
+    ['sea', '98c76e2cbcf5508b32305515d2bde1f4e9c4b81712bf9f6a8ae98d27bf4651a9'],
     ['river', '83b9e3680241dc85ae0bfb019e1ed243b6e294c1f403aa6a086a820d387201be'],
     ['mouth', 'd1ed702bbe236d6cfa3cb553d4d6e5084a0b5beb18dae6a5790419165d3786ea'],
     ['junction', '3ef11c312efd3f07d0dd3d759b75c029b457ee80ad2cb687335485016ea73231'],
@@ -121,7 +121,7 @@ describe('cooperative water geometry', () => {
     advanceTo(steps, 'river')
     steps.return(null)
     const mesh = buildWaterMesh(...argsFor('lake'))!
-    try { expect(digest(mesh)).toBe('ff8975c6ed0eb826c4c0da3abf09b4cb6a2025d74f9047f7163ba4408269a254') }
+    try { expect(digest(mesh)).toBe('07fdb3a2538ee7ec470fa2ea929849e3275f3077cacdf85ee42fdde852e77496') }
     finally { dispose(mesh) }
   })
 
