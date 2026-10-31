@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.029**. Previous roadmap chunk: **11.028**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.030**. Previous roadmap chunk: **11.029**.
 
-Recent changes from **11.029**. River streaming, terrain beds, flow direction and lake joins are more consistent across curved channels and tile boundaries.
+Recent changes from **11.030**. Lakes fit their basins: no dashed bank or dry line at the shore, depth shading follows the carved bed, the Waterway lake shares one exact shoreline, and large lakes have smoother shores.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

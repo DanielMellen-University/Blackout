@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.030** Lake polish: shade lake depth from the carved bed profile; add a short drop-off lip and denser, cell-scaled shoreline probes so near, mid and far terrain stays under lake water instead of showing a dashed bank; give the Waterway lake one exact shoreline shared by water, carving and collision (removes its thin dry line); refine large lake shores to chords near 150 m; skip lake fan triangles outside a water tile before clipping (about 19% faster lake water builds). Add lake depth and shoreline fit regression tests.
+
 - **11.029** Keep curved river banks in streaming queries, follow curves with flow shading, clear terrain over narrow rivers between grid vertices, clip lake crossings at triangle edges, and make Waterway lake joins and span tangents consistent across queries.
 
 - **11.028** Grade tapered river ends downhill and align tapered ends and mouth extensions with their curved endpoint directions. Add geometry regression tests.
