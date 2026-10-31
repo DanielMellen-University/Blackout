@@ -77,6 +77,10 @@ export function* basinSurfaceSteps(basin: WaterBasin, supplied: readonly RiverRe
   if (inlets.length && basin.shoreRadii) {
     // Insert exact channel/shore intersections along existing polygon chords.
     // A narrow inlet must not fall between the lake's angular sample points.
+    // Ribbon vertices count as shore points within 0.12 m of the chord and
+    // 0.15 m of the lake level: the clipped ribbon edge, not its interior or
+    // a higher graded span that only passes near the shore. Each is projected
+    // onto its chord so the polygon outline itself never moves.
     for (const inlet of inlets) for (const vertices of [inlet.triangles ?? inlet.sections, inlet.caps]) {
       for (let i = 0; i < vertices.length; i += 4) {
         const x = vertices[i]!, z = vertices[i + 2]!
@@ -90,6 +94,8 @@ export function* basinSurfaceSteps(basin: WaterBasin, supplied: readonly RiverRe
       }
       yield 'shore'; ensureSeed()
     }
+    // Re-sort by angle, then merge points closer than 5 cm (ribbon triangles
+    // share edge vertices), keeping the deeper optical depth of each pair.
     const angle = (p: BasinVertex) => (Math.atan2(p.z, p.x) + Math.PI * 2) % (Math.PI * 2)
     boundary.sort((a, b) => angle(a) - angle(b))
     let count = 0
