@@ -232,7 +232,7 @@ it('clips crossed water grades without covering submerged beds or protruding abo
 })
 
 it.each([
-  { seed: 2026, jobs: [[-178920, -162120, 2, 2], [-178080, -162120, 1, 2]], t: -161997, lo: .490585786955697, hi: .8367384374141691 },
+  { seed: 2026, jobs: [[-178920, -162120, 2, 2], [-178080, -162120, 1, 2]], t: -161997, lo: .490585786955697, hi: .5188831076025967 },
   { seed: 9001, jobs: [[-130620, -113400, 1, 1], [-130200, -113400, 1, 1]], t: -113007.5, lo: .35948909393378703, hi: .6951107308268547 },
 ])('covers the actual near-water edge gap in seed $seed', ({ seed, jobs, t, lo, hi }) => {
   setWorldSeed(seed); clearOpsPad()

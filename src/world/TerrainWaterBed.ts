@@ -63,6 +63,18 @@ export function* shoreBedSteps(
         check(.25, .75, ground[b]! * .25 + ground[c]! * .75)
         check(.75, .75, ground[d]! * .5 + (ground[b]! + ground[c]!) * .25)
       }
+      // A shoreline cell's dry corner rises away from the water, so the
+      // interpolated ground can cross the surface between the edge and
+      // centre probes above, leaving a dashed line of bank inside the lake.
+      // Probe a 3x3 lattice on both triangles of mixed cells only.
+      if ((wa || wb || wc || wd) && !(wa && wb && wc && wd)) {
+        for (let iu = 0; iu < 3; iu++) for (let iv = 0; iv < 3; iv++) {
+          const u = (iu + .5) / 3, v = (iv + .5) / 3
+          check(u, v, u + v <= 1
+            ? ground[a]! + (ground[b]! - ground[a]!) * u + (ground[c]! - ground[a]!) * v
+            : ground[d]! + (ground[c]! - ground[d]!) * (1 - u) + (ground[b]! - ground[d]!) * (1 - v))
+        }
+      }
       if (lowering <= 0) continue
       // A small conservative allowance covers the curve between probes.
       lowering += Math.max(.2, lowering * .25)

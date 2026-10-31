@@ -67,4 +67,15 @@ describe('lake shoreline fit', () => {
       expect(fit.worst, `${seed}`).toBeLessThan(.05)
     }
   }, 60000)
+
+  it('keeps mid-distance terrain below the water just inside the shore', () => {
+    for (const [seed, pondOnly] of [[1337, true], [1, false], [73, true]] as const) {
+      const fit = shoreFit(seed, pondOnly, 1)
+      expect(fit.total).toBeGreaterThan(300)
+      // Coarser cells were checked at only five points; up to 16 of 384
+      // samples (0.45 m) still showed bank above the surface.
+      expect(fit.poke / fit.total, `${seed}`).toBeLessThan(.015)
+      expect(fit.worst, `${seed}`).toBeLessThan(.1)
+    }
+  }, 60000)
 })
