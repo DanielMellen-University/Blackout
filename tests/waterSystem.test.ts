@@ -189,6 +189,8 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('float farDepthMix = mix(0.72, 1.0, seaMix)')
       expect(shader.fragmentShader).toContain('mix(farDepthMix, 1.0 - exp(-vWaterDepth * 0.8), depthDetail)')
       expect(shader.fragmentShader).toContain('farFreshSky = (1.0 - depthDetail) * (1.0 - seaMix)')
+      // Far water widens its sun highlight instead of clipping to a white blob.
+      expect(shader.fragmentShader).toContain('roughnessFactor = max(roughnessFactor, .2 + .16 * smoothstep(1800.0, 6000.0, waterPixelDistance))')
       // The base normal comes from world up, so a mis-facing sliver cannot
       // flip downward into a white maximum-Fresnel sparkle.
       const upNormal = shader.fragmentShader.indexOf('normal = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz)')
