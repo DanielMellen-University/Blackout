@@ -8,6 +8,8 @@ export interface BasinVertex { x: number; z: number; y: number; depth: number }
 interface BasinSurface { boundary: BasinVertex[]; inner: BasinVertex[]; inlets: readonly RiverSurface[] }
 /** Weak ownership follows the existing bounded drainage-node lifetime. */
 const surfaces = new WeakMap<WaterBasin, BasinSurface>()
+/** Shore ring points closer than this merge into one (metres). */
+const SHORE_MERGE_DISTANCE = .5
 
 /** Optical depth follows the carved bed (terrain sits at least 0.1 m below
  * the surface). The old linear 6 cm/m guess ignored the shallow shelf and
@@ -94,19 +96,30 @@ export function* basinSurfaceSteps(basin: WaterBasin, supplied: readonly RiverRe
       }
       yield 'shore'; ensureSeed()
     }
-    // Re-sort by angle, then merge points closer than 5 cm (ribbon triangles
-    // share edge vertices), keeping the deeper optical depth of each pair.
+    // Re-sort by angle, then merge crowded points, keeping the deeper optical
+    // depth. Ribbon triangles put several edge vertices within centimetres to
+    // a few decimetres of each other; each kept point adds a shore, ring and
+    // fan triangle, so crowded points only made sub-metre slivers. Inserted
+    // points lie on their chord, so dropping one never moves the outline. An
+    // original contour corner always wins over an inserted neighbour.
+    const corners = new Set(boundary.slice(0, count))
     const angle = (p: BasinVertex) => (Math.atan2(p.z, p.x) + Math.PI * 2) % (Math.PI * 2)
     boundary.sort((a, b) => angle(a) - angle(b))
-    let count = 0
+    let kept = 0
     for (const vertex of boundary) {
-      const last = boundary[count - 1]
-      if (last && Math.hypot(vertex.x - last.x, vertex.z - last.z) < .05) last.depth = Math.max(last.depth, vertex.depth)
-      else boundary[count++] = vertex
+      const last = boundary[kept - 1]
+      if (last && Math.hypot(vertex.x - last.x, vertex.z - last.z) < SHORE_MERGE_DISTANCE &&
+        !(corners.has(vertex) && corners.has(last))) {
+        if (corners.has(vertex)) { vertex.depth = Math.max(vertex.depth, last.depth); boundary[kept - 1] = vertex }
+        else last.depth = Math.max(last.depth, vertex.depth)
+      } else boundary[kept++] = vertex
     }
-    boundary.length = count
-    if (count > 1 && Math.hypot(boundary[0]!.x - boundary[count - 1]!.x, boundary[0]!.z - boundary[count - 1]!.z) < .05) {
-      boundary[0]!.depth = Math.max(boundary[0]!.depth, boundary.pop()!.depth)
+    boundary.length = kept
+    const first = boundary[0], tail = boundary[kept - 1]
+    if (kept > 1 && first && tail && Math.hypot(first.x - tail.x, first.z - tail.z) < SHORE_MERGE_DISTANCE &&
+      !(corners.has(first) && corners.has(tail))) {
+      if (corners.has(tail)) { tail.depth = Math.max(tail.depth, first.depth); boundary.shift() }
+      else { first.depth = Math.max(first.depth, tail.depth); boundary.pop() }
     }
   }
   const inner = boundary.map(p => {

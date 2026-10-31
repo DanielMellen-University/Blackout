@@ -16,13 +16,20 @@ describe('basin surface rings', () => {
     const pond = waterBasinsInBounds(-7000, -20000, -6000, -19000).find(b => b.id === 'lake:-3:-10')!
     const surface = finish(basinSurfaceSteps(pond, []))
     expect(surface.boundary.length).toBeGreaterThan(pond.shoreRadii!.length)
+    // Every original contour corner survives the merge.
+    for (let i = 0; i < pond.shoreRadii!.length; i++) {
+      const theta = i / pond.shoreRadii!.length * Math.PI * 2, r = pond.shoreRadii![i]!
+      expect(surface.boundary.some(p => Math.hypot(p.x - Math.cos(theta) * r, p.z - Math.sin(theta) * r) < 1e-6)).toBe(true)
+    }
     let previous = -1
     for (let i = 0; i < surface.boundary.length; i++) {
       const p = surface.boundary[i]!, q = surface.boundary[(i + 1) % surface.boundary.length]!
       const angle = (Math.atan2(p.z, p.x) + Math.PI * 2) % (Math.PI * 2)
       expect(angle).toBeGreaterThanOrEqual(previous)
       previous = angle
-      expect(Math.hypot(p.x - q.x, p.z - q.z)).toBeGreaterThanOrEqual(.05)
+      // Crowded inlet crossings used to leave 5 cm slivers (93 pairs under
+      // 0.5 m here); they now merge so no sub-metre fan wedges remain.
+      expect(Math.hypot(p.x - q.x, p.z - q.z)).toBeGreaterThanOrEqual(.5)
       expect(Math.abs(basinDistance(pond, pond.x + p.x, pond.z + p.z))).toBeLessThan(.05)
     }
   })
