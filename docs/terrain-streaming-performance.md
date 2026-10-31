@@ -10,8 +10,9 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 Hydrology sampling used to test every lake within `radius * 1.65 + 2000` m
 of a sample. Generated lakes with cached shore radii never reach past their
 bounds radius, so they now use `boundsRadius + shelf margin`, which is exact.
-Over 270k seed-73 wetland samples the checksum is identical and sampling is
-about 5% faster (342-345 ms against 365 ms medians; noisy). Warped analytic
+Over 270k seed-73 wetland samples the checksum is identical. Sampling
+medians were 336-345 ms against 343-365 ms before, so the gain is small and
+within noise on one run (0 to 7%). Warped analytic
 basins and the coast-field sea keep the old box.
 
 Tried and not shipped: running the shoreline bed probes on near (LOD0) tiles
