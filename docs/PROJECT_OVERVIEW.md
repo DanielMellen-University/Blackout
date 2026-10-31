@@ -13,6 +13,14 @@ retain compact terminal lakes. Optional lakes have irregular smoothed shores
 and island cutouts. Existing seeds change, so incompatible old ghost paths are
 ignored without deleting saved records, favorites, or settings.
 
+Lakes and rivers share one water model. A generated lake stores its shore as
+cached radii; water rendering, terrain carving and collision all use the same
+straight chords between them (`basinDistance`). One bed profile
+(`basinBedOffset`) carves the lake floor and drives its depth colour, and river
+ribbons carry their own depth into the lake across each mouth. Water tiles are
+built in small cooperative steps, so streaming can spread one large lake
+over several frames.
+
 Regional weather integration and further terrain/biome polish remain in progress,
 not shipped features. Daily EST reset wiring and per-level world conditions
 remain deferred. User-paused systems remain excluded under the
