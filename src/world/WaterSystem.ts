@@ -195,7 +195,10 @@ export function* buildWaterMeshSteps(
 }
 
 /** Water ripples supply local normals in the shader. Do not shade the graded
- * ribbon's individual triangles as rigid, faceted panels at every bend. */
+ * ribbon's individual triangles as rigid, faceted panels at every bend.
+ * Since 11.031 the fragment shader also rebuilds its base normal from world
+ * up, so these vertical normals only feed the standard vertex stage;
+ * a wrong winding sign on a sliver can no longer reach the Fresnel term. */
 function* computeWaterNormalsSteps(geometry: BufferGeometry): Generator<WaterBuildPhase, void, void> {
   const positions = geometry.getAttribute('position')
   const normals = new BufferAttribute(new Float32Array(positions.count * 3), 3)
