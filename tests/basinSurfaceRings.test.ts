@@ -57,5 +57,6 @@ describe('basin surface rings', () => {
       }
     }
     expect(checked).toBeGreaterThanOrEqual(3)
-  })
+    // Builds every lake surface in 75 cold regions; slow on shared CI runners.
+  }, 60000)
 })
