@@ -189,6 +189,11 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('float farDepthMix = mix(0.72, 1.0, seaMix)')
       expect(shader.fragmentShader).toContain('mix(farDepthMix, 1.0 - exp(-vWaterDepth * 0.8), depthDetail)')
       expect(shader.fragmentShader).toContain('farFreshSky = (1.0 - depthDetail) * (1.0 - seaMix)')
+      // The base normal comes from world up, so a mis-facing sliver cannot
+      // flip downward into a white maximum-Fresnel sparkle.
+      const upNormal = shader.fragmentShader.indexOf('normal = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz)')
+      expect(upNormal).toBeGreaterThan(-1)
+      expect(upNormal).toBeLessThan(shader.fragmentShader.indexOf('vec2 ripples = rippleA'))
       expect(shader.fragmentShader.indexOf('float seaMix')).toBeLessThan(shader.fragmentShader.indexOf('float farDepthMix'))
       expect(shader.fragmentShader).toContain('riverBankFoam')
       expect(shader.fragmentShader).toContain('shoreFoam')

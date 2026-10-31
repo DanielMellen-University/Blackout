@@ -172,6 +172,11 @@ export function applyWaterAppearance(
         rippleA = texture2D(waterNormals, p / 380.0 + drift).rg * 2.0 - 1.0;
         rippleB = texture2D(waterNormals, vec2(p.y, -p.x) / 113.0 - drift * 0.7).rg * 2.0 - 1.0;
       }
+      // Water is a horizontal sheet. Rebuild its base normal from world up
+      // instead of trusting the per-triangle winding sign: a sub-metre sliver
+      // where a shore meets an inlet can rasterise with the opposite facing,
+      // flip to point down and read as a white maximum-Fresnel sparkle.
+      normal = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
       vec2 ripples = rippleA * (0.085 + windRippleStrength + waterRain * 0.045 + riverMix * 0.025 + vWaterDrop * .035 * depthDetail) * distanceFade * waterNormalDetail +
         rippleB * (0.035 + waterSnow * 0.01) * distanceFade * waterNormalDetail;
       normal = normalize(normal + mat3(viewMatrix) * vec3(ripples.x, 0.0, ripples.y));
