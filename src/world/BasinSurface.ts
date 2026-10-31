@@ -16,7 +16,16 @@ const surfaces = new WeakMap<WaterBasin, BasinSurface>()
 export function basinOpticalDepth(basin: WaterBasin, inlets: readonly RiverSurface[], x: number, z: number): number {
   const d = basinDistance(basin, x, z)
   let depth = Number.isFinite(d) ? Math.max(.08, d < 0 ? Math.max(.1, -basinBedOffset(basin, d)) : .08) : .08
-  for (const surface of inlets) depth = Math.max(depth, riverSurfaceDepthAt(surface, x, z))
+  if (!inlets.length) return depth
+  // Inlet ribbons are clipped exactly at this shore, so a shoreline vertex
+  // across a river mouth can fall a hair outside the ribbon and read as a
+  // 0.1 m shallow. Those vertices painted pale streaks across the mouth.
+  // Also probe 2.5 m outward along the radial, inside the channel itself.
+  const rx = x - basin.x, rz = z - basin.z, radial = Math.hypot(rx, rz)
+  const nearShore = Number.isFinite(d) && d > -3 && radial > 1
+  const ox = nearShore ? x + rx / radial * 2.5 : x, oz = nearShore ? z + rz / radial * 2.5 : z
+  for (const surface of inlets) depth = Math.max(depth, riverSurfaceDepthAt(surface, x, z),
+    nearShore ? riverSurfaceDepthAt(surface, ox, oz) : -Infinity)
   return depth
 }
 
