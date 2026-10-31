@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.033** Widen and dim the far water sun highlight (roughness floor 0.2 to 0.36 from 1.8 to 6 km) so lakes stop clipping to a pure-white blob from altitude. Add a drawn-mesh sliver test for the seed-73 wetland pond, list open water issues at the top of the water review, and trace the thin pond outlet land strip to an outlet route hugging its shore.
+
 - **11.032** Cull generated lakes in hydrology sampling with their exact bounds box (identical output, small speedup within noise) and test that shore radii stay inside it. Document how to reproduce water review stills and the rejected near-tile shore probe trial (+18% build cost for 3 cm pokes).
 
 - **11.031** River mouths and far freshwater: carry river depth onto lake shore vertices across a mouth so they stop painting pale streaks; give far rivers and lakes one shared mid-depth tone and a small sky floor so they stop reading flat navy from altitude without a seam at mouths; rebuild the water base normal from world up so sub-metre slivers stop sparkling white; merge shore ring points closer than 0.5 m (seed-73 wetland pond ring 743 to 659 points). New tests cover shore chords, the bed profile, river depth queries, optical depth, ring order and lake level queries, plus a shader declaration guard. Docs: water review sections for 11.030 and 11.031 with stills, performance notes, project overview, Node 22 note and `.nvmrc`. The angular river-to-lake bank remains open.

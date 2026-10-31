@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 11.033. Far sun glare: far water raises its roughness floor so a lake's sun highlight widens and dims instead of clipping to a white blob from altitude (seed-73 5 km still: 408 fully white pixels to 0). The water review now lists open issues first: the angular river-to-lake bank, a thin land strip where a level pond outlet hugs its shore (needs a generation fix), and far coast stair-steps.
+
 Chunk 11.032. Lake influence cull: hydrology sampling tests generated lakes only inside `boundsRadius + shelf margin`, which is exact for cached shore radii (identical output; a new test keeps shores inside bounds). Near-tile shore probes were tried and rejected at +18% build cost for pokes under 3 cm. See [streaming performance notes](terrain-streaming-performance.md).
 
 Chunk 11.031. River mouths and far freshwater: river depth now carries across lake mouths (no more pale streaks); far rivers and lakes share one mid-depth tone and a small sky floor, so lakes no longer read flat navy from altitude and mouths stay seamless; the water base normal comes from world up, which removes white sparkle dots on sub-metre slivers; lake shore rings merge points closer than 0.5 m. See [water review](water-surface-review.md). The angular river-to-lake bank needs a contour flare in `RegionalDrainage.ts` that changes generation hashes, so it waits for a reviewed terrain batch.
@@ -163,7 +165,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.032** is current. Previous ship: **11.031**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.033** is current. Previous ship: **11.032**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
