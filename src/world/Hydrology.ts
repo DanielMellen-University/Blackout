@@ -96,7 +96,12 @@ function validBasin(value: unknown): value is Basin {
     Number.isFinite(basin.level)
 }
 
-/** Signed shore distance, warped in space and broken into coves and peninsulas. */
+/** Signed distance to a basin's shore in metres: negative under water,
+ * positive on land. The regional sea reads the global coast field. Generated
+ * lakes with cached `shoreRadii` measure along the ray from the centre to the
+ * exact straight chord water rendering draws, so this is a radial distance,
+ * not a true nearest-shore distance. Older analytic basins use a warped,
+ * lobed ellipse broken into coves and peninsulas. */
 export function basinDistance(b: Basin, x: number, z: number): number {
   if (!validBasin(b) || !Number.isFinite(x) || !Number.isFinite(z)) return Number.POSITIVE_INFINITY
   if (b.regionalSea) return coastField(x, z) * 18000
