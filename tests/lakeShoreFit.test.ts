@@ -30,20 +30,21 @@ function firstLake(seed: number, pondOnly: boolean): WaterBasin {
 }
 
 /** Drawn ground and drawn water just inside a lake's shore, at one LOD. */
-function shoreFit(seed: number, pondOnly: boolean, lod: TerrainLod): { poke: number; total: number; worst: number } {
+function shoreFit(seed: number, pondOnly: boolean, lod: TerrainLod, size = 1,
+  backs: readonly number[] = [1, 3, 6, 10]): { poke: number; total: number; worst: number } {
   setWorldSeed(seed); clearOpsPad()
   const basin = firstLake(seed, pondOnly)
-  const span = 420, tiles = new Map<string, ReturnType<typeof generateTerrainGeometry>>()
+  const span = 420 * size, tiles = new Map<string, ReturnType<typeof generateTerrainGeometry>>()
   let poke = 0, total = 0, worst = 0
   for (let i = 0; i < 96; i++) {
     const a = i / 96 * Math.PI * 2
     let r = 20
     while (basinDistance(basin, basin.x + Math.cos(a) * r, basin.z + Math.sin(a) * r) < 0) r += 1
-    for (const back of [1, 3, 6, 10]) {
+    for (const back of backs) {
       const x = basin.x + Math.cos(a) * (r - back), z = basin.z + Math.sin(a) * (r - back)
       const ox = Math.floor(x / span) * span, oz = Math.floor(z / span) * span, key = `${ox},${oz}`
       let tile = tiles.get(key)
-      if (!tile) { tile = generateTerrainGeometry(ox, oz, lod, 1); tiles.set(key, tile) }
+      if (!tile) { tile = generateTerrainGeometry(ox, oz, lod, size); tiles.set(key, tile) }
       if (!tile.water) continue
       const lx = x - ox - span / 2, lz = z - oz - span / 2
       const water = heightAt(tile.water, lx, lz)
@@ -78,6 +79,17 @@ describe('lake shoreline fit', () => {
       // samples (0.45 m) still showed bank above the surface.
       expect(fit.poke / fit.total, `${seed}`).toBeLessThan(.015)
       expect(fit.worst, `${seed}`).toBeLessThan(.1)
+    }
+  }, 60000)
+
+  it('keeps far terrain below the water just inside the shore', () => {
+    for (const [seed, pondOnly] of [[1337, true], [1, false], [73, true]] as const) {
+      const fit = shoreFit(seed, pondOnly, 2, 4, [2, 6, 12, 25])
+      expect(fit.total).toBeGreaterThan(300)
+      // 105 m far cells hid 35 m slivers between fixed probes: 12-22 of 384
+      // points showed bank up to 3.65 m above the water.
+      expect(fit.poke / fit.total, `${seed}`).toBeLessThan(.01)
+      expect(fit.worst, `${seed}`).toBeLessThan(.15)
     }
   }, 60000)
 

@@ -15,6 +15,7 @@ export function* shoreBedSteps(
   mayContainWater?: (minX: number, minZ: number, maxX: number, maxZ: number) => boolean,
 ): Generator<void, ShoreBed, void> {
   const stride = segs + 5, cell = span / segs
+  const lattice = Math.max(3, Math.min(7, Math.round(cell / 15)))
   const ground = new Float32Array(stride * stride), water = new Float32Array(ground.length)
   const corrections = new Float32Array(ground.length), probe: BedSample = { height: 0, waterLevel: 0 }
   const index = (x: number, z: number): number => (z + 2) * stride + x + 2
@@ -66,10 +67,11 @@ export function* shoreBedSteps(
       // A shoreline cell's dry corner rises away from the water, so the
       // interpolated ground can cross the surface between the edge and
       // centre probes above, leaving a dashed line of bank inside the lake.
-      // Probe a 3x3 lattice on both triangles of mixed cells only.
+      // Probe a lattice on both triangles of mixed cells only. Spacing stays
+      // near 15 m, so wide far cells cannot hide a sliver between probes.
       if ((wa || wb || wc || wd) && !(wa && wb && wc && wd)) {
-        for (let iu = 0; iu < 3; iu++) for (let iv = 0; iv < 3; iv++) {
-          const u = (iu + .5) / 3, v = (iv + .5) / 3
+        for (let iu = 0; iu < lattice; iu++) for (let iv = 0; iv < lattice; iv++) {
+          const u = (iu + .5) / lattice, v = (iv + .5) / lattice
           check(u, v, u + v <= 1
             ? ground[a]! + (ground[b]! - ground[a]!) * u + (ground[c]! - ground[a]!) * v
             : ground[d]! + (ground[c]! - ground[d]!) * (1 - u) + (ground[b]! - ground[d]!) * (1 - v))
