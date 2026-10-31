@@ -17,6 +17,8 @@ npm run dev
 
 Open the URL Vite prints. Run `npm test` for the suite and `npm run build` for version checks, TypeScript, and the production build.
 
+Use Node 22, the version CI runs. A few hydrology snapshot tests hash generated geometry, and newer Node releases round some math differently, so those hashes can fail locally on Node 24 while CI passes.
+
 Run `npm run perf:terrain -- --seed=42 --samples=16` for a CPU geometry profile that closes on completion. Add `--sliced` to report individual work-step costs. It does not measure FPS; see [streaming performance notes](docs/terrain-streaming-performance.md) for scope and recorded samples.
 
 ## Fly
