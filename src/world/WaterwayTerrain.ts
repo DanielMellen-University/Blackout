@@ -1,5 +1,6 @@
 import type { TerrainProfile } from './TerrainProfile'
-import type { RiverReach, WaterBasin } from './Hydrology'
+import { basinDistance, type RiverReach, type WaterBasin } from './Hydrology'
+import { refineLakeShore } from './LakeShore'
 import { registerRiverSurface } from './RiverSurface'
 
 /** Recipe-local drainage using the ordinary carved basins and river ribbons. */
@@ -11,6 +12,7 @@ export function waterwayDrainage(profile: Readonly<TerrainProfile>): { basins: W
   const level = profile.baseHeight - 8
   const basins: WaterBasin[] = [{ ...point(2100, 3300), radius: 1050, aspect: 1.05,
     angle: -profile.yaw, phase: profile.phase, level, sea: false, pond: false, id: 'waterway:lake' }]
+  fixLakeShore(basins[0]!)
   const reaches: RiverReach[] = []
   // A broad meandering channel crosses the outbound route and joins the lake.
   // The airfield and the aligned final stay on the dry western floodplain.
@@ -35,4 +37,28 @@ export function waterwayDrainage(profile: Readonly<TerrainProfile>): { basins: W
     reaches.push(reach)
   }
   return { basins, reaches }
+}
+
+/** Resolve the warped analytic outline once into the same cached radial
+ * contour generated lakes use. Carving, collision and the water surface then
+ * share one exact polygon. Before, the surface bisected each ray to about 5 m
+ * and drew chords inside the warped curve, so carved bed below the lake level
+ * showed as a thin dry line around half of the Waterway shore. */
+function fixLakeShore(basin: WaterBasin): void {
+  const radii = new Float32Array(128)
+  let outer = 0
+  for (let i = 0; i < radii.length; i++) {
+    const angle = i / radii.length * Math.PI * 2, cos = Math.cos(angle), sin = Math.sin(angle)
+    let low = 0, high = basin.radius * 2.5
+    for (let expand = 0; expand < 3 && basinDistance(basin, basin.x + cos * high, basin.z + sin * high) < 0; expand++) high *= 1.35
+    for (let pass = 0; pass < 24; pass++) {
+      const radius = (low + high) * .5
+      if (basinDistance(basin, basin.x + cos * radius, basin.z + sin * radius) < 0) low = radius
+      else high = radius
+    }
+    radii[i] = low
+    outer = Math.max(outer, low)
+  }
+  basin.shoreRadii = refineLakeShore(radii)
+  basin.boundsRadius = Math.max(basin.radius * 1.75, outer * 1.02)
 }

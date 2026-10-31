@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { clearOpsPad } from '../src/world/terrainSample'
+import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
+import { generateMission } from '../src/systems/MissionGenerator'
+import { setTerrainProfile } from '../src/world/TerrainProfile'
 import { basinDistance, waterLandmarks, type WaterBasin } from '../src/world/Hydrology'
 import { generateTerrainGeometry, type TerrainLod } from '../src/world/TerrainGeometry'
 function heightAt(g: { attributes: { position?: { array: ArrayLike<number> } }; index?: ArrayLike<number> | null },  x: number, z: number): number {
@@ -54,7 +56,7 @@ function shoreFit(seed: number, pondOnly: boolean, lod: TerrainLod): { poke: num
   return { poke, total, worst }
 }
 
-afterEach(clearOpsPad)
+afterEach(() => { setTerrainProfile(null); clearOpsPad() })
 
 describe('lake shoreline fit', () => {
   it('keeps near terrain below the water just inside the shore', () => {
@@ -76,6 +78,41 @@ describe('lake shoreline fit', () => {
       // samples (0.45 m) still showed bank above the surface.
       expect(fit.poke / fit.total, `${seed}`).toBeLessThan(.015)
       expect(fit.worst, `${seed}`).toBeLessThan(.1)
+    }
+  }, 60000)
+
+  it('draws Waterway lake water right up to its carved shore', () => {
+    for (const seed of [42, 1337]) {
+      const mission = generateMission(seed, 'waterway-run'), pad = mission.landingRunway
+      setWorldSeed(seed); setTerrainProfile(mission.terrain); setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
+      const basin = waterLandmarks(Math.floor(mission.terrain.originX / 32000),
+        Math.floor(mission.terrain.originZ / 32000)).find(b => b.id === 'waterway:lake')!
+      // Carving, collision and water now share one cached contour.
+      expect(basin.shoreRadii?.length).toBe(256)
+      for (const lod of [0, 1] as TerrainLod[]) {
+        const span = 420, tiles = new Map<string, ReturnType<typeof generateTerrainGeometry>>()
+        let exposed = 0, total = 0
+        for (let i = 0; i < 128; i++) {
+          const a = i / 128 * Math.PI * 2
+          let r = 20
+          while (basinDistance(basin, basin.x + Math.cos(a) * r, basin.z + Math.sin(a) * r) < 0) r += 1
+          for (const back of [1, 3]) {
+            const x = basin.x + Math.cos(a) * (r - back), z = basin.z + Math.sin(a) * (r - back)
+            const ox = Math.floor(x / span) * span, oz = Math.floor(z / span) * span, key = `${ox},${oz}`
+            let tile = tiles.get(key)
+            if (!tile) { tile = generateTerrainGeometry(ox, oz, lod, 1); tiles.set(key, tile) }
+            const lx = x - ox - span / 2, lz = z - oz - span / 2
+            const water = tile.water ? heightAt(tile.water, lx, lz) : -Infinity
+            total++
+            // Carved bed below the lake level with no water drawn over it was
+            // the thin dry line: 124 of 256 inside points at LOD 0 before.
+            if (!Number.isFinite(water) && heightAt(tile.ground, lx, lz) < basin.level - .05) exposed++
+          }
+        }
+        expect(total).toBe(256)
+        expect(exposed, `${seed} lod ${lod}`).toBeLessThanOrEqual(2)
+      }
+      setTerrainProfile(null); clearOpsPad()
     }
   }, 60000)
 })
