@@ -413,6 +413,7 @@ The heap target is about **200 MB**. No heap chase. City/roads redesign is **CLO
 ## Work and verification
 
 - Pull origin/main before each work session and preserve unrelated local changes.
+- Run tests on Node 22, the CI version (`.nvmrc`). Hydrology snapshot hashes can differ on newer Node releases.
 - Ship coherent batches with focused behavior tests and a production build before committing and pushing.
 - Preserve comments that explain generation and lifecycle invariants when recovering a file. Never replace a source with a placeholder to bypass tool limits.
 - Use existing instance, draw-call, and worker budgets. A math-only change is not evidence of an FPS improvement without measurement.
