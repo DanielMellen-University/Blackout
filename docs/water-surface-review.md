@@ -2,6 +2,13 @@
 
 Newest first. Each section records what changed, how it was checked, and what was still visibly wrong afterwards. See [ROADMAP](ROADMAP.md) for the chunk history.
 
+## Open water issues (as of 11.032)
+
+- **Angular river-to-lake bank.** A lake contour meets a river ribbon at a hard corner, leaving a pointed spit of bank. Needs a contour flare along each joined channel in `RegionalDrainage.ts`; this changes generation hashes and fixtures.
+- **Thin land strips at some pond outlets.** On seed 73 near `lake:-2:-9` a narrow grass strip separates the pond's far shore from the river running past it. Not yet traced to generation or rendering.
+- **Far coast stair-steps.** From about 9 km up, some distant shorelines show cell-sized steps where coarse terrain meets flat water.
+- **Sun glare blob.** From altitude the sun's highlight on a large lake can clip to a broad pure-white patch (about 400 pixels in the seed-73 5 km still). Physically plausible, but it reads as a flat white blob.
+
 ## Reproducing review stills
 
 Run `npx vite --port <free port> --strictPort` and open `/dev/terrain.html?destination=wetland&seed=73` (other water destinations: `lake`, `pond`, `lakeoutlet`, `riverjoin`, `headwater`). Headless Chrome works with `--use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Software rendering streams slowly: wait 40 s for a low view and 80 to 90 s for a 5 km overview before capturing, or distant tiles are still missing. Weather is live, so compare before/after stills taken in the same session and judge water against water, not sky haze. Avoid port 5173, which is reserved for the main dev server.
