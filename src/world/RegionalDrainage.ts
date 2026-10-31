@@ -312,8 +312,14 @@ function basin(n: Node): WaterBasin | null {
     }
     if (!riverSink && area() < Math.PI * Math.pow(Math.max(775, radius * .86), 2)) return null
   }
+  // One refinement left 128 shore points, so a long arm of a large lake drew
+  // straight chords of up to 560 m with visible corners. Keep refining the
+  // same non-overshooting contour until chords are near 150 m (max 512).
+  let shore = refineLakeShore(radii), outer = 0
+  for (let i = 0; i < shore.length; i++) outer = Math.max(outer, shore[i]!)
+  while (shore.length < 512 && Math.PI * 2 * outer / shore.length > 150) shore = refineLakeShore(shore)
   const contour: WaterBasin = { x: n.x, z: n.z, radius, aspect: 1, angle: 0, phase: roll * 6.28,
-    level, sea: false, pond, shoreRadii: refineLakeShore(radii), boundsRadius: radius * 1.75,
+    level, sea: false, pond, shoreRadii: shore, boundsRadius: radius * 1.75,
     id: `lake:${n.gx}:${n.gz}` }
   if (large && roll > .9) {
     const island = { x: n.x + radius * .28, z: n.z - radius * .13, radius: radius * .12 }

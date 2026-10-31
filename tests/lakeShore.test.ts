@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { refineLakeShore } from '../src/world/LakeShore'
+import { waterLandmarks } from '../src/world/Hydrology'
+import { setWorldSeed } from '../src/world/noise'
 
 describe('shared refined lake outline', () => {
   it('preserves every constrained anchor and cannot overshoot the cove or extent', () => {
@@ -27,5 +29,26 @@ describe('shared refined lake outline', () => {
     const a = refineLakeShore(radii), b = refineLakeShore(rotated)
     expect([...b]).toEqual([...a.slice(2), ...a.slice(0, 2)])
     expect(refineLakeShore(new Float32Array())).toHaveLength(0)
+  })
+})
+
+describe('large lake shorelines', () => {
+  it('refine long arms into short chords instead of visible corners', () => {
+    for (const seed of [1, 42, 1337]) {
+      setWorldSeed(seed)
+      let maxChord = 0
+      for (let cx = -2; cx <= 2; cx++) for (let cz = -2; cz <= 2; cz++) for (const b of waterLandmarks(cx, cz)) {
+        if (!b.shoreRadii) continue
+        const k = b.shoreRadii.length
+        expect(k === 128 || k === 256 || k === 512).toBe(true)
+        for (let i = 0; i < k; i++) {
+          const a = i / k * Math.PI * 2, c = (i + 1) / k * Math.PI * 2
+          const r1 = b.shoreRadii[i]!, r2 = b.shoreRadii[(i + 1) % k]!
+          maxChord = Math.max(maxChord, Math.hypot(Math.cos(a) * r1 - Math.cos(c) * r2, Math.sin(a) * r1 - Math.sin(c) * r2))
+        }
+      }
+      // A single refinement drew chords of 430 to 560 m on these seeds.
+      expect(maxChord, `${seed}`).toBeLessThan(250)
+    }
   })
 })
