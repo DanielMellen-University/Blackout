@@ -1,5 +1,13 @@
 # Water surface review - 10.890
 
+## 11.031: river mouths and far freshwater
+
+Broad river mouths showed pale streaks across the water. Inlet ribbons are clipped exactly at the lake shore, so some radial shore samples across a mouth fell a hair outside every ribbon and took the 0.1 m shoreline depth, which paints the shallow colour. `basinOpticalDepth` now also probes 2.5 m outward along the radial near the shore. On the seed-73 wetland pond `lake:-3:-10`, every shore vertex across the centre of its two broad inlets now carries the channel depth (about 2 m), where some used to read 0.10 m.
+
+From altitude, lakes and rivers read as flat dark navy. Beyond 1800 m all freshwater used the deepest palette colour, and looking steeply down the Fresnel term adds almost no sky. Far freshwater now settles on a mid-depth tone (72% of the way to deep) and gets a small distance-only sky floor. Rivers and lakes share both, so mouths stay one continuous surface; the sea keeps its own palette. Checked with headless before/after stills of the seed-73 wetland from 5 km.
+
+Investigated and not changed: overlapping basin water tiles by 0.5 m did not remove the faint sparkle dots seen inside the seed-73 pond from 5 km, so it was reverted. The angular river-to-lake bank comes from the generated contour itself: a lake contour meets a straight ribbon at a hard corner. A real fix flares the cached `shoreRadii` along each joined channel in `RegionalDrainage.ts`, which changes generation hashes and fixtures, so it is left for a reviewed terrain batch.
+
 ## 11.030: lake beds, banks and shores
 
 Lake optics now read depth from the carved bed itself. `basinBedOffset` in `Hydrology.ts` is the one profile used by terrain carving and by `basinOpticalDepth`, so the shallow tint sits over the shallow bed that is actually drawn, and the fan centre no longer uses fixed per-kind depths.
