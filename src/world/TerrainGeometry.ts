@@ -133,6 +133,7 @@ function basinsInBounds(originX: number, originZ: number, span: number): WaterBa
   return waterBasinsInBounds(originX, originZ, originX + span, originZ + span, basinScratch)
 }
 
+/** Terrain grid segments per tile side for each LOD (24, 12, 8). */
 export function segsForLod(lod: TerrainLod): number {
   if (lod === 0) return SEGS_NEAR
   if (lod === 1) return SEGS_MID
