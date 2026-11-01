@@ -3,6 +3,18 @@
 The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 30,240 m instead of 15,120 m; the camera far plane follows the stream radius.
 
+## Tile layout in brief
+
+Terrain is planned on a fixed grid of 420 m cells (`CHUNK_SIZE`). The planner
+(`planTerrainTiles`) walks a quadtree from 32-cell roots and splits a tile
+while the camera is closer to its edge than 48, 32, 20, 12 or 8 cells for
+sizes 32, 16, 8, 4 and 2. A split tile only merges again once the camera is
+two cells past that line, so small reversals do not rebuild tiles. Leaves
+never overlap. Grids use 24, 12 or 8 segments per side for LOD 0, 1 and 2;
+water gets its own finer grid budget (`waterSegsForLod`). Contact tiles
+(distance 4 cells or less) build first, then missing coverage, then LOD
+rebuilds (`terrainBuildPriority`).
+
 ## Implementation
 
 ### Chunk 11.032 lake influence cull and near shore probes
