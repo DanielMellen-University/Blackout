@@ -5,6 +5,8 @@ import { regionalDrainageSteps } from './RegionalDrainage'
 import { coastField } from './Coastline'
 import { riverSurface, riverSurfaceHeightAt } from './RiverSurface'
 
+/** Side of one cached hydrology catchment in metres. Terrain streaming also
+ * surveys whole catchments on this grid before it builds nearby water. */
 export const CATCHMENT_SIZE = 32000
 const BIN = 2000
 const BINS = CATCHMENT_SIZE / BIN
