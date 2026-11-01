@@ -619,6 +619,11 @@ function assignLakeOutlet(n: Node): void {
   if (end) source.outletId = `${end[0]}:${end[1]}`
 }
 
+/** Build one catchment's drainage in cooperative steps: route flow on the
+ * regional grid, form lakes and seas, grade them, then emit river reaches.
+ * Returns basins including the halo ring, landmarks (owned basins plus sea
+ * anchors), the reaches this catchment owns, and queryReaches, which adds the
+ * halo's reaches so bounds queries near the catchment edge see them too. */
 export function* regionalDrainageSteps(cx: number, cz: number): Generator<HydrologyBuildPhase, {
   basins: WaterBasin[]; landmarks: WaterBasin[]; reaches: RiverReach[]; queryReaches: RiverReach[]
 }, void> {
