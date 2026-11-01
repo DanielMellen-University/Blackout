@@ -64,5 +64,7 @@ Built with TypeScript, Three.js, and Vite. Graphics presets and adaptive resolut
 - [Project overview](docs/PROJECT_OVERVIEW.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Changelog](CHANGELOG.md)
+- [Water surface review](docs/water-surface-review.md)
+- [Terrain streaming performance](docs/terrain-streaming-performance.md)
 
 Use `/dev/aircraft.html` for model inspection, `/dev/terrain.html` for terrain and weather review, and `/dev/debrief.html` for lightweight landing-feedback review without terrain or WebGL.
