@@ -19,6 +19,9 @@ const SEGS_MID = 12
 // otherwise rounded landforms collapse into triangular needle silhouettes;
 // eight keeps the horizon smooth while remaining far below mid-tile detail.
 const SEGS_FAR = 8
+// Water and river grids aim for these cell sizes in metres per LOD, then cap
+// the segment count so a large far tile cannot multiply its vertex budget.
+// They never drop below the terrain grid, so water never coarsens the shore.
 const WATER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 7, 1: 20, 2: 60 }
 const WATER_MAX_SEGS: Record<TerrainLod, number> = { 0: 56, 1: 40, 2: 16 }
 const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 10, 1: 26, 2: 70 }
