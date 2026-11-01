@@ -7,6 +7,7 @@ import { createClimateSample, sampleGeographyHeight, sampleGeographyInto, sample
  * biome palettes. The deterministic landform generator lives in Geography.
  */
 
+/** World height of the sea surface in metres. */
 export const SEA_LEVEL = 0
 
 /** Fully level disk for the strip + hangar. Outside this, terrain is natural. */
