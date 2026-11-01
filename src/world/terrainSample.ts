@@ -114,6 +114,8 @@ export function getOpsPadInto(out: OpsPadSnapshot): OpsPadSnapshot | null {
   return out
 }
 
+/** Pad weight at a point: 1 inside OPS_PAD_INNER, 0 past OPS_PAD_OUTER, a
+ * smoothstep between, and 0 everywhere while no pad is set. */
 export function opsPadBlend(x: number, z: number): number {
   return padBlend(x, z)
 }
