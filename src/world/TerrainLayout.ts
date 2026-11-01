@@ -20,6 +20,7 @@ export function terrainBuildPriority(job: { dist: number; size: number; rebuild:
   return job.rebuild ? 1000 + job.dist : 10 + job.dist
 }
 
+/** Distance in cells from a point to the nearest edge of a tile; 0 inside. */
 export function tileDistance(cx: number, cz: number, size: number, x: number, z: number): number {
   return Math.hypot(
     Math.max(cx - x, 0, x - cx - size),
