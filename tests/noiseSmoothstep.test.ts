@@ -20,6 +20,12 @@ describe('smoothstep and clamp01', () => {
     expect(smoothstep(10, 0, 10)).toBe(0)
   })
 
+  it('treats equal edges as a hard step instead of NaN', () => {
+    expect(smoothstep(5, 5, 4)).toBe(0)
+    expect(smoothstep(5, 5, 5)).toBe(1)
+    expect(smoothstep(5, 5, 6)).toBe(1)
+  })
+
   it('clamp01 keeps values inside the unit range', () => {
     expect([-1, 0, .25, 1, 3].map(clamp01)).toEqual([0, 0, .25, 1, 1])
   })
