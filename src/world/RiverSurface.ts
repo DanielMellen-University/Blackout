@@ -88,6 +88,9 @@ function clipLakeShore(sections: Float64Array, caps: Float64Array, lakes: readon
   return changed ? new Float64Array(output) : undefined
 }
 
+/** Cached shared surface for one reach: sections, end caps and, near a
+ * receiving lake, shore-clipped triangles. Water meshes, depth queries and
+ * collision all read this one result. */
 export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): RiverSurface {
   const cached = surfaces.get(reach)
   if (cached) return cached
