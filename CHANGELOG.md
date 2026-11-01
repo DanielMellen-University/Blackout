@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.035** Make `smoothstep` a hard step for equal edges instead of returning NaN. Add unit tests for terrain, water and hydrology helpers (noise and seeds, tile layout and build priority, edge joins, ground and ops pad caches, coastal relief and coast fields, water body naming, basin distance and bounds, shore bed corrections, river surface caching, worker payloads, the Waterway lake, hydrology bounds guards and reseeds). Document catchments, reach bins, river surfaces, grid budgets and tile units in code; summarise terrain streaming in the overview and performance notes; list the water model's tests and record the 11.034 needle skip in the water review; link both notes from the README.
+
 - **11.034** Skip river ribbon triangles under 2 mm tall left by clipping at lake mouths and tile edges, so they cannot rasterise as stray facing slivers. Add a unit test for the threshold.
 
 - **11.033** Widen and dim the far water sun highlight (roughness floor 0.2 to 0.36 from 1.8 to 6 km) so lakes stop clipping to a pure-white blob from altitude. Add a drawn-mesh sliver test for the seed-73 wetland pond, list open water issues at the top of the water review, and trace the thin pond outlet land strip to an outlet route hugging its shore.
