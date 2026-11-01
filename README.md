@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.033**. Previous roadmap chunk: **11.032**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.034**. Previous roadmap chunk: **11.033**.
 
-Recent changes from **11.033**. Far lakes no longer clip the sun to a flat white blob. From **11.032**: Hydrology sampling culls lakes with an exact bounds box. From **11.031**: Lakes and rivers read as one lighter surface from altitude instead of flat navy, river mouths lose their pale streaks and white sparkle dots, and crowded lake shore points no longer make tiny sliver triangles.
+Recent changes from **11.034**. River ribbons drop millimetre-wide needle triangles at lake mouths. From **11.033**: Far lakes no longer clip the sun to a flat white blob. From **11.032**: Hydrology sampling culls lakes with an exact bounds box. From **11.031**: Lakes and rivers read as one lighter surface from altitude instead of flat navy, river mouths lose their pale streaks and white sparkle dots, and crowded lake shore points no longer make tiny sliver triangles.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

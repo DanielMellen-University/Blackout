@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.034** Skip river ribbon triangles under 2 mm tall left by clipping at lake mouths and tile edges, so they cannot rasterise as stray facing slivers. Add a unit test for the threshold.
+
 - **11.033** Widen and dim the far water sun highlight (roughness floor 0.2 to 0.36 from 1.8 to 6 km) so lakes stop clipping to a pure-white blob from altitude. Add a drawn-mesh sliver test for the seed-73 wetland pond, list open water issues at the top of the water review, and trace the thin pond outlet land strip to an outlet route hugging its shore.
 
 - **11.032** Cull generated lakes in hydrology sampling with their exact bounds box (identical output, small speedup within noise) and test that shore radii stay inside it. Document how to reproduce water review stills and the rejected near-tile shore probe trial (+18% build cost for 3 cm pokes).
