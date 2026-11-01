@@ -27,4 +27,10 @@ describe('terrain tile keys and priority', () => {
     expect(contact).toBeLessThan(missing)
     expect(missing).toBeLessThan(rebuild)
   })
+
+  it('treats tiles within four cells as contact detail even when rebuilding', () => {
+    expect(terrainBuildPriority({ dist: 4, size: 1, rebuild: true })).toBe(4)
+    expect(terrainBuildPriority({ dist: 4.01, size: 1, rebuild: true })).toBeCloseTo(1004.01, 9)
+    expect(terrainBuildPriority({ dist: 4.01, size: 1, rebuild: false })).toBeCloseTo(14.01, 9)
+  })
 })
