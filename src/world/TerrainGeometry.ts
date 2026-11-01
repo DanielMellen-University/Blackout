@@ -80,6 +80,8 @@ function serializeGeometry(geometry: BufferGeometry): TerrainGeometryBuffers {
     bounds: { x: sphere.center.x, y: sphere.center.y, z: sphere.center.z, radius: sphere.radius } }
 }
 
+/** Rebuild a worker-built tile on the main thread around the transferred
+ * buffers without copying them, and reuse the worker's bounding sphere. */
 export function deserializeTerrainGeometry(data: TerrainGeometryBuffers): BufferGeometry {
   const geometry = new BufferGeometry()
   for (const [name, attribute] of Object.entries(data.attributes)) {
