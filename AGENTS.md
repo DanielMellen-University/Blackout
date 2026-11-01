@@ -24,7 +24,8 @@
 
 - Small fixes are small: find the cause, make the smallest change, run only the targeted tests, push. No full suites or frame-metric runs for a quick fix.
 - Ship one change at a time, in the order asked. One commit per fix, pushed as soon as it passes. Do not batch several fixes into one push or run them in parallel.
-- Bigger work, especially 3D modelling and terrain shaping, goes through Codex with model gpt-6.1-sol at high reasoning effort. Codex runs must render headless, take screenshots and view them before shipping, and report the screenshot paths. Quick fixes are done directly, not through Codex.
+- Keep commit messages short and clear: one plain line saying what changed.
+- Bigger work, especially 3D modelling and terrain shaping, goes through Codex at high reasoning effort. Codex runs must render headless, take screenshots and view them before shipping, and report the screenshot paths. Quick fixes are done directly, not through Codex.
 - Never use port 5173 for checks or previews. The user's own dev server runs there from this repo; do not stop it.
 
 ## Verification and delivery
