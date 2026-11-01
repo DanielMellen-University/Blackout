@@ -655,6 +655,9 @@ function scoreDeparture(x: number, z: number, yaw: number, h0: number): number {
   return score
 }
 
+/** Full rendered surface at a point: geography, hydrology and the pad, then
+ * classified as land or water. Builds a climate sample, so prefer the Into or
+ * Fast variants in hot loops. */
 export function sampleTerrainSurface(x: number, z: number): TerrainSurface {
   return terrainSurfaceFromClimate(sampleClimate(x, z))
 }
