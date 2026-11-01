@@ -456,6 +456,8 @@ export function waterLandmarks(cx: number, cz: number): ReadonlyArray<Readonly<B
   return catchment(cx, cz).landmarks
 }
 
+/** Every river reach owned by the catchment at catchment coordinates cx, cz.
+ * Review and test helper; streamed tiles query reaches by bounds instead. */
 export function riverReaches(cx: number, cz: number): ReadonlyArray<Readonly<Reach>> {
   return catchment(cx, cz).reaches
 }
