@@ -50,4 +50,13 @@ describe('degenerate ribbon triangles', () => {
     // An ordinary small triangle stays.
     expect(degenerateRibbonTriangle({ x: 0, z: 0 }, { x: .3, z: 0 }, { x: 0, z: .3 })).toBe(false)
   })
+
+  it('skips exact collinear and repeated-vertex triangles', () => {
+    expect(degenerateRibbonTriangle({ x: 0, z: 0 }, { x: 5, z: 5 }, { x: 10, z: 10 })).toBe(true)
+    expect(degenerateRibbonTriangle({ x: 3, z: 4 }, { x: 3, z: 4 }, { x: 9, z: 1 })).toBe(true)
+  })
+
+  it('keeps tiny but well-shaped triangles near the area floor', () => {
+    expect(degenerateRibbonTriangle({ x: 0, z: 0 }, { x: .05, z: 0 }, { x: 0, z: .05 })).toBe(false)
+  })
 })
