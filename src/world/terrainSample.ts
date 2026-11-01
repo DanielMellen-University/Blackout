@@ -230,6 +230,9 @@ export interface TerrainSurface {
 
 export const INLAND_WATER_LEVEL = 0.35
 
+/** Name the water body for a wet climate sample. Streams win ties with rivers,
+ * moving water beats still water, ponds beat lakes on ties, and features under
+ * 0.45 fall back to inland. Dry biomes return undefined. */
 export function waterBodyFromClimate(
   climate: Pick<Climate, 'biome'> & { features?: TerrainFeatures },
 ): TerrainWaterBody | undefined {
