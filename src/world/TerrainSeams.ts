@@ -18,6 +18,9 @@ export interface TerrainEdgeJoin<T extends TerrainEdgeBounds = TerrainEdgeTile> 
   end: number
 }
 
+/** Shared side of two edge-touching tiles, or null for gaps, overlaps and
+ * corner-only contact. Edge is the side of a (0 north/-z, 1 east/+x, 2 south/+z,
+ * 3 west/-x) and start..end is the overlap along it in world metres. */
 export function terrainEdgeJoin<T extends TerrainEdgeBounds>(a: TerrainEdgeBounds, b: T): TerrainEdgeJoin<T> | null {
   const as = CHUNK_SIZE * a.size, bs = CHUNK_SIZE * b.size
   let edge: number, start: number, end: number
