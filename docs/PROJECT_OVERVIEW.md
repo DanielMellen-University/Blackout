@@ -21,6 +21,12 @@ ribbons carry their own depth into the lake across each mouth. Water tiles are
 built in small cooperative steps, so streaming can spread one large lake
 over several frames.
 
+Terrain streams as a quadtree of 420 m cells around the camera, with finer
+grids near the jet and coarser ones toward the horizon. Tiles build in
+workers and transfer their buffers without copying. The tile layout and build
+order are summarised in the
+[streaming performance notes](terrain-streaming-performance.md#tile-layout-in-brief).
+
 Regional weather integration and further terrain/biome polish remain in progress,
 not shipped features. Daily EST reset wiring and per-level world conditions
 remain deferred. User-paused systems remain excluded under the
