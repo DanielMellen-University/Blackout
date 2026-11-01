@@ -7,6 +7,7 @@ import { buildWaterMeshSteps, type WaterBuildPhase } from './WaterSystem'
 import { shoreBedSteps, type ShoreBed } from './TerrainWaterBed'
 import { riverSurface } from './RiverSurface'
 
+/** Side of one terrain cell in metres. Tile coordinates and sizes count cells. */
 export const CHUNK_SIZE = 420
 export type TerrainLod = 0 | 1 | 2
 export type TerrainGeometryQuality = 'full' | 'fallback'
