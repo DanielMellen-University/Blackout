@@ -126,6 +126,7 @@ export function smoothstep(edge0: number, edge1: number, x: number): number {
   return t * t * (3 - 2 * t)
 }
 
+/** Clamp to 0..1. NaN passes through unchanged. */
 export function clamp01(v: number): number {
   return v < 0 ? 0 : v > 1 ? 1 : v
 }
