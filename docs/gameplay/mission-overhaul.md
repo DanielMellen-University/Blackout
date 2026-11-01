@@ -65,7 +65,7 @@ The time score starts at 75,000 points, with 320 points deducted per second beyo
 
 ## Phases after landing removal
 
-Rough usage is share of the weekly Codex limit at gpt-6.1-sol high. Each phase is split into daily slices of about 3 to 5% and each phase needs Daniel's OK.
+Rough usage is share of the weekly Codex limit at high reasoning effort. Each phase is split into daily slices of about 3 to 5% and each phase needs Daniel's OK.
 
 | Phase | What | A | B | C | Usage |
 |---|---|---|---|---|---|
