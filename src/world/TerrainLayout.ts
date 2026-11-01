@@ -9,6 +9,7 @@ export interface TerrainTile {
 /** Aligned root span shared by the planner and streamed ownership indexes. */
 export const TERRAIN_ROOT_SIZE = 32
 
+/** Stable map key for a tile. Single cells keep the short historical form. */
 export function tileKey(cx: number, cz: number, size = 1): string {
   return size === 1 ? `${cx},${cz}` : `${cx},${cz}:${size}`
 }
