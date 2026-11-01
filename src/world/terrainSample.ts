@@ -247,6 +247,8 @@ export function waterBodyFromClimate(
   return 'inland'
 }
 
+/** Collapse a climate sample to the rendered surface: seas at SEA_LEVEL,
+ * inland water at its own level (or INLAND_WATER_LEVEL), land at ground height. */
 export function terrainSurfaceFromClimate(
   climate: Pick<Climate, 'height' | 'biome' | 'waterLevel'> & { features?: TerrainFeatures },
 ): TerrainSurface {
