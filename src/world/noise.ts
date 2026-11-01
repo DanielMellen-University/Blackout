@@ -118,6 +118,7 @@ export function ridged(x: number, z: number, octaves = 3): number {
   return norm > 0 ? sum / norm : 0
 }
 
+/** Hermite 0..1 ramp between two edges, clamped. Reversed edges ramp down. */
 export function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)))
   return t * t * (3 - 2 * t)
