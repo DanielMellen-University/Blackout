@@ -2,7 +2,9 @@
 export interface TerrainTile {
   cx: number
   cz: number
+  /** Side length in cells (1, 2, 4, 8, 16 or 32). */
   size: number
+  /** Distance from the planning point to the tile centre, in cells. */
   dist: number
 }
 
