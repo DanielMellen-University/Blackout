@@ -8,6 +8,8 @@ import { riverSurface, riverSurfaceHeightAt } from './RiverSurface'
 /** Side of one cached hydrology catchment in metres. Terrain streaming also
  * surveys whole catchments on this grid before it builds nearby water. */
 export const CATCHMENT_SIZE = 32000
+/** Reach index bin size in metres; each catchment keeps a 16 x 16 grid of
+ * reach lists so bounds queries only scan nearby rivers. */
 const BIN = 2000
 const BINS = CATCHMENT_SIZE / BIN
 
