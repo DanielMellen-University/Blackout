@@ -9,6 +9,8 @@ export function waterwayDrainage(profile: Readonly<TerrainProfile>): { basins: W
     x: profile.originX + Math.cos(profile.yaw) * right + Math.sin(profile.yaw) * forward,
     z: profile.originZ - Math.sin(profile.yaw) * right + Math.cos(profile.yaw) * forward,
   })
+  // Lake and channel share one level 8 m under the profile base height, so the river
+  // joins the lake without a step.
   const level = profile.baseHeight - 8
   const basins: WaterBasin[] = [{ ...point(2100, 3300), radius: 1050, aspect: 1.05,
     angle: -profile.yaw, phase: profile.phase, level, sea: false, pond: false, id: 'waterway:lake' }]
