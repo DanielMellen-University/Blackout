@@ -14,6 +14,9 @@ function field(x: number, y: number): number {
   const b = hash(ix, iy + 1) * (1 - u) + hash(ix + 1, iy + 1) * u
   return a * (1 - v) + b * v
 }
+// The lattice hash repeats every 16 cells and the texture samples 8 pixels per
+// cell, so 128 pixels hold exactly one period and the map tiles without a seam.
+// Red and green store the x and y slope of the field from central differences.
 const size = 128
 const pixels = new Uint8Array(size * size * 4)
 for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
