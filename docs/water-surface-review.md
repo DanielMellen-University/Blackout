@@ -8,6 +8,16 @@ Newest first. Each section records what changed, how it was checked, and what wa
 - **Thin land strips at some pond outlets.** Traced on seed 73: the `lake:-2:-9` outlet (reaches `-2:-9:0:7` to `:9`) leaves the shore and then runs along it at pond level, its centreline 27 to 68 m outside the shore with a 47 to 70 m half-width. Where the river edge passes within a few metres of the shore, a grass strip a few metres wide is left between two water surfaces at the same level. A fix belongs in generation (route the outlet away from the shore, or widen level outlet spans toward their source lake in both carving and ribbon), not in rendering.
 - **Far coast stair-steps.** From about 9 km up, some distant shorelines show cell-sized steps where coarse terrain meets flat water.
 
+## Tests that guard the water model
+
+Run them with Node 22, as CI does; the geometry hashes differ on other Node versions.
+
+- Shore and bed: `basinChord`, `basinBedProfile`, `lakeShore`, `lakeBounds`, `waterBasinBoundsRadius`, `waterwayLakeShore`.
+- Surfaces and depth: `basinSurfaceRings`, `basinOpticalDepth`, `riverSurfaceDepth`, `lakeDepth`, `lakeWaterLevel`.
+- Drawn mesh: `waterSlivers` (sub-metre basin slivers and ribbon needles), `waterMeshSteps` (byte hashes; update only for intended geometry changes).
+- Shader: `waterShaderDeclarations`, `waterNormalsTexture`, and the shader string checks in `waterSystem`.
+- Classification: `waterBodyClassify`, `coastalRelief`, `coastFieldProfiles`.
+
 ## Reproducing review stills
 
 Run `npx vite --port <free port> --strictPort` and open `/dev/terrain.html?destination=wetland&seed=73` (other water destinations: `lake`, `pond`, `lakeoutlet`, `riverjoin`, `headwater`). Headless Chrome works with `--use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Software rendering streams slowly: wait 40 s for a low view and 80 to 90 s for a 5 km overview before capturing, or distant tiles are still missing. Weather is live, so compare before/after stills taken in the same session and judge water against water, not sky haze. Avoid port 5173, which is reserved for the main dev server.
