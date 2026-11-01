@@ -99,6 +99,8 @@ function padBlend(x: number, z: number): number {
   return 1 - smoothstep(OPS_PAD_INNER, OPS_PAD_OUTER, Math.sqrt(distanceSquared))
 }
 
+/** Snapshot of the active pad, or null while none is set. Allocates; hot
+ * paths use getOpsPadInto. */
 export function getOpsPad(): OpsPadSnapshot | null {
   if (!opsOn) return null
   return { x: opsX, z: opsZ, y: opsY, yaw: opsYaw }
