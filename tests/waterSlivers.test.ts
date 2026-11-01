@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MeshStandardMaterial } from 'three'
 import { riverReachesInBounds, waterBasinsInBounds } from '../src/world/Hydrology'
 import { setWorldSeed } from '../src/world/noise'
-import { buildWaterMesh } from '../src/world/WaterSystem'
+import { buildWaterMesh, degenerateRibbonTriangle } from '../src/world/WaterSystem'
 
 // Broad inlets used to crowd a lake's shore ring with points a few centimetres
 // apart. Each made a needle-thin shore/fan triangle, which could rasterise with
@@ -38,5 +38,16 @@ describe('lake water slivers', () => {
       mesh.geometry.dispose()
       ;(mesh.material as MeshStandardMaterial).dispose()
     }
+  })
+})
+
+describe('degenerate ribbon triangles', () => {
+  it('skips millimetre needles but keeps thin real slivers', () => {
+    // A 4 m needle 1 mm wide covers nothing.
+    expect(degenerateRibbonTriangle({ x: 0, z: 0 }, { x: 4, z: 0 }, { x: 2, z: .001 })).toBe(true)
+    // A 10 m sliver 5 cm wide is still visible water.
+    expect(degenerateRibbonTriangle({ x: 0, z: 0 }, { x: 10, z: 0 }, { x: 5, z: .05 })).toBe(false)
+    // An ordinary small triangle stays.
+    expect(degenerateRibbonTriangle({ x: 0, z: 0 }, { x: .3, z: 0 }, { x: 0, z: .3 })).toBe(false)
   })
 })

@@ -403,6 +403,19 @@ function* appendAnalyticBasins(
  * narrow stream. Every tile clips its own piece, so adjacent tiles meet at a
  * shared boundary without overlapping geometry.
  */
+/** Clipping a ribbon against a lake shore and tile edges leaves needle
+ * triangles a few millimetres wide (98 of 112 mouth triangles on the seed-73
+ * wetland pond). They cover nothing visible but can rasterise with the wrong
+ * facing. Skip a triangle whose height over its longest edge is under 2 mm. */
+export function degenerateRibbonTriangle(
+  a: { x: number; z: number }, b: { x: number; z: number }, c: { x: number; z: number },
+): boolean {
+  const doubleArea = Math.abs((b.x - a.x) * (c.z - a.z) - (c.x - a.x) * (b.z - a.z))
+  const longest = Math.max(Math.hypot(a.x - b.x, a.z - b.z), Math.hypot(b.x - c.x, b.z - c.z),
+    Math.hypot(c.x - a.x, c.z - a.z))
+  return doubleArea < longest * .002 && doubleArea < .01
+}
+
 function* appendRiverRibbons(
   reaches: readonly RiverReach[],
   basins: readonly WaterBasin[],
@@ -457,6 +470,7 @@ function* appendRiverRibbons(
     const first = polygon[0]!
     for (let i = 1; i < polygon.length - 1; i++) {
       const second = polygon[i]!, third = polygon[i + 1]!
+      if (degenerateRibbonTriangle(first, second, third)) continue
       positions.push(first.x, first.y, first.z, second.x, second.y, second.z, third.x, third.y, third.z)
       depths.push(first.depth, second.depth, third.depth)
       flowValues.push(first.flow * first.riverBlend, second.flow * second.riverBlend,
