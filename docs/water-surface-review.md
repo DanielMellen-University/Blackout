@@ -2,7 +2,7 @@
 
 Newest first. Each section records what changed, how it was checked, and what was still visibly wrong afterwards. See [ROADMAP](ROADMAP.md) for the chunk history.
 
-## Open water issues (as of 11.033)
+## Open water issues (as of 11.035)
 
 - **Angular river-to-lake bank.** A lake contour meets a river ribbon at a hard corner, leaving a pointed spit of bank. Needs a contour flare along each joined channel in `RegionalDrainage.ts`; this changes generation hashes and fixtures.
 - **Thin land strips at some pond outlets.** Traced on seed 73: the `lake:-2:-9` outlet (reaches `-2:-9:0:7` to `:9`) leaves the shore and then runs along it at pond level, its centreline 27 to 68 m outside the shore with a 47 to 70 m half-width. Where the river edge passes within a few metres of the shore, a grass strip a few metres wide is left between two water surfaces at the same level. A fix belongs in generation (route the outlet away from the shore, or widen level outlet spans toward their source lake in both carving and ribbon), not in rendering.
@@ -21,6 +21,10 @@ Run them with Node 22, as CI does; the geometry hashes differ on other Node vers
 ## Reproducing review stills
 
 Run `npx vite --port <free port> --strictPort` and open `/dev/terrain.html?destination=wetland&seed=73` (other water destinations: `lake`, `pond`, `lakeoutlet`, `riverjoin`, `headwater`). Headless Chrome works with `--use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Software rendering streams slowly: wait 40 s for a low view and 80 to 90 s for a 5 km overview before capturing, or distant tiles are still missing. Weather is live, so compare before/after stills taken in the same session and judge water against water, not sky haze. Avoid port 5173, which is reserved for the main dev server.
+
+## 11.034: river mouth needles
+
+Clipping a river ribbon against a lake shore and tile edges left needle triangles a few millimetres wide: 98 of the 112 mouth triangles on the seed-73 wetland pond tile. They covered nothing visible but could rasterise with the wrong facing. Ribbon triangles shorter than 2 mm over their longest edge (and under 0.005 m² in area) are now skipped. `waterSlivers` pins the threshold. No still: the removed triangles were too thin to see.
 
 ## 11.033: far sun glare
 
