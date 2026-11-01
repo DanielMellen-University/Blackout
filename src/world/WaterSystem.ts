@@ -28,6 +28,9 @@ function releaseStaging(staging: WaterStaging): void {
 export type WaterBuildPhase = 'grid' | 'shore' | 'basin' | 'river' | 'attributes' | 'normals' | 'bounds'
 export type WaterMeshSteps = Generator<WaterBuildPhase, Mesh | null, void>
 
+/** One double-sided standard material per water draw. The polygon offset pulls
+ * water slightly toward the camera so it wins depth ties with the clipped bed
+ * at the shoreline; WaterAppearance then injects the depth, sky and ripple shading. */
 export function makeWaterMaterial(
   clock: { value: number },
   weather: WaterWeatherUniforms | undefined,
