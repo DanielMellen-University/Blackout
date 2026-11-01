@@ -228,6 +228,7 @@ export interface TerrainSurface {
   waterBody?: TerrainWaterBody
 }
 
+/** Fallback inland water surface when a sample carries no water level. */
 export const INLAND_WATER_LEVEL = 0.35
 
 /** Name the water body for a wet climate sample. Streams win ties with rivers,
