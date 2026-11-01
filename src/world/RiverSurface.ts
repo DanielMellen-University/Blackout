@@ -18,6 +18,9 @@ const canonicalBasins = new WeakMap<RiverReach, readonly WaterBasin[]>()
 const empty = new Float64Array(0)
 type Vertex = readonly number[]
 
+/** Pin the lake list a reach should clip against. Builders register a reach
+ * once with every basin it can meet, so later tile queries that only see a
+ * subset of basins still get the same cached surface. */
 export function registerRiverSurface(reach: RiverReach, basins: readonly WaterBasin[]): void {
   canonicalBasins.set(reach, basins)
 }
