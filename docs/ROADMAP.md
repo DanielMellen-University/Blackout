@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 11.036. Share one world-local Waterway drainage recipe across catchments. Worker jobs clone the terrain profile and drop the catchment map; the lake shore and river surfaces stay when the seed and drainage inputs match. Each catchment keeps its own reach bins. Seed, phase and dry changes drop the recipe. A same-base ABBA CPU build of six near tiles keeps byte-identical geometry and lowers the conventional median on seeds 42, 1337 and 9001. Seed 9001's cold-start maximum still moves between passes. This is not an FPS or memory result. See [streaming performance notes](terrain-streaming-performance.md).
+
 Chunk 11.035. Test and doc sweep: unit tests for noise, seeds, tile layout and priority, edge joins, ground and pad caches, coast relief and fields, water body naming, basin distance and bounds, shore beds, river surface caching, worker payloads, the Waterway lake, hydrology bounds guards and reseeds. `smoothstep` now treats equal edges as a hard step instead of returning NaN. Doc comments explain catchments, reach bins, river surface registration, grid budgets and tile units; the overview and performance notes summarise terrain streaming, and the water review lists the tests that guard the water model.
 
 Chunk 11.034. Mouth needles: river ribbons skip clipped triangles under 2 mm tall where they meet a lake shore or tile edge (most of the 112 mouth triangles on the seed-73 wetland pond were such needles). A unit test pins the threshold.
@@ -169,7 +171,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.035** is current. Previous ship: **11.034**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.036** is current. Previous ship: **11.035**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
