@@ -1,5 +1,5 @@
 import { waterwayDrainage } from './WaterwayTerrain'
-import { getTerrainProfile } from './TerrainProfile'
+import { getTerrainProfile, type TerrainProfile } from './TerrainProfile'
 import { fbm, getWorldSeed, smoothstep, valueNoise } from './noise'
 import { regionalDrainageSteps } from './RegionalDrainage'
 import { coastField } from './Coastline'
@@ -70,9 +70,33 @@ let seed = Number.NaN
 const cache = new Map<string, Catchment>()
 let riverBoundsQueryToken = 0
 let cachedProfile = getTerrainProfile()
+/** One world-local Waterway recipe. Catchment entries still own their bins, but
+ * every catchment reuses these basin and reach objects so lake shores, ribbon
+ * surfaces and mouth clipping are built once. Worker tiles clone the profile
+ * object, which drops the catchment map, and this recipe survives that clone
+ * when the seed and drainage inputs are unchanged. */
+let waterwayRecipe: { seed: number; key: string; basins: Basin[]; reaches: Reach[] } | null = null
+function waterwayKey(profile: TerrainProfile): string {
+  return JSON.stringify([profile.theme, profile.originX, profile.originZ, profile.yaw,
+    profile.baseHeight, profile.phase, profile.dry])
+}
+function waterwayRecipeFor(profile: TerrainProfile, buildSeed: number): { basins: Basin[]; reaches: Reach[] } {
+  const key = waterwayKey(profile)
+  if (waterwayRecipe && waterwayRecipe.seed === buildSeed && waterwayRecipe.key === key) return waterwayRecipe
+  const generated = waterwayDrainage(profile)
+  waterwayRecipe = { seed: buildSeed, key, basins: generated.basins, reaches: generated.reaches }
+  return waterwayRecipe
+}
 function ensureProfile(): void {
   const profile = getTerrainProfile()
-  if (profile !== cachedProfile) { cache.clear(); cachedProfile = profile }
+  if (profile === cachedProfile) return
+  cache.clear()
+  cachedProfile = profile
+  if (!waterwayRecipe) return
+  // Reference inequality is not a drainage change. Drop the shared recipe only
+  // when the seed or a field waterwayDrainage actually reads no longer matches.
+  if (!profile || waterwayRecipe.seed !== getWorldSeed() || waterwayRecipe.key !== waterwayKey(profile))
+    waterwayRecipe = null
 }
 function ensureCatchmentSeed(expected: number): void {
   if (getWorldSeed() !== expected) throw new Error('World seed changed during hydrology preparation')
@@ -80,6 +104,7 @@ function ensureCatchmentSeed(expected: number): void {
   // one before a suspended builder resumes. Never reuse that other seed's cache.
   ensureProfile()
   if (seed !== expected) { cache.clear(); seed = expected }
+  if (waterwayRecipe && waterwayRecipe.seed !== expected) waterwayRecipe = null
 }
 
 /**
@@ -173,6 +198,7 @@ function catchment(cx: number, cz: number): Catchment {
   cx = Number.isFinite(cx) ? Math.trunc(cx) : 0
   cz = Number.isFinite(cz) ? Math.trunc(cz) : 0
   if (seed !== getWorldSeed()) { cache.clear(); seed = getWorldSeed() }
+  if (waterwayRecipe && waterwayRecipe.seed !== getWorldSeed()) waterwayRecipe = null
   const key = `${cx},${cz}`
   const previous = cache.get(key)
   if (previous) return previous
@@ -189,7 +215,7 @@ function* buildCatchmentSteps(cx: number, cz: number): Generator<HydrologyBuildP
   if (getTerrainProfile()?.dry) return dryCatchment
   const buildSeed = getWorldSeed()
   const profile = getTerrainProfile()
-  const generated = profile?.theme === 'waterway-run' ? waterwayDrainage(profile) : null
+  const generated = profile?.theme === 'waterway-run' ? waterwayRecipeFor(profile, buildSeed) : null
   const data = generated ? { ...generated, queryReaches: generated.reaches, landmarks: generated.basins }
     : yield* regionalDrainageSteps(cx, cz)
   ensureCatchmentSeed(buildSeed)

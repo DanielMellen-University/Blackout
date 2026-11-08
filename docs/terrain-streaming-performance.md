@@ -17,6 +17,59 @@ rebuilds (`terrainBuildPriority`).
 
 ## Implementation
 
+### Chunk 11.036 shared Waterway recipe
+
+Waterway drainage is one lake and 22 river reaches derived from the mission
+profile. Each worker tile arrives as a structured clone of that profile.
+Hydrology keys its catchment map on object identity, so the clone drops every
+catchment and used to rebuild the shore solve, ribbon surfaces and lake clip.
+The reaches and the lake basin are now one recipe for the current seed and
+the fields `waterwayDrainage` reads (theme, origin, yaw, base height, phase,
+dry). Catchment bins stay per catchment. A new seed, a phase change or a dry
+profile drops the recipe. Relief-only edits do not, because relief does not
+change this drainage.
+
+This is a CPU microbench of geometry builds, not FPS, GPU frame time, or
+memory. No GUI was run. Node v22.23.4 on this machine reported 4 logical
+CPUs. The command is `node scripts/profile-waterway-tiles.mjs --samples=8
+--protocol=worker-clone`. It builds six distinct 420 m LOD-0 tiles around
+the river and lake for seeds 42, 1337 and 9001, cloning the profile before
+each tile. Each sample is one six-tile total. The median is conventional:
+sort the totals and average the two central values when the count is even.
+Passes ran sequentially on one process each, order A (base), B (recipe), B,
+A. Geometry is the SHA-256 of heights, water levels, and ground and water
+attributes and indexes. The same digest came back on every pass:
+
+| Seed | Geometry SHA-256 |
+| --- | --- |
+| 42 | `a6439d3183a048c5f8a81cf932a77071266d0abd7b0cee40bb3863657cd4c7df` |
+| 1337 | `3212ade3db06ce72a97f54d7f91cb27cbb4d954fd0a5b50eb243c92ec286c400` |
+| 9001 | `8bbc7fe64a94e423052cd33a7afd0087212ed9f9ff6289d0f25d35ce2cd88f22` |
+
+| Seed | A1 median / min / max | B1 | B2 | A2 | Pooled A median | Pooled B median |
+| --- | --- | --- | --- | --- | --- | --- |
+| 42 | 122.001 / 97.625 / 283.550 | 68.369 / 64.199 / 237.553 | 67.944 / 64.972 / 219.398 | 103.630 / 97.646 / 273.574 | 115.743 | 68.369 |
+| 1337 | 108.919 / 104.422 / 139.798 | 70.053 / 68.786 / 119.137 | 62.842 / 60.590 / 102.784 | 109.237 / 105.217 / 254.595 | 108.919 | 68.812 |
+| 9001 | 96.841 / 96.038 / 143.384 | 67.858 / 66.449 / 169.150 | 65.941 / 64.759 / 124.445 | 97.041 / 95.738 / 137.394 | 96.865 | 67.612 |
+
+Times are milliseconds for all six tiles. Pooled medians use the 16 A samples
+and the 16 B samples. Seed 42's tiles sit in catchments 0,0 and 0,-1. Seeds
+1337 and 9001 stay in -1,0, so their gain is the recipe surviving the clone,
+not a second catchment. The stable-profile control
+(`--protocol=stable --samples=4`) sets the profile once per sample. Its
+medians moved from 74.393 / 74.669 / 66.775 ms to 73.541 / 73.791 / 66.180 ms
+for seeds 42 / 1337 / 9001. That path was already warm. Four samples do not
+show a speedup there.
+
+Seed 9001 does not show a warm-path regression. Its pooled median falls from
+96.865 ms to 67.612 ms. The 169.150 ms B1 maximum is that pass's first
+sample. The other first samples are 143.384 (A1), 137.394 (A2) and 124.445
+(B2). After dropping the first sample of each pass, the 9001 median is
+96.844 ms before and 67.169 ms after, and the maximum falls from 105.493 ms
+to 94.028 ms. Baseline seed 1337 separately spikes to 254.595 ms on the last
+A2 sample, so a single cold maximum is not a direction. These numbers are
+one machine, six tiles, and JIT noise. They are not a frame-rate claim.
+
 ### Chunk 11.032 lake influence cull and near shore probes
 
 Hydrology sampling used to test every lake within `radius * 1.65 + 2000` m

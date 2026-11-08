@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.036** Share one world-local Waterway drainage recipe across catchments. A worker tile clones the terrain profile and drops the catchment map; the recipe, lake shore and river surfaces stay when the seed and drainage inputs match, and each catchment keeps its own reach bins. Seed, phase and dry changes still drop it. On this machine, an ABBA CPU build of six near tiles kept byte-identical geometry and cut the conventional median by about 30–41% for seeds 42, 1337 and 9001. That is tile CPU time, not FPS. Seed 9001's cold-start maximum still jumps around between passes.
+
 - **11.035** Make `smoothstep` a hard step for equal edges instead of returning NaN. Add unit tests for terrain, water and hydrology helpers (noise and seeds, tile layout and build priority, edge joins, ground and ops pad caches, coastal relief and coast fields, water body naming, basin distance and bounds, shore bed corrections, river surface caching, worker payloads, the Waterway lake, hydrology bounds guards and reseeds). Document catchments, reach bins, river surfaces, grid budgets and tile units in code; summarise terrain streaming in the overview and performance notes; list the water model's tests and record the 11.034 needle skip in the water review; link both notes from the README.
 
 - **11.034** Skip river ribbon triangles under 2 mm tall left by clipping at lake mouths and tile edges, so they cannot rasterise as stray facing slivers. Add a unit test for the threshold.
