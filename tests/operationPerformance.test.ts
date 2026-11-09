@@ -11,4 +11,12 @@ describe('operation performance record', () => {
     expect(stored.wallMs).toBeLessThan(10_000)
     expect(stored.node).toMatch(/^v22\./)
   })
+
+  it('matches a fresh seed-42 flight of every decision path', () => {
+    const { wallMs, node, ...record } = stored
+    expect(wallMs).toBeGreaterThan(0)
+    expect(node).toMatch(/^v/)
+    expect(record).toEqual(operationPerformanceRecord(42))
+    expect(pathOutcomesDiffer(record.paths)).toBe(true)
+  })
 })
