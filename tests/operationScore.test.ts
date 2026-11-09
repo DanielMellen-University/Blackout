@@ -53,4 +53,11 @@ describe('operation scoring', () => {
     expect(timeScoreFor(1000, 0)).toBe(-5000)
     expect(timeScoreFor(Number.NaN, 10)).toBe(0)
   })
+
+  it('scores a low trace above a high trace', () => {
+    const weights = { low: 1.6, terrain: 1.5, speed: 0.6 }
+    const low = line(stageSpec(buildOperationPlan(42, 'valley', null), 'transit'))
+    const high = low.map(sample => ({ ...sample, y: 900, clearance: 700 }))
+    expect(flyingScoreFor(low, weights)).toBeGreaterThan(flyingScoreFor(high, weights))
+  })
 })
