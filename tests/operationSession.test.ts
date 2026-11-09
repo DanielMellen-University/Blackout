@@ -124,4 +124,15 @@ describe('operation session', () => {
     expect(session.hud?.stageLabel).toContain('Stage 1 of 3')
   })
 
+  it('does not throw when the store rejects the write', () => {
+    const broken: OperationStore = {
+      read: () => null,
+      write: () => { throw new Error('full') },
+    }
+    const session = new OperationSession(broken, 42, 0)
+    expect(() => finish(session, 'valley', 'conserve')).not.toThrow()
+    expect(session.status).toBe('results')
+    expect(session.result?.medal).toBe('silver')
+  })
+
 })
