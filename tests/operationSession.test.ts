@@ -40,4 +40,13 @@ describe('operation session', () => {
     expect(view.showChoices).toBe(false)
   })
 
+  it('ignores a choice while the stage is still flying', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 0)
+    session.start()
+    session.advance(1)
+    expect(session.status).toBe('flying')
+    session.choose('valley')
+    expect(session.hud?.stageLabel).toContain('ingress')
+  })
+
 })
