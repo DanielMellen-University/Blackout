@@ -72,4 +72,14 @@ describe('operation flight', () => {
     expect(flight.samples.ingress).toHaveLength(0)
   })
 
+  it('pauses after ingress for valley or ridge', () => {
+    const flight = open()
+    stepOperationFlight(flight, 100_000)
+    expect(flight.attempt.phase).toBe('route-choice')
+    expect(flight.samples.transit).toHaveLength(0)
+    const before = flight.samples.ingress.length
+    stepOperationFlight(flight, 10)
+    expect(flight.samples.ingress).toHaveLength(before)
+  })
+
 })
