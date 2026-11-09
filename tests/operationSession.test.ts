@@ -143,4 +143,9 @@ describe('operation session', () => {
     session.close()
   })
 
+  it('refuses replay when nothing has been saved', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 0)
+    expect(session.replay()).toBe(false)
+    expect(session.status).toBe('idle')
+  })
 })
