@@ -9,4 +9,10 @@ describe('operation samples', () => {
   it('accepts a finite airborne sample', () => {
     expect(isFlightSample(sample())).toBe(true)
   })
+
+  it('rejects a sample with a non-finite field', () => {
+    expect(isFlightSample(sample({ speed: Number.NaN }))).toBe(false)
+    expect(isFlightSample(null)).toBe(false)
+    expect(isFlightSample({ ...sample(), airborne: 'yes' })).toBe(false)
+  })
 })
