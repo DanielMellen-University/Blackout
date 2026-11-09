@@ -29,4 +29,8 @@ describe('operation formatting', () => {
     expect(formatOperationSpeed(231.8)).toBe('232 m/s')
   })
 
+  it('leaves speed blank when the sample is missing a number', () => {
+    expect(formatOperationSpeed(Number.NaN)).toBe('—')
+  })
+
 })
