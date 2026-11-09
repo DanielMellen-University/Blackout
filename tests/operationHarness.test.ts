@@ -25,4 +25,14 @@ describe('operation flight harness', () => {
     expect(ridgeTransit.endAltitudeM).toBeGreaterThan(valleyTransit.endAltitudeM)
     expect(valleyTransit.minClearanceM).toBeLessThan(ridgeTransit.minClearanceM)
   })
+
+  it('makes commit faster on the egress leg than conserve', () => {
+    const conserve = flyOperation(42, 'valley', 'conserve')
+    const commit = flyOperation(42, 'valley', 'commit')
+    const conserveEgress = conserve.stages.find(stage => stage.id === 'egress')!
+    const commitEgress = commit.stages.find(stage => stage.id === 'egress')!
+    expect(commitEgress.peakSpeedMps).toBeGreaterThan(conserveEgress.peakSpeedMps)
+    expect(commitEgress.elapsedSec).toBeLessThan(conserveEgress.elapsedSec)
+    expect(commit.score).not.toBe(conserve.score)
+  })
 })
