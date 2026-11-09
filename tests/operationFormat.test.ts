@@ -25,4 +25,8 @@ describe('operation formatting', () => {
     expect(formatOperationScore(Number.POSITIVE_INFINITY)).toBe('0')
   })
 
+  it('rounds speed to whole metres per second', () => {
+    expect(formatOperationSpeed(231.8)).toBe('232 m/s')
+  })
+
 })
