@@ -32,4 +32,11 @@ describe('operation attempt', () => {
     expect(step.attempt.phase).toBe('route-choice')
     expect(step.attempt.stages.ingress?.passed).toBe(true)
   })
+
+  it('stops the run when a stage fails', () => {
+    const step = recordStage(createAttempt(42), line(42, null, null, 'ingress').map(sample => ({ ...sample, airborne: false })))
+    expect(step.attempt.phase).toBe('failed')
+    expect(step.attempt.failure).toBe('ground')
+    expect(chooseRoute(step.attempt, 'valley').ok).toBe(false)
+  })
 })
