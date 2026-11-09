@@ -14,4 +14,10 @@ describe('operation plan', () => {
   it('replays the same seed as the same plan', () => {
     expect(buildOperationPlan(42, 'valley', 'conserve')).toEqual(buildOperationPlan(42, 'valley', 'conserve'))
   })
+
+  it('leaves ingress unchanged when later decisions change', () => {
+    const valley = stageSpec(buildOperationPlan(42, 'valley', 'conserve'), 'ingress')
+    const ridge = stageSpec(buildOperationPlan(42, 'ridge', 'commit'), 'ingress')
+    expect(valley).toEqual(ridge)
+  })
 })
