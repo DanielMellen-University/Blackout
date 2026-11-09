@@ -47,4 +47,8 @@ describe('operation formatting', () => {
     expect(formatOperationMedal('bronze')).toBe('Bronze')
   })
 
+  it('names a missing medal', () => {
+    expect(formatOperationMedal('none')).toBe('No medal')
+  })
+
 })
