@@ -33,4 +33,8 @@ describe('operation formatting', () => {
     expect(formatOperationSpeed(Number.NaN)).toBe('—')
   })
 
+  it('rounds clearance to whole metres', () => {
+    expect(formatOperationClearance(121.2)).toBe('121 m')
+  })
+
 })
