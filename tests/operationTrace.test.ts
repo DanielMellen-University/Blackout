@@ -13,4 +13,10 @@ describe('operation trace and pace', () => {
     expect(operationTracePath([])).toBe('')
   })
 
+  it('starts at the first sample and ends at the last', () => {
+    const path = operationTracePath([sample(0, 100), sample(100, 200), sample(200, 150)])
+    expect(path.startsWith('M8.0 152.0')).toBe(true)
+    expect(path.endsWith('632.0 80.0')).toBe(true)
+  })
+
 })
