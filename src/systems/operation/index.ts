@@ -30,3 +30,12 @@ export { OPERATION_PATHS, measureOperationPaths, operationPerformanceRecord, pat
 export type { OperationPerformanceRecord, PathSummary } from './measure'
 export { operationBrief } from './brief'
 export { operationDevRequested } from './devFlag'
+export {
+  chooseOperationEnergy,
+  chooseOperationRoute,
+  closeOperationFlight,
+  openOperationFlight,
+  operationFlightTranscript,
+  stepOperationFlight,
+} from './flight'
+export type { OperationFlight } from './flight'
