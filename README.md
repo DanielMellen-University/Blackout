@@ -25,6 +25,8 @@ Run `npm run perf:terrain -- --seed=42 --samples=16` for a CPU geometry profile 
 
 For the b32 developer feel test, add `?dev=perfect-line` to the URL to reveal **Perfect Line (prototype)** on the title screen. Start airborne at 150 m/s, follow 15 gates down the canyon and finish in the air. Press **R** any time to retry immediately. Results are transient and do not affect mission records.
 
+Add `?dev=operation` to launch **Ridge relay** from the flight plan. Ingress, transit and egress are flown in the air. After ingress choose valley or ridge; after transit choose conserve or commit. The results show the score, medal and best. Replay plays the saved transcript. The featured row stays Free flight, Training orbit and Daily challenge, and the course catalog stays at 82.
+
 Default keyboard controls:
 
 - W / S pitch, A / D yaw, Q / E roll
@@ -43,7 +45,7 @@ A gated mission is one flight attempt, from launch until the final gate or a cra
 
 ## Mission picker
 
-Launch and Pause > Next mission share a featured row: **Free flight**, **Training orbit**, **Daily challenge**. **Contour circuit** and **Weather circuit** are in the course list; **Perfect Line (prototype)** is hidden unless `?dev=perfect-line` is set. **Random world** stays first in the scrollable grid. Search, categories, sorting, counts, and empty messages apply only to the remaining missions; featured cards and Random world always remain visible. Choosing a mission card prepares it without launching; Perfect Line uses its existing immediate launch. Arrow keys follow the displayed rows; Home/End reach the first/last visible card, and Enter/Space select it.
+Launch and Pause > Next mission share a featured row: **Free flight**, **Training orbit**, **Daily challenge**. **Contour circuit** and **Weather circuit** are in the course list; **Perfect Line (prototype)** is hidden unless `?dev=perfect-line` is set. **Ridge relay** is hidden unless `?dev=operation` is set, and it launches immediately instead of joining the catalog. **Random world** stays first in the scrollable grid. Search, categories, sorting, counts, and empty messages apply only to the remaining missions; featured cards and Random world always remain visible. Choosing a mission card prepares it without launching; Perfect Line uses its existing immediate launch. Arrow keys follow the displayed rows; Home/End reach the first/last visible card, and Enter/Space select it.
 
 Regular mission cards have an independent star in the top-right: navy when unsaved, orange when favorited. Clicking a star never selects or launches that mission. Select a regular mission and press F, or Tab to its star and use Enter/Space. Favorites share existing saved data across both pickers. Featured modes and Random world have no stars. The launch panel stays centered and fully bounded; shorter windows scroll its columns internally. The takeoff brief below pilot rank follows your configured controls.
 
