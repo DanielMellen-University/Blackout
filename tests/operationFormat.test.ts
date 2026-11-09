@@ -67,4 +67,8 @@ describe('operation formatting', () => {
     expect(operationChoiceLabel('commit')).toBe('Commit')
   })
 
+  it('ignores an unknown choice label', () => {
+    expect(operationChoiceLabel('glide')).toBe('')
+  })
+
 })
