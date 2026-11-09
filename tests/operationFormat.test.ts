@@ -37,4 +37,8 @@ describe('operation formatting', () => {
     expect(formatOperationClearance(121.2)).toBe('121 m')
   })
 
+  it('leaves clearance blank when it is not a number', () => {
+    expect(formatOperationClearance(Number.NaN)).toBe('—')
+  })
+
 })
