@@ -74,4 +74,15 @@ describe('operation replay', () => {
     expect(text.indexOf('transit')).toBeLessThan(text.indexOf('egress'))
     expect(canonicalTranscript(transcript)).toBe(text)
   })
+
+  it('rebuilds the plan the decisions selected', () => {
+    const transcript = createTranscript(42, 'ridge', 'conserve', {
+      ingress: line('ingress'),
+      transit: line('transit'),
+      egress: line('egress'),
+    })!
+    expect(transcriptPlan({ ...transcript, route: 'ridge', energy: 'conserve' }).stages[1]).toEqual(
+      buildOperationPlan(42, 'ridge', 'conserve').stages[1],
+    )
+  })
 })
