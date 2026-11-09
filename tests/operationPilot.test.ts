@@ -18,4 +18,8 @@ describe('operation pilot', () => {
   it('lowers the nose when the jet is above the band', () => {
     expect(commandPilot({ ...level, altitudeErrorM: -80 }, 0.5, false).pitch).toBeLessThan(0)
   })
+
+  it('yaws toward a line that is to the right', () => {
+    expect(commandPilot({ ...level, lateralErrorM: 40 }, 0.5, false).yaw).toBeGreaterThan(0)
+  })
 })
