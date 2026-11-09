@@ -96,4 +96,12 @@ describe('operation flight', () => {
     expect(flight.attempt.route).toBeNull()
   })
 
+  it('enters transit after valley', () => {
+    const flight = open()
+    stepOperationFlight(flight, 100_000)
+    expect(chooseOperationRoute(flight, 'valley').ok).toBe(true)
+    expect(flight.attempt.phase).toBe('transit')
+    expect(flight.attempt.route).toBe('valley')
+  })
+
 })
