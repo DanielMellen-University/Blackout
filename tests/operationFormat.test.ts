@@ -71,4 +71,8 @@ describe('operation formatting', () => {
     expect(operationChoiceLabel('glide')).toBe('')
   })
 
+  it('shows no leg progress before the first sample', () => {
+    expect(operationLegProgress(createAttempt(42), null)).toBe('—')
+  })
+
 })
