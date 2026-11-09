@@ -14,4 +14,9 @@ describe('operation gates', () => {
       expect(gate.y).toBe(400)
     }
   })
+
+  it('ends the stage on the last gate', () => {
+    const gates = buildStageGates(2, 300, 0)
+    expect(gates[2]?.z).toBe(3 * STAGE_LENGTH_M)
+  })
 })
