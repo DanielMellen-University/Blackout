@@ -14,4 +14,11 @@ describe('operation layout', () => {
     expect(GATE_SPACING_M).toBe(800)
     expect(STAGE_LENGTH_M).toBe(2400)
   })
+
+  it('abuts the three stages on z', () => {
+    expect(stageStartZ(0)).toBe(0)
+    expect(stageEndZ(0)).toBe(stageStartZ(1))
+    expect(stageEndZ(1)).toBe(stageStartZ(2))
+    expect(stageEndZ(2)).toBe(7200)
+  })
 })
