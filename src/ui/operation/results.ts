@@ -4,7 +4,12 @@ import { OPERATION_STAGES } from '../../systems/operation/identity'
 import { medalForScore } from '../../systems/operation/medal'
 import { buildOperationPlan } from '../../systems/operation/plan'
 import type { OperationBest } from '../../systems/operation/save'
-import { formatOperationMedal, formatOperationScore, operationChoiceLabel } from './format'
+import { formatOperationMedal, formatOperationScore, formatStageLine, operationChoiceLabel } from './format'
+
+export interface OperationStageLine {
+  id: string
+  text: string
+}
 
 export interface OperationResultModel {
   title: string
@@ -16,6 +21,7 @@ export interface OperationResultModel {
   timeLabel: string
   summary: string
   canReplay: boolean
+  stages: readonly OperationStageLine[]
 }
 
 function pathLabel(attempt: OperationAttempt): string {
@@ -56,5 +62,9 @@ export function operationResultModel(
     timeLabel: timeLabel(attempt),
     summary: operationBrief(plan, attempt.phase),
     canReplay: passed && hasTranscript,
+    stages: OPERATION_STAGES.flatMap(id => {
+      const stage = attempt.stages[id]
+      return stage ? [{ id, text: formatStageLine(id, stage) }] : []
+    }),
   }
 }

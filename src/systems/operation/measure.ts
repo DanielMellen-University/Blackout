@@ -71,7 +71,7 @@ function round3(value: number): number {
 }
 
 export interface OperationPerformanceRecord {
-  chunk: '11.037'
+  chunk: '11.038'
   operationId: typeof OPERATION_ID
   seed: number
   dtSec: number
@@ -94,11 +94,16 @@ export function operationPerformanceRecord(seed = 42): OperationPerformanceRecor
         peakSpeedMps: round3(stage.peakSpeedMps),
         minClearanceM: round3(stage.minClearanceM),
         endAltitudeM: round3(stage.endAltitudeM),
+        pathDeviationM: round3(stage.pathDeviationM),
+        altitudeErrorM: round3(stage.altitudeErrorM),
+        meanSpeedMps: round3(stage.meanSpeedMps),
+        fuelUsed: round3(stage.fuelUsed),
+        nitroUsed: round3(stage.nitroUsed),
       })),
     }
   }
   return {
-    chunk: '11.037',
+    chunk: '11.038',
     operationId: OPERATION_ID,
     seed,
     dtSec: OPERATION_DT_SEC,

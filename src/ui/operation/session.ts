@@ -1,3 +1,4 @@
+import { stageThrottle } from '../../systems/operation/bands'
 import {
   chooseOperationEnergy,
   chooseOperationRoute,
@@ -7,7 +8,7 @@ import {
   stepOperationFlight,
   type OperationFlight,
 } from '../../systems/operation/flight'
-import { OPERATION_STAGES } from '../../systems/operation/identity'
+import { OPERATION_STAGES, type OperationStageId } from '../../systems/operation/identity'
 import type { OperationTranscript } from '../../systems/operation/replay'
 import { replayOperation } from '../../systems/operation/replay'
 import type { FlightSample } from '../../systems/operation/samples'
@@ -21,6 +22,7 @@ import {
   type OperationStore,
 } from '../../systems/operation/save'
 import { normalizeOperationSeed } from '../../systems/operation/seed'
+import { clampOperationStick, neutralOperationStick, type OperationStick } from '../../systems/operation/stick'
 import { formatOperationScore } from './format'
 import { operationHudModel, type OperationHudModel } from './hud'
 import { operationReplayCues, operationReplayHud, type OperationReplayCue } from './playback'
@@ -28,9 +30,15 @@ import { OPERATION_PLAY_SEED } from './playSeed'
 import { operationResultModel, type OperationResultModel } from './results'
 
 export type OperationPlayStatus = 'idle' | 'flying' | 'choice' | 'results' | 'replay'
+export type OperationControlMode = 'model' | 'stick'
 
 function copySamples(flight: OperationFlight): FlightSample[] {
   return OPERATION_STAGES.flatMap(id => flight.samples[id])
+}
+
+function liveStage(phase: string): OperationStageId | null {
+  if (phase === 'ingress' || phase === 'transit' || phase === 'egress') return phase
+  return null
 }
 
 /** Plays the ridge relay one stage at a time and keeps the best result. */
@@ -39,6 +47,8 @@ export class OperationSession {
   hud: OperationHudModel | null = null
   result: OperationResultModel | null = null
   trace: FlightSample[] = []
+  controlMode: OperationControlMode
+  stick: OperationStick = neutralOperationStick()
   private progress: OperationProgress
   private flight: OperationFlight | null = null
   private frozen: FlightSample[] = []
@@ -49,12 +59,34 @@ export class OperationSession {
   private readonly replayHold: number
   private readonly store: OperationStore
 
-  constructor(store: OperationStore, seed = OPERATION_PLAY_SEED, replayHold = 36) {
+  constructor(store: OperationStore, seed = OPERATION_PLAY_SEED, replayHold = 36, control: OperationControlMode = 'model') {
     this.store = store
+    this.controlMode = control === 'stick' ? 'stick' : 'model'
     const loaded = loadProgress(store)
     this.progress = loaded ?? emptyProgress()
     this.seed = normalizeOperationSeed(seed)
     this.replayHold = Number.isFinite(replayHold) ? Math.max(0, Math.floor(replayHold)) : 0
+  }
+
+  setControlMode(mode: string): void {
+    if (mode === 'stick' || mode === 'model') this.controlMode = mode
+  }
+
+  setStick(stick: Partial<OperationStick> | null): void {
+    this.stick = clampOperationStick(stick)
+  }
+
+  /** The stage currently being flown, if the aircraft is moving. */
+  currentStage(): OperationStageId | null {
+    return liveStage(this.flight?.attempt.phase ?? '')
+  }
+
+  /** Power the scripted brief uses for the live stage. Stick mode starts there. */
+  briefedThrottle(): number {
+    const attempt = this.flight?.attempt
+    const stage = this.currentStage()
+    if (!attempt || !stage) return 0.5
+    return stageThrottle(stage, attempt.route, attempt.energy)
   }
 
   start(): void {
@@ -72,7 +104,7 @@ export class OperationSession {
   /** Fly the current stage. A full budget still stops when the stage ends. */
   advance(steps: number): void {
     if (this.status !== 'flying' || !this.flight) return
-    stepOperationFlight(this.flight, steps)
+    stepOperationFlight(this.flight, steps, this.controlMode === 'stick' ? this.stick : null)
     const phase = this.flight.attempt.phase
     if (phase === 'route-choice' || phase === 'energy-choice') this.status = 'choice'
     else if (phase === 'complete' || phase === 'failed') {

@@ -8,6 +8,11 @@ export interface StageWeights {
   speed: number
 }
 
+export interface SpeedBand {
+  minMps: number
+  maxMps: number
+}
+
 const FLOOR = OPERATION_TERRAIN.baseHeight
 
 /** Absolute altitude for the briefed band. Valley stays low. Ridge climbs. */
@@ -63,4 +68,21 @@ export function stageThrottle(
 /** Commit burns nitro on the egress leg, the stage that follows that decision. */
 export function stageBoost(id: OperationStageId, energy: EnergyChoice | null): boolean {
   return id === 'egress' && energy === 'commit'
+}
+
+/** Speed window the leg is scored against. Commit is a wide acceleration, not a cruise. */
+export function stageSpeedBand(
+  id: OperationStageId,
+  route: RouteChoice | null,
+  energy: EnergyChoice | null,
+): SpeedBand {
+  if (id === 'ingress') return { minMps: 140, maxMps: 250 }
+  if (id === 'transit') return route === 'ridge' ? { minMps: 180, maxMps: 260 } : { minMps: 160, maxMps: 250 }
+  if (energy === 'commit') return { minMps: 180, maxMps: 900 }
+  return { minMps: 140, maxMps: 230 }
+}
+
+/** Fuel units a disciplined leg may burn before the energy score falls. */
+export function stageFuelBudget(id: OperationStageId, energy: EnergyChoice | null): number {
+  return id === 'egress' && energy === 'commit' ? 8 : 4
 }

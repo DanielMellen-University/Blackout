@@ -18,6 +18,13 @@ function finished(score: number, route: 'valley' | 'ridge' = 'valley', energy: '
     timeScore: 1,
     flyingScore: 1,
     gateScore: 1,
+    pathDeviationM: 4,
+    altitudeErrorM: 12,
+    speedErrorMps: 0,
+    meanSpeedMps: 200,
+    fuelUsed: 0.4,
+    nitroUsed: 0,
+    disciplineScore: 4000,
     score: 1,
   }
   return {
@@ -52,39 +59,43 @@ function best(score: number): OperationBest {
 
 describe('operation results', () => {
   it('shows the score and a gold medal', () => {
-    const result = operationResultModel(finished(48_516), best(48_516), null, true)
-    expect(result.scoreLabel).toBe(formatOperationScore(48_516))
+    const result = operationResultModel(finished(61_472), best(61_472), null, true)
+    expect(result.scoreLabel).toBe(formatOperationScore(61_472))
     expect(result.medalLabel).toBe('Gold')
     expect(result.medal).toBe('gold')
     expect(result.title).toBe('Ridge relay complete')
   })
 
   it('shows silver and bronze from the score bands', () => {
-    expect(operationResultModel(finished(44_097), null, null, true).medalLabel).toBe(formatOperationMedal('silver'))
-    expect(operationResultModel(finished(30_550), null, null, true).medalLabel).toBe('Bronze')
+    expect(operationResultModel(finished(57_741), null, null, true).medalLabel).toBe(formatOperationMedal('silver'))
+    expect(operationResultModel(finished(42_947), null, null, true).medalLabel).toBe('Bronze')
   })
 
   it('names the flown path and the airborne finish', () => {
-    const result = operationResultModel(finished(48_516, 'valley', 'commit'), null, null, true)
+    const result = operationResultModel(finished(61_472, 'valley', 'commit'), null, null, true)
     expect(result.pathLabel).toBe(`${operationChoiceLabel('valley')} then ${operationChoiceLabel('commit').toLowerCase()}`)
     expect(result.summary).toContain('complete in the air')
     expect(result.summary.toLowerCase()).not.toContain('land')
     expect(result.timeLabel).toBe('30.0 s')
+    expect(result.stages.map(stage => stage.id)).toEqual(['ingress', 'transit', 'egress'])
+    expect(result.stages[0]?.text).toContain('path 4 m')
+    expect(result.stages[0]?.text).toContain('alt 12 m')
+    expect(result.stages[0]?.text).toContain('fuel 0.4')
   })
 
   it('calls the first finish the best', () => {
-    const result = operationResultModel(finished(30_550), best(30_550), null, true)
-    expect(result.bestLabel).toBe('Best 30,550')
+    const result = operationResultModel(finished(42_947), best(42_947), null, true)
+    expect(result.bestLabel).toBe('Best 42,947')
   })
 
   it('calls a higher finish a new best', () => {
-    const result = operationResultModel(finished(48_516), best(48_516), best(30_550), true)
-    expect(result.bestLabel).toBe('New best 48,516')
+    const result = operationResultModel(finished(61_472), best(61_472), best(42_947), true)
+    expect(result.bestLabel).toBe('New best 61,472')
   })
 
   it('keeps the stored best when the finish is lower', () => {
-    const result = operationResultModel(finished(30_550), best(48_516), best(48_516), true)
-    expect(result.bestLabel).toBe('Best 48,516')
+    const result = operationResultModel(finished(42_947), best(61_472), best(61_472), true)
+    expect(result.bestLabel).toBe('Best 61,472')
     expect(result.bestLabel).not.toContain('New best')
   })
 
@@ -95,18 +106,18 @@ describe('operation results', () => {
 
   it('withholds a medal and a replay when the run stops', () => {
     const attempt = { ...createAttempt(42), phase: 'failed' as const, score: 10 }
-    const result = operationResultModel(attempt, best(30_550), best(30_550), false)
+    const result = operationResultModel(attempt, best(42_947), best(42_947), false)
     expect(result.medalLabel).toBe('No medal')
     expect(result.canReplay).toBe(false)
     expect(result.title).toBe('Ridge relay stopped')
     expect(result.pathLabel).toBe('Unfinished')
-    expect(result.bestLabel).toBe('Best 30,550')
+    expect(result.bestLabel).toBe('Best 42,947')
     expect(`${result.title} ${result.summary} ${result.pathLabel}`.toLowerCase()).not.toContain('land')
   })
 
   it('offers replay only when a transcript was stored', () => {
-    expect(operationResultModel(finished(48_516), null, null, true).canReplay).toBe(true)
-    expect(operationResultModel(finished(48_516), null, null, false).canReplay).toBe(false)
+    expect(operationResultModel(finished(61_472), null, null, true).canReplay).toBe(true)
+    expect(operationResultModel(finished(61_472), null, null, false).canReplay).toBe(false)
   })
 
   it('says there is no best yet when nothing has finished', () => {

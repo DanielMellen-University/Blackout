@@ -1,4 +1,4 @@
-import { operationChoiceLabel } from './format'
+import { formatOperationStick, operationChoiceLabel } from './format'
 import type { OperationDecision } from './hud'
 import type { OperationSession } from './session'
 
@@ -22,6 +22,9 @@ export interface OperationDeckView {
   airborne: string
   prompt: string
   traceSamples: number
+  controlMode: 'model' | 'stick'
+  stickLabel: string
+  guide: string
   choices: readonly OperationChoiceButton[]
   showChoices: boolean
   showResults: boolean
@@ -33,6 +36,7 @@ export interface OperationDeckView {
   resultBest: string
   resultTime: string
   resultSummary: string
+  resultStages: readonly { id: string; text: string }[]
   showReplay: boolean
 }
 
@@ -49,6 +53,9 @@ const EMPTY: OperationDeckView = {
   airborne: '—',
   prompt: '',
   traceSamples: 0,
+  controlMode: 'model',
+  stickLabel: '',
+  guide: '—',
   choices: [],
   showChoices: false,
   showResults: false,
@@ -60,10 +67,18 @@ const EMPTY: OperationDeckView = {
   resultBest: '',
   resultTime: '',
   resultSummary: '',
+  resultStages: [],
   showReplay: false,
 }
 
 /** What the operation deck should show for the current session. */
+function controlLabel(session: OperationSession): string {
+  if (session.status === 'replay') return 'Replay'
+  if (session.status === 'results') return session.controlMode === 'stick' ? 'You flew the stick' : 'The model flew the legs'
+  if (session.controlMode === 'stick') return formatOperationStick(session.stick)
+  return 'Model is flying this leg'
+}
+
 export function operationDeckView(session: OperationSession): OperationDeckView {
   if (session.status === 'idle') return EMPTY
   const hud = session.hud
@@ -89,6 +104,9 @@ export function operationDeckView(session: OperationSession): OperationDeckView 
     airborne: hud?.airborneLabel ?? '—',
     prompt: hud?.prompt ?? '',
     traceSamples: session.trace.length,
+    controlMode: session.controlMode,
+    stickLabel: controlLabel(session),
+    guide: hud?.guideLabel ?? '—',
     choices,
     showChoices: !showResults && choices.length > 0,
     showResults,
@@ -100,6 +118,7 @@ export function operationDeckView(session: OperationSession): OperationDeckView 
     resultBest: result?.bestLabel ?? '',
     resultTime: result?.timeLabel ?? '',
     resultSummary: result?.summary ?? '',
+    resultStages: result?.stages ?? [],
     showReplay: showResults && result.canReplay,
   }
 }

@@ -1,5 +1,6 @@
 import { FlyingScore } from '../FlyingScore'
 import type { EnergyChoice, RouteChoice } from './choices'
+import { measureDiscipline } from './discipline'
 import type { OperationStageId } from './identity'
 import { CORRIDOR_HALF_WIDTH_M, MIN_CLEARANCE_M } from './layout'
 import type { StageSpec } from './plan'
@@ -21,6 +22,13 @@ export interface StageResult {
   timeScore: number
   flyingScore: number
   gateScore: number
+  pathDeviationM: number
+  altitudeErrorM: number
+  speedErrorMps: number
+  meanSpeedMps: number
+  fuelUsed: number
+  nitroUsed: number
+  disciplineScore: number
   score: number
 }
 
@@ -76,6 +84,13 @@ function emptyResult(id: OperationStageId, reason: StageFailReason): StageResult
     timeScore: 0,
     flyingScore: 0,
     gateScore: 0,
+    pathDeviationM: 0,
+    altitudeErrorM: 0,
+    speedErrorMps: 0,
+    meanSpeedMps: 0,
+    fuelUsed: 0,
+    nitroUsed: 0,
+    disciplineScore: 0,
     score: 0,
   }
 }
@@ -91,9 +106,11 @@ export function scoreStage(spec: StageSpec, samples: readonly FlightSample[]): S
   else if (stats.endZ < spec.endZ - 1) reason = 'incomplete'
   else if (stats.elapsedSec > spec.timeAllowanceSec) reason = 'timeout'
   const passed = reason === 'complete'
+  const discipline = measureDiscipline(spec, samples)
   const timeScore = passed ? timeScoreFor(stats.elapsedSec, spec.timeAllowanceSec) : 0
   const flyingScore = passed ? flyingScoreFor(samples, spec.weights) : 0
   const gateScore = passed ? gateScoreFor(spec, samples) : 0
+  const disciplineScore = passed ? discipline.score : 0
   return {
     id: spec.id,
     passed,
@@ -107,7 +124,14 @@ export function scoreStage(spec: StageSpec, samples: readonly FlightSample[]): S
     timeScore,
     flyingScore,
     gateScore,
-    score: timeScore + flyingScore + gateScore,
+    pathDeviationM: discipline.pathDeviationM,
+    altitudeErrorM: discipline.altitudeErrorM,
+    speedErrorMps: discipline.speedErrorMps,
+    meanSpeedMps: discipline.meanSpeedMps,
+    fuelUsed: discipline.fuelUsed,
+    nitroUsed: discipline.nitroUsed,
+    disciplineScore,
+    score: timeScore + flyingScore + gateScore + disciplineScore,
   }
 }
 

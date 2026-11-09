@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { medalForScore } from '../src/systems/operation/medal'
 import { replayOperation } from '../src/systems/operation/replay'
 import { memoryOperationStore, type OperationStore } from '../src/systems/operation/save'
 import { OperationSession } from '../src/ui/operation/session'
@@ -40,6 +39,23 @@ describe('operation session', () => {
     expect(view.showChoices).toBe(false)
   })
 
+  it('flies a stick command and shows the measured line', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 0, 'stick')
+    session.start()
+    session.setStick({ pitch: 0.6, roll: 0, yaw: 0, throttle: 0.7, boost: false, airbrake: false })
+    session.advance(30)
+    expect(session.status).toBe('flying')
+    expect(session.controlMode).toBe('stick')
+    expect(session.trace).toHaveLength(30)
+    expect(session.hud?.guideLabel).toContain('fuel')
+    expect(session.hud?.guideLabel).toContain('nitro')
+    expect(session.hud?.airborneLabel).toBe('Airborne')
+    const model = new OperationSession(memoryOperationStore(), 42, 0, 'model')
+    model.start()
+    model.advance(30)
+    expect(session.trace[29]!.y).not.toBeCloseTo(model.trace[29]!.y, 0)
+  })
+
   it('ignores a choice while the stage is still flying', () => {
     const session = new OperationSession(memoryOperationStore(), 42, 0)
     session.start()
@@ -64,7 +80,7 @@ describe('operation session', () => {
     finish(session, 'valley', 'commit')
     const best = session.result?.scoreLabel
     finish(session, 'ridge', 'conserve')
-    expect(session.result?.medal).toBe(medalForScore(30_550, true))
+    expect(session.result?.medal).toBe('bronze')
     expect(session.result?.bestLabel).toBe(`Best ${best}`)
     expect(session.result?.bestLabel.startsWith('New best')).toBe(false)
   })

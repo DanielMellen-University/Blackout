@@ -1,4 +1,13 @@
-import { stageAllowance, stageAltitude, stageWeights, type StageWeights } from './bands'
+import {
+  stageAllowance,
+  stageAltitude,
+  stageBoost,
+  stageFuelBudget,
+  stageSpeedBand,
+  stageWeights,
+  type SpeedBand,
+  type StageWeights,
+} from './bands'
 import type { EnergyChoice, RouteChoice } from './choices'
 import { buildStageGates, lateralForSeed, type StageGate } from './gates'
 import { OPERATION_FINISH, OPERATION_ID, OPERATION_STAGES, stageIndex, type OperationStageId } from './identity'
@@ -14,6 +23,9 @@ export interface StageSpec {
   lateralM: number
   gates: readonly StageGate[]
   endZ: number
+  speedBand: SpeedBand
+  fuelBudget: number
+  boost: boolean
 }
 
 export interface OperationPlan {
@@ -44,6 +56,9 @@ export function buildOperationPlan(
       lateralM,
       gates: buildStageGates(index, altitudeM, lateralM),
       endZ: stageEndZ(index),
+      speedBand: stageSpeedBand(id, route, energy),
+      fuelBudget: stageFuelBudget(id, energy),
+      boost: stageBoost(id, energy),
     }
   }) as unknown as readonly [StageSpec, StageSpec, StageSpec]
   return {

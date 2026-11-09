@@ -40,6 +40,13 @@ function result(partial: Partial<StageResult>): StageResult {
     timeScore: 1,
     flyingScore: 1,
     gateScore: 1,
+    pathDeviationM: 0,
+    altitudeErrorM: 0,
+    speedErrorMps: 0,
+    meanSpeedMps: 180,
+    fuelUsed: 0,
+    nitroUsed: 0,
+    disciplineScore: 0,
     score: 3,
     ...partial,
   }

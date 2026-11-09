@@ -140,7 +140,7 @@
             <button type="button" id="btn-perfect-line" class="btn-ghost" hidden>Perfect Line (prototype)</button>
             <p id="perfect-line-description" hidden>One canyon, 15 gates, airborne finish. R retries the same line.</p>
             <button type="button" id="btn-ridge-relay" class="btn-ghost" hidden>Ridge relay</button>
-            <p id="ridge-relay-description" hidden>Three stages in the air. Choose valley or ridge, then conserve or commit.</p>
+            <p id="ridge-relay-description" hidden>Three stages in the air. Fly the stick or let the model fly, then choose valley or ridge and conserve or commit.</p>
             <div class="seed-launch">
               <label class="seed-launch-label" for="title-seed-input">Or revisit a world</label>
               <div class="seed-launch-controls">
@@ -165,6 +165,12 @@
           </header>
           <p id="operation-stage" class="operation-stage"></p>
           <p id="operation-brief" class="operation-brief"></p>
+          <div id="operation-controls" class="operation-controls" role="group" aria-label="Control mode">
+            <button type="button" id="operation-mode-stick" class="operation-choice" data-mode="stick" aria-pressed="false">Stick</button>
+            <button type="button" id="operation-mode-model" class="operation-choice" data-mode="model" aria-pressed="true">Model</button>
+          </div>
+          <p id="operation-stick" class="operation-stick"></p>
+          <p id="operation-guide" class="operation-guide"></p>
           <dl class="operation-telemetry">
             <div><dt>Speed</dt><dd id="operation-speed">—</dd></div>
             <div><dt>Clearance</dt><dd id="operation-clearance">—</dd></div>
@@ -183,6 +189,7 @@
             <p id="operation-result-best"></p>
             <p id="operation-result-time"></p>
             <p id="operation-result-summary"></p>
+            <ol id="operation-result-stages" class="operation-stage-list"></ol>
             <div class="operation-result-actions">
               <button type="button" id="operation-replay" class="btn-ghost" hidden>Replay</button>
               <button type="button" id="operation-again" class="btn-ghost">Fly again</button>

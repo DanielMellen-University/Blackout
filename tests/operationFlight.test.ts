@@ -221,4 +221,15 @@ describe('operation flight', () => {
     expect(valley.attempt.phase).toBe('complete')
     expect(ridge.attempt.phase).toBe('complete')
   })
+
+  it('follows the stick instead of the model pilot', () => {
+    const flown = open()
+    const model = open()
+    const noseUp = { pitch: 1, roll: 0, yaw: 0, throttle: 0.9, boost: false, airbrake: false }
+    stepOperationFlight(flown, 40, noseUp)
+    stepOperationFlight(model, 40)
+    expect(flown.live!.y).toBeGreaterThan(model.live!.y + 5)
+    expect(flown.samples.ingress[0]?.fuel).toBeLessThan(100)
+    expect(flown.samples.ingress.every(sample => sample.airborne)).toBe(true)
+  })
 })
