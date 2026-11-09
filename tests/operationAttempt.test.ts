@@ -48,4 +48,10 @@ describe('operation attempt', () => {
     const ready = recordStage(createAttempt(42), line(42, null, null, 'ingress')).attempt
     expect(chooseRoute(ready, 'commit')).toMatchObject({ ok: false, reason: 'bad-route' })
   })
+
+  it('rejects a second route choice', () => {
+    const ready = recordStage(createAttempt(42), line(42, null, null, 'ingress')).attempt
+    const chosen = chooseRoute(ready, 'valley').attempt
+    expect(chooseRoute(chosen, 'ridge').ok).toBe(false)
+  })
 })
