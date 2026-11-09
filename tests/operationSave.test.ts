@@ -130,4 +130,8 @@ describe('operation save', () => {
     expect(saved.history).toHaveLength(0)
     expect(saved.best).toBeNull()
   })
+
+  it('filters unknown stage ids', () => {
+    expect(stageIdsFromUnknown(['ingress', 'landing', 'egress'])).toEqual(['ingress', 'egress'])
+  })
 })
