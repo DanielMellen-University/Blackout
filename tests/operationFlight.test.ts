@@ -167,4 +167,12 @@ describe('operation flight', () => {
     expect(chooseOperationRoute(flight, 'valley').ok).toBe(false)
   })
 
+  it('matches the valley then conserve harness flight', () => {
+    const measured = flyOperation(42, 'valley', 'conserve')
+    const flight = flyChoices('valley', 'conserve')
+    expect(flight.attempt.phase).toBe('complete')
+    expect(flight.attempt.score).toBe(measured.score)
+    expect(flight.samples).toEqual(measured.samples)
+  })
+
 })
