@@ -52,4 +52,8 @@ describe('operation save', () => {
     expect(parseProgress(null)).toEqual(emptyProgress())
     expect(parseProgress('')).toEqual(emptyProgress())
   })
+
+  it('rejects a different save version', () => {
+    expect(parseProgress(JSON.stringify({ version: 2, active: null, best: null, history: [], replay: null }))).toBeNull()
+  })
 })
