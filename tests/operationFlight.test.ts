@@ -206,4 +206,10 @@ describe('operation flight', () => {
     expect(replayed.attempt.phase).toBe('complete')
   })
 
+  it('withholds a transcript until the run is complete', () => {
+    const flight = open()
+    stepOperationFlight(flight, 100_000)
+    expect(operationFlightTranscript(flight)).toBeNull()
+  })
+
 })
