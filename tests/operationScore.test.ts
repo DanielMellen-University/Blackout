@@ -91,4 +91,11 @@ describe('operation scoring', () => {
     const short = line(spec).map(sample => ({ ...sample, z: sample.z * 0.2 }))
     expect(scoreStage(spec, short).reason).toBe('incomplete')
   })
+
+  it('fails a trace that overruns the allowance', () => {
+    const spec = stageSpec(buildOperationPlan(42, 'valley', null), 'transit')
+    const slow = line(spec).map((sample, index) => ({ ...sample, t: index * 3 }))
+    expect(scoreStage(spec, slow).reason).toBe('timeout')
+    expect(scoreStage(spec, slow).score).toBe(0)
+  })
 })
