@@ -109,4 +109,8 @@ describe('operation results', () => {
     expect(operationResultModel(finished(48_516), null, null, false).canReplay).toBe(false)
   })
 
+  it('says there is no best yet when nothing has finished', () => {
+    const attempt = { ...createAttempt(42), phase: 'failed' as const }
+    expect(operationResultModel(attempt, null, null, false).bestLabel).toBe('No best yet')
+  })
 })
