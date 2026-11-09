@@ -111,4 +111,15 @@ describe('operation flight', () => {
     expect(flight.attempt.route).toBe('ridge')
   })
 
+  it('pauses after transit for conserve or commit', () => {
+    const flight = open()
+    stepOperationFlight(flight, 100_000)
+    chooseOperationRoute(flight, 'valley')
+    stepOperationFlight(flight, 100_000)
+    expect(flight.attempt.phase).toBe('energy-choice')
+    expect(flight.samples.egress).toHaveLength(0)
+    stepOperationFlight(flight, 5)
+    expect(flight.attempt.phase).toBe('energy-choice')
+  })
+
 })
