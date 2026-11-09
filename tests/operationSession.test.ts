@@ -69,4 +69,12 @@ describe('operation session', () => {
     expect(session.result?.bestLabel.startsWith('New best')).toBe(false)
   })
 
+  it('replaces the best when a later finish scores higher', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 0)
+    finish(session, 'ridge', 'conserve')
+    expect(session.result?.bestLabel.startsWith('New best')).toBe(false)
+    finish(session, 'valley', 'commit')
+    expect(session.result?.bestLabel.startsWith('New best')).toBe(true)
+  })
+
 })
