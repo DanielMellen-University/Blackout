@@ -1,0 +1,43 @@
+import { describe, expect, it } from 'vitest'
+import { medalForScore } from '../src/systems/operation/medal'
+import { replayOperation } from '../src/systems/operation/replay'
+import { memoryOperationStore, type OperationStore } from '../src/systems/operation/save'
+import { OperationSession } from '../src/ui/operation/session'
+import { operationDeckView } from '../src/ui/operation/view'
+
+function finish(session: OperationSession, route: string, energy: string): void {
+  session.start()
+  for (let n = 0; n < 20 && session.status === 'flying'; n += 1) session.advance(100_000)
+  expect(session.status).toBe('choice')
+  expect(session.hud?.decisions).toEqual(['valley', 'ridge'])
+  session.choose(route)
+  for (let n = 0; n < 20 && session.status === 'flying'; n += 1) session.advance(100_000)
+  expect(session.status).toBe('choice')
+  expect(session.hud?.decisions).toEqual(['conserve', 'commit'])
+  session.choose(energy)
+  for (let n = 0; n < 20 && session.status === 'flying'; n += 1) session.advance(100_000)
+}
+
+describe('operation session', () => {
+  it('flies valley then commit to a gold result and stores the best', () => {
+    const store = memoryOperationStore()
+    const session = new OperationSession(store, 42, 0)
+    expect(session.status).toBe('idle')
+    finish(session, 'valley', 'commit')
+    expect(session.status).toBe('results')
+    expect(session.result?.medal).toBe('gold')
+    expect(session.result?.bestLabel).toContain('Best')
+    expect(session.result?.canReplay).toBe(true)
+    expect(session.result?.pathLabel).toBe('Valley then commit')
+    const saved = store.snapshot()
+    expect(saved).toContain('ridge-relay')
+    expect(saved).toContain('valley')
+    const view = operationDeckView(session)
+    expect(view.showResults).toBe(true)
+    expect(view.resultScore).toContain(session.result?.scoreLabel)
+    expect(view.resultMedal).toBe('Gold')
+    expect(view.showReplay).toBe(true)
+    expect(view.showChoices).toBe(false)
+  })
+
+})
