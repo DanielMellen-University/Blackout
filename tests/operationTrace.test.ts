@@ -39,4 +39,7 @@ describe('operation trace and pace', () => {
     expect(operationReplayStepsPerFrame(false)).toBeLessThan(operationReplayStepsPerFrame(true))
   })
 
+  it('plays the measured seed', () => {
+    expect(OPERATION_PLAY_SEED).toBe(42)
+  })
 })
