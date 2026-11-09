@@ -82,4 +82,10 @@ describe('operation results', () => {
     expect(result.bestLabel).toBe('New best 48,516')
   })
 
+  it('keeps the stored best when the finish is lower', () => {
+    const result = operationResultModel(finished(30_550), best(48_516), best(48_516), true)
+    expect(result.bestLabel).toBe('Best 48,516')
+    expect(result.bestLabel).not.toContain('New best')
+  })
+
 })
