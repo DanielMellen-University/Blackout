@@ -113,4 +113,15 @@ describe('operation session', () => {
     expect(sawChoice).toBe(true)
   })
 
+  it('returns to idle on close and can fly again', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 0)
+    finish(session, 'ridge', 'commit')
+    session.close()
+    expect(session.status).toBe('idle')
+    expect(operationDeckView(session).visible).toBe(false)
+    session.start()
+    expect(session.status).toBe('flying')
+    expect(session.hud?.stageLabel).toContain('Stage 1 of 3')
+  })
+
 })
