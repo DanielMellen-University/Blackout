@@ -10,4 +10,8 @@ describe('operation plan', () => {
     expect(plan.stages).toHaveLength(3)
     for (const stage of plan.stages) expect(stage.gates).toHaveLength(3)
   })
+
+  it('replays the same seed as the same plan', () => {
+    expect(buildOperationPlan(42, 'valley', 'conserve')).toEqual(buildOperationPlan(42, 'valley', 'conserve'))
+  })
 })
