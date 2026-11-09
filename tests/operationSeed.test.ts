@@ -27,4 +27,8 @@ describe('operation seed', () => {
   it('truncates a fractional seed', () => {
     expect(normalizeOperationSeed(42.9)).toBe(42)
   })
+
+  it('caps an enormous seed', () => {
+    expect(normalizeOperationSeed(9e15)).toBe(1_000_000_000)
+  })
 })
