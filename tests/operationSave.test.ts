@@ -62,4 +62,16 @@ describe('operation save', () => {
     expect(parseProgress('[]')).toBeNull()
     expect(parseProgress(JSON.stringify({ version: 1, active: { id: 'other' }, best: null, history: [] }))).toBeNull()
   })
+
+  it('keeps the best only when a later finish scores higher', () => {
+    const first = finish('ridge')
+    const second = finish('valley')
+    expect(second.score).toBeGreaterThan(first.score)
+    const once = commitAttempt(emptyProgress(), first)
+    const twice = commitAttempt(once, second)
+    expect(twice.best?.score).toBe(second.score)
+    expect(twice.history).toHaveLength(2)
+    const repeat = commitAttempt(twice, first)
+    expect(repeat.best?.score).toBe(second.score)
+  })
 })
