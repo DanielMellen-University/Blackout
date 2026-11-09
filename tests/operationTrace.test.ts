@@ -25,4 +25,12 @@ describe('operation trace and pace', () => {
     expect(ys[1]).toBeLessThan(ys[0]!)
   })
 
+  it('keeps a long trace inside the view box', () => {
+    const samples = Array.from({ length: 2000 }, (_, index) => sample(index, 100 + (index % 50)))
+    const path = operationTracePath(samples)
+    const points = path.split(' ').length
+    expect(points).toBeLessThan(2000)
+    expect(path.startsWith('M')).toBe(true)
+  })
+
 })
