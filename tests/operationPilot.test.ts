@@ -31,4 +31,13 @@ describe('operation pilot', () => {
     expect(commandPilot(level, Number.NaN, false).throttle).toBe(0)
     expect(command.boost).toBe(true)
   })
+
+  it('burns nitro only on a commit egress', () => {
+    expect(pilotForStage('egress', 'valley', 'commit', level).boost).toBe(true)
+    expect(pilotForStage('egress', 'valley', 'conserve', level).boost).toBe(false)
+    expect(pilotForStage('transit', 'ridge', 'commit', level).boost).toBe(false)
+    expect(pilotForStage('egress', 'ridge', 'commit', level).throttle).toBeGreaterThan(
+      pilotForStage('egress', 'ridge', 'conserve', level).throttle,
+    )
+  })
 })
