@@ -56,4 +56,10 @@ describe('operation save', () => {
   it('rejects a different save version', () => {
     expect(parseProgress(JSON.stringify({ version: 2, active: null, best: null, history: [], replay: null }))).toBeNull()
   })
+
+  it('rejects truncated and garbage documents', () => {
+    expect(parseProgress('{')).toBeNull()
+    expect(parseProgress('[]')).toBeNull()
+    expect(parseProgress(JSON.stringify({ version: 1, active: { id: 'other' }, best: null, history: [] }))).toBeNull()
+  })
 })
