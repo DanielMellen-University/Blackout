@@ -43,4 +43,12 @@ describe('operation flight harness', () => {
     expect(second.stages.map(stage => stage.steps)).toEqual(first.stages.map(stage => stage.steps))
     expect(second.stages.map(stage => stage.peakSpeedMps)).toEqual(first.stages.map(stage => stage.peakSpeedMps))
   })
+
+  it('replays the measured transcript to the same score', () => {
+    const measured = flyOperation(42, 'valley', 'commit')
+    expect(measured.transcript).not.toBeNull()
+    const replayed = replayOperation(measured.transcript!)
+    expect(replayed.attempt.phase).toBe('complete')
+    expect(replayed.attempt.score).toBe(measured.score)
+  })
 })
