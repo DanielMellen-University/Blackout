@@ -29,4 +29,10 @@ describe('operation stage HUD', () => {
     expect(hud.progressLabel.endsWith('%')).toBe(true)
   })
 
+  it('says stopped when the sample is not airborne', () => {
+    const hud = operationHudModel(createAttempt(42), { ...sample, airborne: false })
+    expect(hud.airborneLabel).toBe('Stopped')
+    expect(hud.brief.toLowerCase()).not.toContain('land')
+  })
+
 })
