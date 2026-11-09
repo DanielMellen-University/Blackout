@@ -25,4 +25,16 @@ describe('operation launch', () => {
     expect([...FEATURED_MISSION_IDS]).toEqual(['free-flight', 'training-orbit', 'daily-ops'])
   })
 
+  it('reads and writes the operation store', () => {
+    const values = new Map<string, string>()
+    const store = browserOperationStore({
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => { values.set(key, value) },
+    })
+    expect(store.read()).toBeNull()
+    store.write('{"version":1}')
+    expect(values.get(OPERATION_STORAGE_KEY)).toBe('{"version":1}')
+    expect(store.read()).toBe('{"version":1}')
+  })
+
 })
