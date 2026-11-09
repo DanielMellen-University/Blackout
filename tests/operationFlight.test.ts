@@ -196,4 +196,14 @@ describe('operation flight', () => {
     expect(flight.samples.transit.some(sample => sample.clearance > 160)).toBe(true)
   })
 
+  it('builds a transcript that replays to the same score', () => {
+    const flight = flyChoices('valley', 'commit')
+    const transcript = operationFlightTranscript(flight)
+    expect(transcript).not.toBeNull()
+    const replayed = replayOperation(transcript!)
+    expect(replayed.ok).toBe(true)
+    expect(replayed.attempt.score).toBe(flight.attempt.score)
+    expect(replayed.attempt.phase).toBe('complete')
+  })
+
 })
