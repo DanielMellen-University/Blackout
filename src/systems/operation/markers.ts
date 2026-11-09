@@ -132,7 +132,7 @@ function material(kind: OperationMarkerKind, solid: boolean): MeshBasicMaterial 
   return new MeshBasicMaterial({
     color: COLORS[kind],
     transparent: true,
-    opacity: solid ? 0.92 : 0.38,
+    opacity: solid ? 0.92 : 0.24,
     side: DoubleSide,
     depthWrite: false,
     fog: false,

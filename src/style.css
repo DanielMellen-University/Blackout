@@ -2880,13 +2880,18 @@ body,
 }
 .operation-deck.operation-cockpit .operation-sheet {
   width: min(960px, 100%);
-  max-height: min(46vh, 520px);
+  max-height: min(34vh, 280px);
   margin: 0 auto;
+  padding: 14px 16px 12px;
   pointer-events: auto;
   background: rgba(11, 20, 36, 0.78);
 }
-.operation-deck.operation-cockpit .operation-header h2 { font-size: 24px; }
-.operation-deck.operation-cockpit .operation-trace { height: 64px; margin-bottom: 10px; }
+.operation-deck.operation-cockpit:not(.is-results) .operation-brief,
+.operation-deck.operation-cockpit:not(.is-results) .operation-trace { display: none; }
+.operation-deck.operation-cockpit .operation-header h2 { font-size: 22px; }
+.operation-deck.operation-cockpit .operation-stage { margin: 8px 0 6px; }
+.operation-deck.operation-cockpit .operation-telemetry { margin-bottom: 0; }
+.operation-deck.operation-cockpit .operation-telemetry dd { font-size: 16px; }
 .operation-deck.operation-cockpit.is-results {
   place-items: center;
   background: rgba(8, 15, 32, 0.28);
