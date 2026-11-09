@@ -20,4 +20,9 @@ describe('operation formatting', () => {
     expect(formatOperationScore(48516)).toBe('48,516')
   })
 
+  it('renders a non-finite score as zero', () => {
+    expect(formatOperationScore(Number.NaN)).toBe('0')
+    expect(formatOperationScore(Number.POSITIVE_INFINITY)).toBe('0')
+  })
+
 })
