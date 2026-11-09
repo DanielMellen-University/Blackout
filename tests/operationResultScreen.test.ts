@@ -88,4 +88,9 @@ describe('operation results', () => {
     expect(result.bestLabel).not.toContain('New best')
   })
 
+  it('does not call an equal score a new best', () => {
+    const result = operationResultModel(finished(44_097), best(44_097), best(44_097), true)
+    expect(result.bestLabel).toBe('Best 44,097')
+  })
+
 })
