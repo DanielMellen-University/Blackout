@@ -33,4 +33,10 @@ describe('operation trace and pace', () => {
     expect(path.startsWith('M')).toBe(true)
   })
 
+  it('steps a short burst each frame and a long burst when motion is reduced', () => {
+    expect(operationStepsPerFrame(false)).toBeGreaterThan(0)
+    expect(operationStepsPerFrame(false)).toBeLessThan(operationStepsPerFrame(true))
+    expect(operationReplayStepsPerFrame(false)).toBeLessThan(operationReplayStepsPerFrame(true))
+  })
+
 })
