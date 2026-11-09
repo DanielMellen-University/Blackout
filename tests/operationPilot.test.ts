@@ -22,4 +22,13 @@ describe('operation pilot', () => {
   it('yaws toward a line that is to the right', () => {
     expect(commandPilot({ ...level, lateralErrorM: 40 }, 0.5, false).yaw).toBeGreaterThan(0)
   })
+
+  it('clamps axes and throttle', () => {
+    const command = commandPilot({ ...level, altitudeErrorM: 10_000, lateralErrorM: -10_000 }, 4, true)
+    expect(command.pitch).toBe(1)
+    expect(command.yaw).toBe(-1)
+    expect(command.throttle).toBe(1)
+    expect(commandPilot(level, Number.NaN, false).throttle).toBe(0)
+    expect(command.boost).toBe(true)
+  })
 })
