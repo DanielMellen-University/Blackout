@@ -80,4 +80,9 @@ describe('operation scoring', () => {
     const spec = stageSpec(buildOperationPlan(42, null, null), 'ingress')
     expect(scoreStage(spec, line(spec, { clearance: 10 })).reason).toBe('clearance')
   })
+
+  it('fails a trace that leaves the corridor', () => {
+    const spec = stageSpec(buildOperationPlan(42, null, null), 'ingress')
+    expect(scoreStage(spec, line(spec, { x: spec.lateralM + 400 })).reason).toBe('off-corridor')
+  })
 })
