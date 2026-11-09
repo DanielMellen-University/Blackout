@@ -135,4 +135,12 @@ describe('operation session', () => {
     expect(session.result?.medal).toBe('silver')
   })
 
+  it('starts cleanly from a corrupt save', () => {
+    const session = new OperationSession(memoryOperationStore('{'), 42, 0)
+    session.start()
+    expect(session.status).toBe('flying')
+    expect(session.hud?.bestLabel).toBe('No best yet')
+    session.close()
+  })
+
 })
