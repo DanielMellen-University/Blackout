@@ -58,4 +58,12 @@ describe('operation replay', () => {
     const foreign = { ...transcript, id: 'other' as typeof transcript.id }
     expect(replayOperation(foreign)).toMatchObject({ ok: false, reason: 'wrong-operation' })
   })
+
+  it('rejects a transcript that is missing a stage trace', () => {
+    expect(createTranscript(42, 'valley', 'commit', {
+      ingress: line('ingress'),
+      transit: line('transit'),
+      egress: [line('egress')[0]!],
+    })).toBeNull()
+  })
 })
