@@ -16,4 +16,13 @@ describe('operation flight harness', () => {
     expect(measured.stages.every(stage => stage.passed)).toBe(true)
     expect(measured.attempt.phase).toBe('complete')
   })
+
+  it('flies the ridge higher than the valley', () => {
+    const valley = flyOperation(42, 'valley', 'conserve')
+    const ridge = flyOperation(42, 'ridge', 'conserve')
+    const valleyTransit = valley.stages.find(stage => stage.id === 'transit')!
+    const ridgeTransit = ridge.stages.find(stage => stage.id === 'transit')!
+    expect(ridgeTransit.endAltitudeM).toBeGreaterThan(valleyTransit.endAltitudeM)
+    expect(valleyTransit.minClearanceM).toBeLessThan(ridgeTransit.minClearanceM)
+  })
 })
