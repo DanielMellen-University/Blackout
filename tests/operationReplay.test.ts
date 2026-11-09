@@ -66,4 +66,12 @@ describe('operation replay', () => {
       egress: [line('egress')[0]!],
     })).toBeNull()
   })
+
+  it('serializes the transcript in stage order', () => {
+    const transcript = createTranscript(42, 'valley', 'commit', samples())!
+    const text = canonicalTranscript(transcript)
+    expect(text.indexOf('ingress')).toBeLessThan(text.indexOf('transit'))
+    expect(text.indexOf('transit')).toBeLessThan(text.indexOf('egress'))
+    expect(canonicalTranscript(transcript)).toBe(text)
+  })
 })
