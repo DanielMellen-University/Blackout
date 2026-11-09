@@ -18,4 +18,9 @@ describe('operation seed', () => {
   it('uses the absolute value of a negative seed', () => {
     expect(normalizeOperationSeed(-18)).toBe(18)
   })
+
+  it('turns zero into seed 1', () => {
+    expect(normalizeOperationSeed(0)).toBe(1)
+    expect(normalizeOperationSeed(-0)).toBe(1)
+  })
 })
