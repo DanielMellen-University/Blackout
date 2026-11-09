@@ -23,4 +23,13 @@ describe('operation replay cues', () => {
     expect(cues.at(-1)).toMatchObject({ kind: 'sample', stage: 'egress' })
   })
 
+  it('keeps one cue per sample plus the two decisions', () => {
+    const stored = transcript()
+    const cues = operationReplayCues(stored)
+    const samples = stored.samples.ingress.length + stored.samples.transit.length + stored.samples.egress.length
+    expect(cues).toHaveLength(samples + 2)
+    const first = cues[0]
+    expect(first && first.kind === 'sample' && first.sample.speed).toBeGreaterThan(0)
+  })
+
 })
