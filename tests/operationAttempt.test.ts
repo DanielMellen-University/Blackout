@@ -70,4 +70,10 @@ describe('operation attempt', () => {
     const stageSum = (attempt.stages.ingress?.score ?? 0) + (attempt.stages.transit?.score ?? 0) + (attempt.stages.egress?.score ?? 0)
     expect(attempt.score).toBeGreaterThan(stageSum)
   })
+
+  it('rejects an energy choice before transit', () => {
+    let attempt = createAttempt(7)
+    attempt = recordStage(attempt, line(7, null, null, 'ingress')).attempt
+    expect(chooseEnergy(attempt, 'conserve')).toMatchObject({ ok: false, reason: 'energy-not-open' })
+  })
 })
