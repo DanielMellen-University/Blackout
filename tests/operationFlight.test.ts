@@ -56,4 +56,13 @@ describe('operation flight', () => {
     }
   })
 
+  it('records an airborne sample on the first step', () => {
+    const flight = open()
+    stepOperationFlight(flight, 1)
+    expect(flight.samples.ingress).toHaveLength(1)
+    expect(flight.live?.airborne).toBe(true)
+    expect(flight.live?.t).toBeCloseTo(1 / 60)
+    expect(flight.attempt.phase).toBe('ingress')
+  })
+
 })
