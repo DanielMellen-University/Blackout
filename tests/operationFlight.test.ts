@@ -131,4 +131,13 @@ describe('operation flight', () => {
     expect(flight.attempt.energy).toBeNull()
   })
 
+  it('enters egress after conserve', () => {
+    const flight = open()
+    stepOperationFlight(flight, 100_000)
+    chooseOperationRoute(flight, 'valley')
+    stepOperationFlight(flight, 100_000)
+    expect(chooseOperationEnergy(flight, 'conserve').ok).toBe(true)
+    expect(flight.attempt.phase).toBe('egress')
+  })
+
 })
