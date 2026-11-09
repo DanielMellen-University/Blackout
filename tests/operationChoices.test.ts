@@ -8,4 +8,10 @@ describe('operation choices', () => {
     expect(isRouteChoice('commit')).toBe(false)
     expect(isRouteChoice(null)).toBe(false)
   })
+
+  it('accepts only conserve or commit', () => {
+    expect(isEnergyChoice('conserve')).toBe(true)
+    expect(isEnergyChoice('commit')).toBe(true)
+    expect(isEnergyChoice('valley')).toBe(false)
+  })
 })
