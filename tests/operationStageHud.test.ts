@@ -60,4 +60,11 @@ describe('operation stage HUD', () => {
     expect(hud.brief).toContain('conserve or commit')
   })
 
+  it('names the energy choice during egress', () => {
+    const attempt = { ...createAttempt(42), phase: 'egress' as const, route: 'valley' as const, energy: 'commit' as const }
+    const hud = operationHudModel(attempt, sample, { bestLabel: 'Best 1,000' })
+    expect(hud.stageLabel).toContain('commit')
+    expect(hud.bestLabel).toBe('Best 1,000')
+  })
+
 })
