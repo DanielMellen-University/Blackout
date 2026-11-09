@@ -15,4 +15,10 @@ describe('operation brief', () => {
     expect(text).toContain('valley or ridge')
     expect(text).toContain('stage 2 of 3')
   })
+
+  it('asks for the energy decision before egress', () => {
+    const text = operationBrief(buildOperationPlan(42, 'valley', null), 'energy-choice')
+    expect(text).toContain('conserve or commit')
+    expect(text).toContain('stage 3 of 3')
+  })
 })
