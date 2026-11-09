@@ -75,4 +75,8 @@ describe('operation formatting', () => {
     expect(operationLegProgress(createAttempt(42), null)).toBe('—')
   })
 
+  it('clamps leg progress to the start of the stage', () => {
+    expect(operationLegProgress(createAttempt(42), sample(-200))).toBe('0%')
+  })
+
 })
