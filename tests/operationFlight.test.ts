@@ -65,4 +65,11 @@ describe('operation flight', () => {
     expect(flight.attempt.phase).toBe('ingress')
   })
 
+  it('ignores an empty step budget', () => {
+    const flight = open()
+    stepOperationFlight(flight, 0)
+    stepOperationFlight(flight, Number.NaN)
+    expect(flight.samples.ingress).toHaveLength(0)
+  })
+
 })
