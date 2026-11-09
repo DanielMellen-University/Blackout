@@ -64,4 +64,12 @@ describe('operation results', () => {
     expect(operationResultModel(finished(30_550), null, null, true).medalLabel).toBe('Bronze')
   })
 
+  it('names the flown path and the airborne finish', () => {
+    const result = operationResultModel(finished(48_516, 'valley', 'commit'), null, null, true)
+    expect(result.pathLabel).toBe(`${operationChoiceLabel('valley')} then ${operationChoiceLabel('commit').toLowerCase()}`)
+    expect(result.summary).toContain('complete in the air')
+    expect(result.summary.toLowerCase()).not.toContain('land')
+    expect(result.timeLabel).toBe('30.0 s')
+  })
+
 })
