@@ -98,4 +98,13 @@ describe('operation scoring', () => {
     expect(scoreStage(spec, slow).reason).toBe('timeout')
     expect(scoreStage(spec, slow).score).toBe(0)
   })
+
+  it('pays the valley bonus only for a low transit', () => {
+    const low = result({ minClearanceM: VALLEY_CLEARANCE_M })
+    const high = result({ minClearanceM: VALLEY_CLEARANCE_M + 1 })
+    expect(decisionBonus('valley', null, low, undefined)).toBe(VALLEY_BONUS)
+    expect(decisionBonus('valley', null, high, undefined)).toBe(0)
+    expect(decisionBonus('ridge', null, low, undefined)).toBe(0)
+    expect(decisionBonus('valley', null, result({ passed: false }), undefined)).toBe(0)
+  })
 })
