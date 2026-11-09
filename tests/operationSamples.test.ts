@@ -32,4 +32,8 @@ describe('operation samples', () => {
   it('returns null for a single sample', () => {
     expect(sampleStats([sample()], 0)).toBeNull()
   })
+
+  it('returns null when time runs backwards', () => {
+    expect(sampleStats([sample({ t: 2 }), sample({ t: 1, z: 10 })], 0)).toBeNull()
+  })
 })
