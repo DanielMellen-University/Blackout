@@ -95,4 +95,10 @@ describe('operation save', () => {
     for (let index = 0; index < OPERATION_HISTORY_LIMIT + 3; index += 1) progress = commitAttempt(progress, finish('valley'))
     expect(progress.history).toHaveLength(OPERATION_HISTORY_LIMIT)
   })
+
+  it('clears the active attempt and keeps the best', () => {
+    const saved = clearActive(commitAttempt(emptyProgress(), finish('valley')))
+    expect(saved.active).toBeNull()
+    expect(saved.best?.route).toBe('valley')
+  })
 })
