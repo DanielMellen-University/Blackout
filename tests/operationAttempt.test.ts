@@ -39,4 +39,8 @@ describe('operation attempt', () => {
     expect(step.attempt.failure).toBe('ground')
     expect(chooseRoute(step.attempt, 'valley').ok).toBe(false)
   })
+
+  it('rejects a route choice before ingress is complete', () => {
+    expect(chooseRoute(createAttempt(42), 'valley')).toMatchObject({ ok: false, reason: 'route-not-open' })
+  })
 })
