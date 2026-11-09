@@ -62,4 +62,13 @@ describe('operation flight harness', () => {
     expect(loaded?.replay?.energy).toBe('conserve')
     expect(replayOperation(loaded!.replay!).attempt.score).toBe(measured.score)
   })
+
+  it('restores the world seed and terrain profile', () => {
+    setWorldSeed(99)
+    setTerrainProfile(marker)
+    flyOperation(42, 'valley', 'conserve')
+    expect(getWorldSeed()).toBeCloseTo(99, 6)
+    expect(getTerrainProfile()).toEqual(marker)
+    setTerrainProfile(null)
+  })
 })
