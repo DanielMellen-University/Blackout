@@ -17,4 +17,13 @@ describe('operation identity', () => {
     expect(OPERATION_STAGE_COUNT).toBe(3)
     expect([...OPERATION_STAGES]).toEqual(['ingress', 'transit', 'egress'])
   })
+
+  it('walks stages in order and stops after egress', () => {
+    expect(stageIndex('ingress')).toBe(0)
+    expect(stageIndex('transit')).toBe(1)
+    expect(stageIndex('egress')).toBe(2)
+    expect(nextStage('ingress')).toBe('transit')
+    expect(nextStage('transit')).toBe('egress')
+    expect(nextStage('egress')).toBeNull()
+  })
 })
