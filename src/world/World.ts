@@ -187,6 +187,17 @@ export class World {
   private missionProfile: MissionRouteProfile | undefined
   /** Authored weather stays fixed against manual N-cycle changes. */
   private weatherLocked = false
+  private operationCourse: {
+    runway: boolean
+    mission: boolean
+    weather: WeatherId
+    timeOfDay: number
+    timeLocked: boolean
+    weatherLocked: boolean
+    automatic: boolean
+    weatherTime: number
+    wind: number | null
+  } | null = null
   /** Front routes keep manual cycling locked while their automatic blend runs. */
   private weatherCycleLockedValue = false
   private appliedWeather: WeatherEffectState | null = null
@@ -685,6 +696,57 @@ export class World {
     if (this.disposed) return this.atmosphere.weather
     if (this.weatherCycleLockedValue) return this.atmosphere.weather
     return this.atmosphere.cycleWeather()
+  }
+
+  /**
+   * Show the operation corridor instead of the title airfield.
+   * The caller has already switched the shared terrain profile.
+   * A second call does not clear tiles that are already streaming.
+   */
+  presentOperationCourse(x: number, z: number): void {
+    if (this.disposed || this.operationCourse) return
+    this.operationCourse = {
+      runway: this.runway.visible,
+      mission: this.mission.root.visible,
+      weather: this.atmosphere.weather,
+      timeOfDay: this.atmosphere.timeOfDay,
+      timeLocked: this.atmosphere.timeOfDayLocked,
+      weatherLocked: this.weatherLocked,
+      automatic: this.atmosphere.weatherAutomatic,
+      weatherTime: this.atmosphere.weatherSimulationTime,
+      wind: this.atmosphere.authoredWindHeading,
+    }
+    this.runway.visible = false
+    this.mission.root.visible = false
+    this.setSettlementsVisible(false)
+    this.setTrafficVisible(false)
+    this.atmosphere.setWeather('clear', true)
+    this.atmosphere.setWeatherLocked(true)
+    this.atmosphere.timeOfDay = 0.48
+    this.atmosphere.setTimeOfDayLocked(true)
+    this.terrain.clearAll()
+    const safeX = Number.isFinite(x) ? x : this.spawn.x
+    const safeZ = Number.isFinite(z) ? z : this.spawn.z
+    this.terrain.update(safeX, safeZ, 1 / 60)
+  }
+
+  /** Put the title airfield back after the operation cockpit closes. */
+  restoreOperationCourse(): void {
+    if (this.disposed || !this.operationCourse) return
+    const saved = this.operationCourse
+    this.operationCourse = null
+    this.runway.visible = saved.runway
+    this.mission.root.visible = saved.mission
+    this.setSettlementsVisible(false)
+    this.setTrafficVisible(false)
+    this.atmosphere.setWeather(saved.weather, true)
+    this.atmosphere.timeOfDay = saved.timeOfDay
+    this.atmosphere.setTimeOfDayLocked(saved.timeLocked)
+    this.atmosphere.setWeatherLocked(saved.weatherLocked)
+    this.atmosphere.setWindHeading(saved.wind)
+    if (saved.automatic && !saved.weatherLocked) this.atmosphere.setAutomaticWeather(true, saved.weatherTime)
+    this.terrain.clearAll()
+    this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
   }
 
   /**

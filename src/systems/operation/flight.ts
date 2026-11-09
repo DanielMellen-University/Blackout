@@ -6,7 +6,7 @@ import { clearOpsPad, getOpsPad, setOpsPad, type OpsPadSnapshot } from '../../wo
 import { chooseEnergy, chooseRoute, createAttempt, recordStage, type AttemptStep, type OperationAttempt } from './attempt'
 import { captureFlightSample } from './capture'
 import type { OperationStageId } from './identity'
-import { OPERATION_DT_SEC } from './layout'
+import { OPERATION_APPROACH_LEAD_M, OPERATION_DT_SEC } from './layout'
 import { pilotForStage, type PilotPose } from './pilot'
 import { clampOperationStick, type OperationStick } from './stick'
 import { buildOperationPlan, stageSpec } from './plan'
@@ -17,7 +17,25 @@ import { OPERATION_TERRAIN } from './terrain'
 
 const MAX_STEPS = 90 * 60
 const START_SPEED_MPS = 150
-const START_LEAD_M = 200
+
+export interface OperationFlightPose {
+  x: number
+  y: number
+  z: number
+  qx: number
+  qy: number
+  qz: number
+  qw: number
+}
+
+interface HeldWorld {
+  seed: number
+  profile: Readonly<TerrainProfile> | null
+  pad: OpsPadSnapshot | null
+}
+
+let presentationSeed: number | null = null
+let heldWorld: HeldWorld | null = null
 
 interface FlightBody {
   aircraft: Aircraft
@@ -79,11 +97,45 @@ function withOperationWorld(seed: number, run: () => void): void {
   }
 }
 
+function applyPresentation(): void {
+  if (presentationSeed === null) return
+  setWorldSeed(presentationSeed)
+  setTerrainProfile(OPERATION_TERRAIN)
+  clearOpsPad()
+}
+
 function restoreWorld(seed: number, profile: Readonly<TerrainProfile> | null, pad: OpsPadSnapshot | null): void {
+  if (presentationSeed !== null) {
+    applyPresentation()
+    return
+  }
   setWorldSeed(seed)
   setTerrainProfile(profile)
   if (pad) setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
   else clearOpsPad()
+}
+
+/**
+ * Keep the operation terrain in place while the 3D scene is showing it.
+ * Passing null puts back the world that was current when the hold began.
+ */
+export function holdOperationPresentation(seed: number | null): void {
+  if (seed !== null) {
+    if (!heldWorld) {
+      heldWorld = { seed: getWorldSeed(), profile: getTerrainProfile(), pad: getOpsPad() }
+    }
+    presentationSeed = normalizeOperationSeed(seed)
+    applyPresentation()
+    return
+  }
+  if (!heldWorld) {
+    presentationSeed = null
+    return
+  }
+  const previous = heldWorld
+  heldWorld = null
+  presentationSeed = null
+  restoreWorld(previous.seed, previous.profile, previous.pad)
 }
 
 /** Start at ingress. The surrounding world seed and pad are put back after every step. */
@@ -99,7 +151,7 @@ export function openOperationFlight(seed: number, maxSteps = MAX_STEPS): Operati
   setTerrainProfile(OPERATION_TERRAIN)
   clearOpsPad()
   try {
-    aircraft.reset({ x: lateral, y: opening.stages[0]!.altitudeM, z: -START_LEAD_M, yaw: 0 })
+    aircraft.reset({ x: lateral, y: opening.stages[0]!.altitudeM, z: -OPERATION_APPROACH_LEAD_M, yaw: 0 })
     aircraft.velocity.set(0, 0, START_SPEED_MPS)
     aircraft.controls.gearDown = false
     aircraft.controls.boost = false
@@ -122,6 +174,23 @@ export function openOperationFlight(seed: number, maxSteps = MAX_STEPS): Operati
     closed: false,
   })
   return flight
+}
+
+/** Live aircraft pose for the 3D scene. Null once the flight is closed. */
+export function operationFlightPose(flight: OperationFlight): OperationFlightPose | null {
+  const body = bodies.get(flight)
+  if (!body || body.closed) return null
+  const position = body.aircraft.position
+  const orientation = body.aircraft.orientation
+  return {
+    x: position.x,
+    y: position.y,
+    z: position.z,
+    qx: orientation.x,
+    qy: orientation.y,
+    qz: orientation.z,
+    qw: orientation.w,
+  }
 }
 
 /** Further steps become no-ops. Samples already recorded stay on the flight. */

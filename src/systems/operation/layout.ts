@@ -6,6 +6,8 @@ export const CORRIDOR_HALF_WIDTH_M = 180
 export const MIN_CLEARANCE_M = 40
 /** Fixed physics step for the harness. Simulated time does not follow the wall clock. */
 export const OPERATION_DT_SEC = 1 / 60
+/** Metres of line shown behind the start, so the first band is already in the cockpit. */
+export const OPERATION_APPROACH_LEAD_M = 200
 
 export function stageStartZ(index: number): number {
   return index * STAGE_LENGTH_M

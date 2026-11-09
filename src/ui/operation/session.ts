@@ -1,13 +1,17 @@
 import { stageThrottle } from '../../systems/operation/bands'
+import type { EnergyChoice, RouteChoice } from '../../systems/operation/choices'
 import {
   chooseOperationEnergy,
   chooseOperationRoute,
   closeOperationFlight,
   openOperationFlight,
+  operationFlightPose,
   operationFlightTranscript,
   stepOperationFlight,
   type OperationFlight,
+  type OperationFlightPose,
 } from '../../systems/operation/flight'
+import type { OperationPhase } from '../../systems/operation/attempt'
 import { OPERATION_STAGES, type OperationStageId } from '../../systems/operation/identity'
 import type { OperationTranscript } from '../../systems/operation/replay'
 import { replayOperation } from '../../systems/operation/replay'
@@ -31,6 +35,14 @@ import { operationResultModel, type OperationResultModel } from './results'
 
 export type OperationPlayStatus = 'idle' | 'flying' | 'choice' | 'results' | 'replay'
 export type OperationControlMode = 'model' | 'stick'
+
+export interface OperationSceneSnapshot {
+  seed: number
+  phase: OperationPhase | OperationPlayStatus
+  route: RouteChoice | null
+  energy: EnergyChoice | null
+  pose: OperationFlightPose | null
+}
 
 function copySamples(flight: OperationFlight): FlightSample[] {
   return OPERATION_STAGES.flatMap(id => flight.samples[id])
@@ -79,6 +91,18 @@ export class OperationSession {
   /** The stage currently being flown, if the aircraft is moving. */
   currentStage(): OperationStageId | null {
     return liveStage(this.flight?.attempt.phase ?? '')
+  }
+
+  /** Pose and plan the 3D scene mirrors. The pose is null once the flight is closed. */
+  snapshot(): OperationSceneSnapshot {
+    const attempt = this.flight?.attempt
+    return {
+      seed: this.seed,
+      phase: attempt?.phase ?? this.status,
+      route: attempt?.route ?? null,
+      energy: attempt?.energy ?? null,
+      pose: this.flight ? operationFlightPose(this.flight) : null,
+    }
   }
 
   /** Power the scripted brief uses for the live stage. Stick mode starts there. */

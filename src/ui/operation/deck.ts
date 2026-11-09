@@ -1,5 +1,4 @@
-import type { OperationSession } from './session'
-import { OperationSession as Session } from './session'
+import { OperationSession as Session, type OperationSceneSnapshot, type OperationSession } from './session'
 import { browserOperationStore } from './store'
 import { operationTracePath } from './trace'
 import { operationStepsPerFrame, operationReplayStepsPerFrame, operationStickStepsPerFrame } from './pace'
@@ -7,6 +6,10 @@ import { OPERATION_PLAY_SEED } from './playSeed'
 import { operationDeckView, type OperationDeckView } from './view'
 import { OperationStickInput } from './stickInput'
 import { OPERATION_DT_SEC } from '../../systems/operation/layout'
+
+export interface OperationSceneFrame extends OperationSceneSnapshot {
+  active: boolean
+}
 
 export interface OperationClock {
   reducedMotion: boolean
@@ -162,6 +165,8 @@ export class OperationDeck {
   private readonly session: OperationSession
   private readonly clock: OperationClock
   private readonly stickInput: OperationStickInput
+  private sceneListener: ((frame: OperationSceneFrame) => void) | null = null
+  private sceneClock = 0
 
   constructor(els: OperationDeckElements, session: OperationSession, clock: OperationClock = defaultClock(), stickInput?: OperationStickInput) {
     this.els = els
@@ -198,8 +203,15 @@ export class OperationDeck {
     })
   }
 
+  /** Tell the 3D scene whenever the stage, the pose or the visibility changes. */
+  bindScene(listener: ((frame: OperationSceneFrame) => void) | null): void {
+    this.sceneListener = listener
+    this.notifyScene()
+  }
+
   open(): void {
     this.armedStage = ''
+    this.markSceneClock()
     this.stickInput.attach()
     this.session.start()
     this.els.root.hidden = false
@@ -210,13 +222,17 @@ export class OperationDeck {
   close(): void {
     this.stickInput.detach()
     this.armedStage = ''
+    this.sceneClock = 0
     this.session.close()
     this.els.root.hidden = true
     this.paintedStatus = ''
+    this.setDeckClass(false, false)
+    this.notifyScene()
   }
 
   flyAgain(): void {
     this.armedStage = ''
+    this.markSceneClock()
     this.stickInput.attach()
     this.session.start()
     this.paint()
@@ -240,8 +256,10 @@ export class OperationDeck {
         this.armedStage = stage
       }
       this.session.setStick(this.stickInput.sample(OPERATION_DT_SEC))
-      this.session.advance(operationStickStepsPerFrame())
-    } else if (this.session.status === 'flying') this.session.advance(operationStepsPerFrame(this.clock.reducedMotion))
+      this.session.advance(this.sceneListener ? this.sceneSteps() : operationStickStepsPerFrame())
+    } else if (this.session.status === 'flying') {
+      this.session.advance(this.sceneListener ? this.sceneSteps() : operationStepsPerFrame(this.clock.reducedMotion))
+    }
     else if (this.session.status === 'replay') this.session.advanceReplay(operationReplayStepsPerFrame(this.clock.reducedMotion))
     this.paint()
     if (this.session.status === 'flying' || this.session.status === 'replay') this.queue()
@@ -260,10 +278,44 @@ export class OperationDeck {
   private paint(): void {
     const view = operationDeckView(this.session)
     paintOperationDeck(this.els, view, operationTracePath(this.session.trace))
+    this.setDeckClass(this.sceneListener !== null && !this.els.root.hidden, view.showResults)
     if (view.showChoices && this.paintedStatus !== 'choice') {
       this.els.choices.querySelector<HTMLElement>('.operation-choice')?.focus()
     }
     this.paintedStatus = this.session.status
+    this.notifyScene()
+  }
+
+  /** Real time while the cockpit is up. A late frame catches up by at most eight steps. */
+  private sceneSteps(): number {
+    const now = typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : 0
+    const elapsed = this.sceneClock > 0 ? Math.max(0, now - this.sceneClock) : 16
+    this.sceneClock = now
+    const steps = Math.round(elapsed / (1000 / 60))
+    if (!Number.isFinite(steps)) return 1
+    return Math.max(1, Math.min(8, steps))
+  }
+
+  private markSceneClock(): void {
+    this.sceneClock = typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : 0
+  }
+
+  private setDeckClass(cockpit: boolean, results: boolean): void {
+    const names = new Set(this.els.root.className.split(/\s+/).filter(Boolean))
+    if (cockpit) names.add('operation-cockpit')
+    else names.delete('operation-cockpit')
+    if (results) names.add('is-results')
+    else names.delete('is-results')
+    this.els.root.className = [...names].join(' ')
+  }
+
+  private notifyScene(): void {
+    if (!this.sceneListener) return
+    const snap = this.session.snapshot()
+    this.sceneListener({
+      active: !this.els.root.hidden && this.session.status !== 'idle',
+      ...snap,
+    })
   }
 }
 

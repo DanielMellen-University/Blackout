@@ -1,6 +1,8 @@
 import { flightStart, announcesLanding } from './systems/AirborneStart'
 import { operationDevRequested } from './systems/operation/devFlag'
+import { OperationCockpit } from './ui/operation/cockpit'
 import { operationLaunchItem } from './ui/operation/launch'
+import type { OperationDeck } from './ui/operation/deck'
 import { sampleTerrainSurfaceHeightFast } from './world/terrainSample'
 import { PERFECT_LINE_SEED, PERFECT_LINE_SPEED } from './world/PerfectLine'
 import { FLIGHT_REVISION_TAG, flightRecordId, legacyFlightRecordLabel } from './core/FlightRevision'
@@ -474,8 +476,9 @@ export async function boot(): Promise<void> {
     return snapshot
   }
 
-  let ridgeRelayDeck: { open(): void; close(): void } | null = null
+  let ridgeRelayDeck: OperationDeck | null = null
   let ridgeRelayOpening: Promise<void> | null = null
+  let operationCockpit: OperationCockpit | null = null
   const openRidgeRelay = (): void => {
     if (!operationDevRequested(replayParams?.toString() ?? '')) return
     if (ridgeRelayDeck) {
@@ -490,6 +493,7 @@ export async function boot(): Promise<void> {
       const root = document.getElementById('operation-deck')
       if (!root) return
       ridgeRelayDeck = mountOperationDeck(root)
+      operationCockpit?.attach(ridgeRelayDeck)
       ridgeRelayDeck.open()
     })
     void ridgeRelayOpening
@@ -857,6 +861,7 @@ export async function boot(): Promise<void> {
   // the hero camera stays at the origin until Play is pressed.
   cameras.setMode('chase', aircraft)
   cameras.setTitleFraming(aircraft)
+  operationCockpit = new OperationCockpit(world, aircraft, cameras, titleScreen)
   const audio = new FlightAudio()
   audio.prepare()
   if (titleStatus) titleStatus.textContent = 'PREPARING FLIGHT'
@@ -2750,20 +2755,21 @@ export async function boot(): Promise<void> {
 
     // A hidden tab cannot present a frame. Keep simulation and streaming alive,
     // but avoid submitting camera/debug/render work until the tab is visible.
+    const operationLive = operationCockpit?.pump() === true
     if (shouldRenderFrame(document.hidden, contextLost) && staticRenderDue(
       nowMs,
       lastRenderMs,
-      simLive,
+      simLive || operationLive,
       lastRenderedSimulationLive,
     )) {
       if (renderer.shadowMap.enabled) {
-        shadowUpdateElapsed += Math.max(0, visualDt)
+        shadowUpdateElapsed += Math.max(0, operationLive && visualDt === 0 ? 1 / 60 : visualDt)
         if (shadowUpdateDue(shadowUpdateElapsed, 0, SHADOW_UPDATE_STEP)) {
           renderer.shadowMap.needsUpdate = true
           shadowUpdateElapsed %= SHADOW_UPDATE_STEP
         }
       }
-      cameras.update(aircraft, visualDt)
+      cameras.update(aircraft, operationLive && visualDt === 0 ? 1 / 60 : visualDt)
       const renderStart = debug ? performance.now() : 0
       renderer.render(world.scene, cameras.camera)
       if (debug || flightReview) {
@@ -2784,7 +2790,7 @@ export async function boot(): Promise<void> {
         }
       }
       lastRenderMs = nowMs
-      lastRenderedSimulationLive = simLive
+      lastRenderedSimulationLive = simLive || operationLive
     }
 
     if (!crashCinematic.active && shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {

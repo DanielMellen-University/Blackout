@@ -151,4 +151,37 @@ describe('operation deck', () => {
     expect(root.hidden).toBe(true)
     expect(session.status).toBe('idle')
   })
+
+  it('overlays the stage HUD and flies one step per frame when the cockpit is bound', () => {
+    const root = buildRoot()
+    root.className = 'operation-deck'
+    vi.stubGlobal('Element', TestElement)
+    vi.stubGlobal('HTMLElement', TestElement)
+    vi.stubGlobal('document', {
+      createElement: () => new TestElement(),
+      createElementNS: () => {
+        const path = new TestElement()
+        path.tag = 'path'
+        return path
+      },
+      getElementById: (id: string) => id === 'operation-deck' ? root : null,
+    })
+    const session = new OperationSession(memoryOperationStore(), 42, 0, 'model')
+    const deck = mountOperationDeck(root as unknown as HTMLElement, session, clock)
+    const phases: string[] = []
+    deck.bindScene(frame => phases.push(frame.phase))
+    deck.open()
+    expect(root.className).toContain('operation-deck')
+    expect(root.className).toContain('operation-cockpit')
+    expect(phases.at(-1)).toBe('ingress')
+    expect(session.snapshot().pose?.z).toBeCloseTo(-200)
+    expect(session.trace).toHaveLength(0)
+    deck.tick()
+    expect(session.trace.length).toBeGreaterThan(0)
+    expect(session.trace.length).toBeLessThan(4)
+    deck.close()
+    expect(root.className).not.toContain('operation-cockpit')
+    expect(root.hidden).toBe(true)
+    expect(phases.at(-1)).toBe('idle')
+  })
 })

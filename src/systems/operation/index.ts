@@ -1,7 +1,7 @@
 export { OPERATION_FINISH, OPERATION_ID, OPERATION_LABEL, OPERATION_STAGE_COUNT, OPERATION_STAGES, isOperationStageId, nextStage, stageIndex } from './identity'
 export { normalizeOperationSeed } from './seed'
 export { OPERATION_TERRAIN } from './terrain'
-export { CORRIDOR_HALF_WIDTH_M, GATE_SPACING_M, GATES_PER_STAGE, MIN_CLEARANCE_M, OPERATION_DT_SEC, STAGE_LENGTH_M, stageEndZ, stageStartZ } from './layout'
+export { CORRIDOR_HALF_WIDTH_M, GATE_SPACING_M, GATES_PER_STAGE, MIN_CLEARANCE_M, OPERATION_APPROACH_LEAD_M, OPERATION_DT_SEC, STAGE_LENGTH_M, stageEndZ, stageStartZ } from './layout'
 export { ENERGY_CHOICES, ROUTE_CHOICES, isEnergyChoice, isRouteChoice, operationPathKey } from './choices'
 export type { EnergyChoice, RouteChoice } from './choices'
 export { stageAllowance, stageAltitude, stageBoost, stageFuelBudget, stageSpeedBand, stageThrottle, stageWeights } from './bands'
@@ -39,8 +39,12 @@ export {
   chooseOperationEnergy,
   chooseOperationRoute,
   closeOperationFlight,
+  holdOperationPresentation,
   openOperationFlight,
+  operationFlightPose,
   operationFlightTranscript,
   stepOperationFlight,
 } from './flight'
-export type { OperationFlight } from './flight'
+export type { OperationFlight, OperationFlightPose } from './flight'
+export { OperationCourseMarkers, operationMarkerLayout } from './markers'
+export type { OperationMarkerBand, OperationMarkerGate, OperationMarkerKind, OperationMarkerLayout } from './markers'
