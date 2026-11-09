@@ -189,4 +189,11 @@ describe('operation flight', () => {
     expect(flight.attempt.phase).toBe('complete')
   })
 
+  it('matches the ridge then commit harness flight', () => {
+    const measured = flyOperation(42, 'ridge', 'commit')
+    const flight = flyChoices('ridge', 'commit')
+    expect(flight.attempt.score).toBe(measured.score)
+    expect(flight.samples.transit.some(sample => sample.clearance > 160)).toBe(true)
+  })
+
 })
