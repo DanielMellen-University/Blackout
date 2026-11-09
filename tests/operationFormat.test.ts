@@ -101,4 +101,8 @@ describe('operation formatting', () => {
     expect(operationReplayStepsPerFrame(false)).toBe(20)
   })
 
+  it('uses a long step when motion is reduced', () => {
+    expect(operationStepsPerFrame(true)).toBe(480)
+    expect(operationReplayStepsPerFrame(true)).toBe(240)
+  })
 })
