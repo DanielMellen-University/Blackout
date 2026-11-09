@@ -44,4 +44,12 @@ describe('operation replay cues', () => {
     expect(hud.brief.toLowerCase()).not.toContain('land')
   })
 
+  it('shows egress with the energy choice already made', () => {
+    const stored = transcript()
+    const cue = { kind: 'sample' as const, stage: 'egress' as const, sample: stored.samples.egress[0]! }
+    const hud = operationReplayHud(stored, cue, cue.sample)
+    expect(hud.stageLabel).toContain('commit')
+    expect(hud.decisions).toEqual([])
+    expect(hud.speedLabel.endsWith('m/s')).toBe(true)
+  })
 })
