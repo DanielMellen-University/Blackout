@@ -77,4 +77,21 @@ describe('operation session', () => {
     expect(session.result?.bestLabel.startsWith('New best')).toBe(true)
   })
 
+  it('replays the saved transcript to the same score without changing the best', () => {
+    const store = memoryOperationStore()
+    const session = new OperationSession(store, 42, 0)
+    finish(session, 'valley', 'commit')
+    const score = session.result?.scoreLabel
+    const best = session.result?.bestLabel
+    expect(session.replay()).toBe(true)
+    expect(session.status).toBe('replay')
+    expect(session.hud?.scoreLabel).toBe('Replay')
+    for (let n = 0; n < 500 && session.status === 'replay'; n += 1) session.advanceReplay(10_000)
+    expect(session.status).toBe('results')
+    expect(session.result?.scoreLabel).toBe(score)
+    expect(session.result?.bestLabel).toBe(best)
+    const saved = JSON.parse(store.snapshot() ?? '{}') as { replay: Parameters<typeof replayOperation>[0] }
+    expect(replayOperation(saved.replay).attempt.score.toLocaleString('en-US')).toBe(score)
+  })
+
 })
