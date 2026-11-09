@@ -21,4 +21,8 @@ describe('operation layout', () => {
     expect(stageEndZ(1)).toBe(stageStartZ(2))
     expect(stageEndZ(2)).toBe(7200)
   })
+
+  it('steps the harness at a fixed 60 Hz', () => {
+    expect(OPERATION_DT_SEC).toBeCloseTo(1 / 60, 12)
+  })
 })
