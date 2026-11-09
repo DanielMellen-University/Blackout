@@ -46,4 +46,10 @@ describe('operation save', () => {
     expect(OPERATION_SAVE_VERSION).toBe(1)
     expect(OPERATION_STORAGE_KEY).toBe('blackout.operation.ridge-relay')
   })
+
+  it('round-trips an empty progress document', () => {
+    expect(parseProgress(serializeProgress(emptyProgress()))).toEqual(emptyProgress())
+    expect(parseProgress(null)).toEqual(emptyProgress())
+    expect(parseProgress('')).toEqual(emptyProgress())
+  })
 })
