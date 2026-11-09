@@ -93,4 +93,15 @@ describe('operation results', () => {
     expect(result.bestLabel).toBe('Best 44,097')
   })
 
+  it('withholds a medal and a replay when the run stops', () => {
+    const attempt = { ...createAttempt(42), phase: 'failed' as const, score: 10 }
+    const result = operationResultModel(attempt, best(30_550), best(30_550), false)
+    expect(result.medalLabel).toBe('No medal')
+    expect(result.canReplay).toBe(false)
+    expect(result.title).toBe('Ridge relay stopped')
+    expect(result.pathLabel).toBe('Unfinished')
+    expect(result.bestLabel).toBe('Best 30,550')
+    expect(`${result.title} ${result.summary} ${result.pathLabel}`.toLowerCase()).not.toContain('land')
+  })
+
 })
