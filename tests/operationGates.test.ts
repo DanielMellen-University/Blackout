@@ -1,0 +1,17 @@
+import { describe, expect, it } from 'vitest'
+import { buildStageGates, lateralForSeed } from '../src/systems/operation/gates'
+import { STAGE_LENGTH_M } from '../src/systems/operation/layout'
+
+describe('operation gates', () => {
+  it('places three gates facing down-track', () => {
+    const gates = buildStageGates(0, 400, 50)
+    expect(gates).toHaveLength(3)
+    expect(gates.map(gate => gate.z)).toEqual([800, 1600, 2400])
+    for (const gate of gates) {
+      expect(gate.fwdX).toBe(0)
+      expect(gate.fwdZ).toBe(1)
+      expect(gate.x).toBe(50)
+      expect(gate.y).toBe(400)
+    }
+  })
+})
