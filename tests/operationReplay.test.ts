@@ -52,4 +52,10 @@ describe('operation replay', () => {
     expect(replayOperation(tampered).attempt.phase).toBe('failed')
     expect(replayOperation(tampered).attempt.score).not.toBe(original)
   })
+
+  it('rejects a transcript for a different operation', () => {
+    const transcript = createTranscript(42, 'valley', 'commit', samples())!
+    const foreign = { ...transcript, id: 'other' as typeof transcript.id }
+    expect(replayOperation(foreign)).toMatchObject({ ok: false, reason: 'wrong-operation' })
+  })
 })
