@@ -89,4 +89,11 @@ describe('operation flight', () => {
     expect(flight.attempt.phase).toBe('ingress')
   })
 
+  it('rejects an unknown route', () => {
+    const flight = open()
+    stepOperationFlight(flight, 100_000)
+    expect(chooseOperationRoute(flight, 'coast').ok).toBe(false)
+    expect(flight.attempt.route).toBeNull()
+  })
+
 })
