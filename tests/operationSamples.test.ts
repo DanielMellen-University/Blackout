@@ -28,4 +28,8 @@ describe('operation samples', () => {
     expect(stats?.minAltitudeM).toBe(300)
     expect(stats?.endZ).toBe(400)
   })
+
+  it('returns null for a single sample', () => {
+    expect(sampleStats([sample()], 0)).toBeNull()
+  })
 })
