@@ -140,4 +140,13 @@ describe('operation flight', () => {
     expect(flight.attempt.phase).toBe('egress')
   })
 
+  it('enters egress after commit', () => {
+    const flight = open()
+    stepOperationFlight(flight, 100_000)
+    chooseOperationRoute(flight, 'ridge')
+    stepOperationFlight(flight, 100_000)
+    expect(chooseOperationEnergy(flight, 'commit').ok).toBe(true)
+    expect(flight.attempt.energy).toBe('commit')
+  })
+
 })
