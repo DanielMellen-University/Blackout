@@ -20,4 +20,13 @@ describe('operation stage HUD', () => {
     expect(hud.airborneLabel).toBe('—')
   })
 
+  it('shows live speed, clearance and leg progress', () => {
+    const hud = operationHudModel(createAttempt(42), sample)
+    expect(hud.speedLabel).toBe('180 m/s')
+    expect(hud.clearanceLabel).toBe('90 m')
+    expect(hud.airborneLabel).toBe('Airborne')
+    expect(hud.progressLabel).toBe(operationLegProgress(createAttempt(42), sample))
+    expect(hud.progressLabel.endsWith('%')).toBe(true)
+  })
+
 })
