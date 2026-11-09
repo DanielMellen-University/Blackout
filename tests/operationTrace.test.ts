@@ -19,4 +19,10 @@ describe('operation trace and pace', () => {
     expect(path.endsWith('632.0 80.0')).toBe(true)
   })
 
+  it('draws a higher altitude further up the view', () => {
+    const path = operationTracePath([sample(0, 100), sample(10, 300)])
+    const ys = [...path.matchAll(/[\d.]+ ([\d.]+)/g)].map(match => Number(match[1]))
+    expect(ys[1]).toBeLessThan(ys[0]!)
+  })
+
 })
