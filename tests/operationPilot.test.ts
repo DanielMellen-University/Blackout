@@ -14,4 +14,8 @@ describe('operation pilot', () => {
   it('raises the nose when the jet is below the band', () => {
     expect(commandPilot({ ...level, altitudeErrorM: 80 }, 0.5, false).pitch).toBeGreaterThan(0)
   })
+
+  it('lowers the nose when the jet is above the band', () => {
+    expect(commandPilot({ ...level, altitudeErrorM: -80 }, 0.5, false).pitch).toBeLessThan(0)
+  })
 })
