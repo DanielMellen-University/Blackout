@@ -68,4 +68,11 @@ describe('operation scoring', () => {
     expect(scored.reason).toBe('complete')
     expect(scored.score).toBeGreaterThan(0)
   })
+
+  it('banks nothing for ground contact', () => {
+    const spec = stageSpec(buildOperationPlan(42, null, null), 'ingress')
+    const scored = scoreStage(spec, line(spec, { airborne: false }))
+    expect(scored.reason).toBe('ground')
+    expect(scored.score).toBe(0)
+  })
 })
