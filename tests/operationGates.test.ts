@@ -19,4 +19,9 @@ describe('operation gates', () => {
     const gates = buildStageGates(2, 300, 0)
     expect(gates[2]?.z).toBe(3 * STAGE_LENGTH_M)
   })
+
+  it('shifts the line with the seed and keeps that shift', () => {
+    expect(lateralForSeed(42)).toBe(lateralForSeed(42))
+    expect(lateralForSeed(42)).not.toBe(lateralForSeed(43))
+  })
 })
