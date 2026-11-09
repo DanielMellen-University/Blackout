@@ -182,4 +182,11 @@ describe('operation flight', () => {
     expect(flight.samples.egress.at(-1)?.speed).toBe(measured.samples.egress.at(-1)?.speed)
   })
 
+  it('matches the ridge then conserve harness flight', () => {
+    const measured = flyOperation(42, 'ridge', 'conserve')
+    const flight = flyChoices('ridge', 'conserve')
+    expect(flight.attempt.score).toBe(measured.score)
+    expect(flight.attempt.phase).toBe('complete')
+  })
+
 })
