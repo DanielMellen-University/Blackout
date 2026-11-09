@@ -139,6 +139,8 @@
             </div>
             <button type="button" id="btn-perfect-line" class="btn-ghost" hidden>Perfect Line (prototype)</button>
             <p id="perfect-line-description" hidden>One canyon, 15 gates, airborne finish. R retries the same line.</p>
+            <button type="button" id="btn-ridge-relay" class="btn-ghost" hidden>Ridge relay</button>
+            <p id="ridge-relay-description" hidden>Three stages in the air. Choose valley or ridge, then conserve or commit.</p>
             <div class="seed-launch">
               <label class="seed-launch-label" for="title-seed-input">Or revisit a world</label>
               <div class="seed-launch-controls">
@@ -152,6 +154,42 @@
       </div>
 
       <div id="perfect-line-status" role="status" hidden></div>
+      <div id="operation-deck" class="operation-deck" role="dialog" aria-modal="true" aria-labelledby="operation-title" hidden>
+        <div class="operation-sheet">
+          <header class="operation-header">
+            <div>
+              <p class="operation-kicker">Flight plan / operation</p>
+              <h2 id="operation-title">Ridge relay</h2>
+            </div>
+            <button type="button" id="operation-close" class="btn-ghost">Close</button>
+          </header>
+          <p id="operation-stage" class="operation-stage"></p>
+          <p id="operation-brief" class="operation-brief"></p>
+          <dl class="operation-telemetry">
+            <div><dt>Speed</dt><dd id="operation-speed">—</dd></div>
+            <div><dt>Clearance</dt><dd id="operation-clearance">—</dd></div>
+            <div><dt>Leg</dt><dd id="operation-progress">—</dd></div>
+            <div><dt>Score</dt><dd id="operation-score">0</dd></div>
+            <div><dt>Best</dt><dd id="operation-best">No best yet</dd></div>
+            <div><dt>State</dt><dd id="operation-airborne">—</dd></div>
+          </dl>
+          <svg id="operation-trace" class="operation-trace" viewBox="0 0 640 160" role="img" aria-label="Stage trace"></svg>
+          <div id="operation-choices" class="operation-choices" hidden></div>
+          <section id="operation-results" class="operation-results" hidden>
+            <h3 id="operation-result-title"></h3>
+            <p id="operation-result-score"></p>
+            <p id="operation-result-medal"></p>
+            <p id="operation-result-path"></p>
+            <p id="operation-result-best"></p>
+            <p id="operation-result-time"></p>
+            <p id="operation-result-summary"></p>
+            <div class="operation-result-actions">
+              <button type="button" id="operation-replay" class="btn-ghost" hidden>Replay</button>
+              <button type="button" id="operation-again" class="btn-ghost">Fly again</button>
+            </div>
+          </section>
+        </div>
+      </div>
       <div id="menu" class="menu" role="dialog" aria-modal="true" aria-labelledby="menu-heading" hidden>
         <div class="menu-backdrop" data-menu-close></div>
         <div class="menu-sheet">
