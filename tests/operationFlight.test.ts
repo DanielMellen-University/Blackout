@@ -175,4 +175,11 @@ describe('operation flight', () => {
     expect(flight.samples).toEqual(measured.samples)
   })
 
+  it('matches the valley then commit harness flight', () => {
+    const measured = flyOperation(42, 'valley', 'commit')
+    const flight = flyChoices('valley', 'commit')
+    expect(flight.attempt.score).toBe(measured.score)
+    expect(flight.samples.egress.at(-1)?.speed).toBe(measured.samples.egress.at(-1)?.speed)
+  })
+
 })
