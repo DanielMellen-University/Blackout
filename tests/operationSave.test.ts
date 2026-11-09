@@ -122,4 +122,12 @@ describe('operation save', () => {
     expect(loadProgress(store)).toBeNull()
     expect(writeProgress(store, emptyProgress())).toBe(false)
   })
+
+  it('keeps an in-progress attempt without writing history', () => {
+    const attempt = recordStage(createAttempt(9), line('ingress', null, null)).attempt
+    const saved = commitAttempt(emptyProgress(), attempt)
+    expect(saved.active?.phase).toBe('route-choice')
+    expect(saved.history).toHaveLength(0)
+    expect(saved.best).toBeNull()
+  })
 })
