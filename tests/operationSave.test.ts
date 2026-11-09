@@ -81,4 +81,12 @@ describe('operation save', () => {
     expect(saved.best?.score).toBe(attempt.score)
     expect(saved.history).toHaveLength(2)
   })
+
+  it('does not store a failed run as a best result', () => {
+    const failed = recordStage(createAttempt(42), line('ingress', null, null).map(sample => ({ ...sample, airborne: false }))).attempt
+    const saved = commitAttempt(emptyProgress(), failed)
+    expect(saved.best).toBeNull()
+    expect(saved.history).toHaveLength(0)
+    expect(saved.active?.phase).toBe('failed')
+  })
 })
