@@ -77,4 +77,9 @@ describe('operation results', () => {
     expect(result.bestLabel).toBe('Best 30,550')
   })
 
+  it('calls a higher finish a new best', () => {
+    const result = operationResultModel(finished(48_516), best(48_516), best(30_550), true)
+    expect(result.bestLabel).toBe('New best 48,516')
+  })
+
 })
