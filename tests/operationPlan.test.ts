@@ -1,0 +1,13 @@
+import { describe, expect, it } from 'vitest'
+import { buildOperationPlan, stageSpec } from '../src/systems/operation/plan'
+import { OPERATION_FINISH, OPERATION_STAGES } from '../src/systems/operation/identity'
+
+describe('operation plan', () => {
+  it('builds exactly three airborne stages', () => {
+    const plan = buildOperationPlan(42, null, null)
+    expect(plan.finish).toBe(OPERATION_FINISH)
+    expect(plan.stages.map(stage => stage.id)).toEqual([...OPERATION_STAGES])
+    expect(plan.stages).toHaveLength(3)
+    for (const stage of plan.stages) expect(stage.gates).toHaveLength(3)
+  })
+})
