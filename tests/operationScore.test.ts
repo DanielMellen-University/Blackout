@@ -107,4 +107,13 @@ describe('operation scoring', () => {
     expect(decisionBonus('ridge', null, low, undefined)).toBe(0)
     expect(decisionBonus('valley', null, result({ passed: false }), undefined)).toBe(0)
   })
+
+  it('pays the commit bonus only when egress actually carried speed', () => {
+    const fast = result({ id: 'egress', peakSpeedMps: COMMIT_SPEED_MPS })
+    const slow = result({ id: 'egress', peakSpeedMps: COMMIT_SPEED_MPS - 1 })
+    expect(decisionBonus(null, 'commit', undefined, fast)).toBe(COMMIT_BONUS)
+    expect(decisionBonus(null, 'commit', undefined, slow)).toBe(0)
+    expect(decisionBonus(null, 'conserve', undefined, fast)).toBe(0)
+    expect(decisionBonus('valley', 'commit', result({ minClearanceM: 100 }), fast)).toBe(VALLEY_BONUS + COMMIT_BONUS)
+  })
 })
