@@ -49,4 +49,13 @@ describe('operation session', () => {
     expect(session.hud?.stageLabel).toContain('ingress')
   })
 
+  it('ignores an unknown decision', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 0)
+    session.start()
+    session.advance(100_000)
+    session.choose('coast')
+    expect(session.status).toBe('choice')
+    expect(session.hud?.prompt).toBe('Valley or ridge')
+  })
+
 })
