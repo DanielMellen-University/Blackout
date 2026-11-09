@@ -79,4 +79,8 @@ describe('operation formatting', () => {
     expect(operationLegProgress(createAttempt(42), sample(-200))).toBe('0%')
   })
 
+  it('fills leg progress at the end of ingress', () => {
+    expect(operationLegProgress(createAttempt(42), sample(2400))).toBe('100%')
+  })
+
 })
