@@ -1,4 +1,6 @@
 import { flightStart, announcesLanding } from './systems/AirborneStart'
+import { operationDevRequested } from './systems/operation/devFlag'
+import { operationLaunchItem } from './ui/operation/launch'
 import { sampleTerrainSurfaceHeightFast } from './world/terrainSample'
 import { PERFECT_LINE_SEED, PERFECT_LINE_SPEED } from './world/PerfectLine'
 import { FLIGHT_REVISION_TAG, flightRecordId, legacyFlightRecordLabel } from './core/FlightRevision'
@@ -472,6 +474,27 @@ export async function boot(): Promise<void> {
     return snapshot
   }
 
+  let ridgeRelayDeck: { open(): void; close(): void } | null = null
+  let ridgeRelayOpening: Promise<void> | null = null
+  const openRidgeRelay = (): void => {
+    if (!operationDevRequested(replayParams?.toString() ?? '')) return
+    if (ridgeRelayDeck) {
+      ridgeRelayDeck.open()
+      return
+    }
+    ridgeRelayOpening ??= import('./ui/operation/deck').then(({ mountOperationDeck }) => {
+      if (ridgeRelayDeck) {
+        ridgeRelayDeck.open()
+        return
+      }
+      const root = document.getElementById('operation-deck')
+      if (!root) return
+      ridgeRelayDeck = mountOperationDeck(root)
+      ridgeRelayDeck.open()
+    })
+    void ridgeRelayOpening
+  }
+
   const refreshCourseSelectorLabels = (): void => {
     const items = COURSE_LIBRARY.map((course) => {
       const opsTimestamp = courseSession.timestampFor(course.id)
@@ -560,9 +583,16 @@ export async function boot(): Promise<void> {
     if (perfectLineButton) perfectLineButton.hidden = !perfectLineItem
     const perfectLineDescription = document.getElementById('perfect-line-description')
     if (perfectLineDescription) perfectLineDescription.hidden = !perfectLineItem
+    const ridgeRelayButton = document.getElementById('btn-ridge-relay')
+    const ridgeRelayItem = operationLaunchItem(() => ridgeRelayButton?.click(), replayParams?.toString() ?? '')
+    if (ridgeRelayButton) ridgeRelayButton.hidden = !ridgeRelayItem
+    const ridgeRelayDescription = document.getElementById('ridge-relay-description')
+    if (ridgeRelayDescription) ridgeRelayDescription.hidden = !ridgeRelayItem
     for (const picker of coursePickers) {
-      picker.setItems(picker === coursePickers[0] && perfectLineButton && perfectLineItem
-        ? [...items, perfectLineItem] : items, selectedCourseId)
+      const extras = picker === coursePickers[0]
+        ? [perfectLineItem, ridgeRelayItem].filter(item => item != null)
+        : []
+      picker.setItems(extras.length > 0 ? [...items, ...extras] : items, selectedCourseId)
     }
   }
   const rememberRecentCourse = (id: CourseId): void => {
@@ -1783,6 +1813,9 @@ export async function boot(): Promise<void> {
     syncInputContext()
   }
 
+  uiListeners.add(document.getElementById('btn-ridge-relay'), 'click', () => {
+    openRidgeRelay()
+  })
   uiListeners.add(document.getElementById('btn-perfect-line'), 'click', () => {
     if (replayParams?.get('dev') !== 'perfect-line') return
     perfectLineActive = true
@@ -1899,6 +1932,14 @@ export async function boot(): Promise<void> {
 
   const onGlobalKeyDown = (e: KeyboardEvent): void => {
     if (nativeSelectOwnsEscape(e)) return
+    if (document.getElementById('operation-deck')?.hidden === false) {
+      if (e.code === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        ridgeRelayDeck?.close()
+      }
+      return
+    }
     if (coursePickerOwnsGlobalKey(e)) return
     if (e.code === 'Escape') {
       e.preventDefault()
