@@ -104,4 +104,9 @@ describe('operation results', () => {
     expect(`${result.title} ${result.summary} ${result.pathLabel}`.toLowerCase()).not.toContain('land')
   })
 
+  it('offers replay only when a transcript was stored', () => {
+    expect(operationResultModel(finished(48_516), null, null, true).canReplay).toBe(true)
+    expect(operationResultModel(finished(48_516), null, null, false).canReplay).toBe(false)
+  })
+
 })
