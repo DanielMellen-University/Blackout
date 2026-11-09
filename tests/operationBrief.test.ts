@@ -9,4 +9,10 @@ describe('operation brief', () => {
     expect(text).toContain('finish in the air')
     expect(text.toLowerCase()).not.toContain('land')
   })
+
+  it('asks for the route decision before transit', () => {
+    const text = operationBrief(buildOperationPlan(42, null, null), 'route-choice')
+    expect(text).toContain('valley or ridge')
+    expect(text).toContain('stage 2 of 3')
+  })
 })
