@@ -54,4 +54,20 @@ describe('operation attempt', () => {
     const chosen = chooseRoute(ready, 'valley').attempt
     expect(chooseRoute(chosen, 'ridge').ok).toBe(false)
   })
+
+  it('runs all three stages and banks the decision bonuses', () => {
+    let attempt = createAttempt(42)
+    attempt = recordStage(attempt, line(42, null, null, 'ingress')).attempt
+    attempt = chooseRoute(attempt, 'valley').attempt
+    attempt = recordStage(attempt, line(42, 'valley', null, 'transit')).attempt
+    expect(attempt.phase).toBe('energy-choice')
+    attempt = chooseEnergy(attempt, 'commit').attempt
+    const beforeEgress = attempt.score
+    attempt = recordStage(attempt, line(42, 'valley', 'commit', 'egress')).attempt
+    expect(attempt.phase).toBe('complete')
+    expect(attempt.score).toBeGreaterThan(beforeEgress)
+    expect(attempt.failure).toBeNull()
+    const stageSum = (attempt.stages.ingress?.score ?? 0) + (attempt.stages.transit?.score ?? 0) + (attempt.stages.egress?.score ?? 0)
+    expect(attempt.score).toBeGreaterThan(stageSum)
+  })
 })
