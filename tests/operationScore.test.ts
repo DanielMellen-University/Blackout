@@ -85,4 +85,10 @@ describe('operation scoring', () => {
     const spec = stageSpec(buildOperationPlan(42, null, null), 'ingress')
     expect(scoreStage(spec, line(spec, { x: spec.lateralM + 400 })).reason).toBe('off-corridor')
   })
+
+  it('fails a trace that stops short of the stage end', () => {
+    const spec = stageSpec(buildOperationPlan(42, null, null), 'ingress')
+    const short = line(spec).map(sample => ({ ...sample, z: sample.z * 0.2 }))
+    expect(scoreStage(spec, short).reason).toBe('incomplete')
+  })
 })
