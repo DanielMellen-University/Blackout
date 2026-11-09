@@ -63,4 +63,8 @@ describe('operation formatting', () => {
     expect(operationChoiceLabel('conserve')).toBe('Conserve')
   })
 
+  it('names commit', () => {
+    expect(operationChoiceLabel('commit')).toBe('Commit')
+  })
+
 })
