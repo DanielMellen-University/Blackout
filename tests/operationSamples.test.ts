@@ -36,4 +36,13 @@ describe('operation samples', () => {
   it('returns null when time runs backwards', () => {
     expect(sampleStats([sample({ t: 2 }), sample({ t: 1, z: 10 })], 0)).toBeNull()
   })
+
+  it('records ground contact and lateral error', () => {
+    const stats = sampleStats([
+      sample({ airborne: false, x: 30 }),
+      sample({ t: 1, z: 10, airborne: true, x: -10 }),
+    ], 0)
+    expect(stats?.airborne).toBe(false)
+    expect(stats?.maxAbsLateralErrorM).toBe(30)
+  })
 })
