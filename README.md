@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.036**. Previous roadmap chunk: **11.035**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.037**. Previous roadmap chunk: **11.036**.
 
-Recent changes from **11.036**. Waterway workers keep one drainage recipe across profile clones, so repeated near tiles do not rebuild the lake shore and river surfaces. A CPU tile batch is faster on seeds 42, 1337 and 9001; that measurement is not FPS. From **11.035**: `smoothstep` with equal edges is a hard step instead of NaN, and terrain, water and hydrology helpers gain unit tests and doc comments. From **11.034**: River ribbons drop millimetre-wide needle triangles at lake mouths. From **11.033**: Far lakes no longer clip the sun to a flat white blob. From **11.032**: Hydrology sampling culls lakes with an exact bounds box.
+Recent changes from **11.037**. Ridge relay is a three-stage operation: valley or ridge, then conserve or commit, with saved results and replay. A CPU flight on seed 42 scores 48,516 for valley/commit and 30,550 for ridge/conserve; that measurement is not FPS. From **11.036**: Waterway workers keep one drainage recipe across profile clones. From **11.035**: `smoothstep` with equal edges is a hard step instead of NaN, and terrain, water and hydrology helpers gain unit tests and doc comments. From **11.034**: River ribbons drop millimetre-wide needle triangles at lake mouths. From **11.033**: Far lakes no longer clip the sun to a flat white blob. From **11.032**: Hydrology sampling culls lakes with an exact bounds box.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -19,7 +19,7 @@ Open the URL Vite prints. Run `npm test` for the suite and `npm run build` for v
 
 Use Node 22, the version CI runs (`.nvmrc` pins it for nvm and fnm). A few hydrology snapshot tests hash generated geometry, and newer Node releases round some math differently, so those hashes can fail locally on Node 24 while CI passes.
 
-Run `npm run perf:terrain -- --seed=42 --samples=16` for a CPU geometry profile that closes on completion. Add `--sliced` to report individual work-step costs. It does not measure FPS; see [streaming performance notes](docs/terrain-streaming-performance.md) for scope and recorded samples.
+Run `npm run perf:terrain -- --seed=42 --samples=16` for a CPU geometry profile that closes on completion. Add `--sliced` to report individual work-step costs. It does not measure FPS; see [streaming performance notes](docs/terrain-streaming-performance.md) for scope and recorded samples. Run `npm run perf:operation` to remeasure the ridge relay. That records simulated flight time, not FPS.
 
 ## Fly
 
