@@ -35,4 +35,12 @@ describe('operation flight harness', () => {
     expect(commitEgress.elapsedSec).toBeLessThan(conserveEgress.elapsedSec)
     expect(commit.score).not.toBe(conserve.score)
   })
+
+  it('repeats a path with the same score and stage times', () => {
+    const first = flyOperation(42, 'ridge', 'commit')
+    const second = flyOperation(42, 'ridge', 'commit')
+    expect(second.score).toBe(first.score)
+    expect(second.stages.map(stage => stage.steps)).toEqual(first.stages.map(stage => stage.steps))
+    expect(second.stages.map(stage => stage.peakSpeedMps)).toEqual(first.stages.map(stage => stage.peakSpeedMps))
+  })
 })
