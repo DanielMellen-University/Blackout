@@ -35,4 +35,13 @@ describe('operation stage HUD', () => {
     expect(hud.brief.toLowerCase()).not.toContain('land')
   })
 
+  it('offers valley and ridge after ingress', () => {
+    const attempt = { ...createAttempt(42), phase: 'route-choice' as const }
+    const hud = operationHudModel(attempt, sample)
+    expect(hud.decisions).toEqual(['valley', 'ridge'])
+    expect(hud.prompt).toBe('Valley or ridge')
+    expect(hud.stageLabel).toContain('Stage 2 of 3')
+    expect(hud.brief).toContain('valley or ridge')
+  })
+
 })
