@@ -89,4 +89,10 @@ describe('operation save', () => {
     expect(saved.history).toHaveLength(0)
     expect(saved.active?.phase).toBe('failed')
   })
+
+  it('caps remembered finishes', () => {
+    let progress = emptyProgress()
+    for (let index = 0; index < OPERATION_HISTORY_LIMIT + 3; index += 1) progress = commitAttempt(progress, finish('valley'))
+    expect(progress.history).toHaveLength(OPERATION_HISTORY_LIMIT)
+  })
 })
