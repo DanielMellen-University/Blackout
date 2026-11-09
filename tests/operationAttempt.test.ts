@@ -24,4 +24,12 @@ describe('operation attempt', () => {
     expect(attempt.energy).toBeNull()
     expect(attempt.score).toBe(0)
   })
+
+  it('moves from ingress to the route choice after a pass', () => {
+    const started = createAttempt(42)
+    const step = recordStage(started, line(42, null, null, 'ingress'))
+    expect(step.ok).toBe(true)
+    expect(step.attempt.phase).toBe('route-choice')
+    expect(step.attempt.stages.ingress?.passed).toBe(true)
+  })
 })
