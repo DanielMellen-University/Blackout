@@ -51,4 +51,13 @@ describe('operation stage HUD', () => {
     expect(hud.decisions).toEqual([])
   })
 
+  it('offers conserve and commit after transit', () => {
+    const attempt = { ...createAttempt(42), phase: 'energy-choice' as const, route: 'ridge' as const }
+    const hud = operationHudModel(attempt, sample)
+    expect(hud.decisions).toEqual(['conserve', 'commit'])
+    expect(hud.prompt).toBe('Conserve or commit')
+    expect(hud.stageLabel).toContain('Stage 3 of 3')
+    expect(hud.brief).toContain('conserve or commit')
+  })
+
 })
