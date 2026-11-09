@@ -72,4 +72,9 @@ describe('operation results', () => {
     expect(result.timeLabel).toBe('30.0 s')
   })
 
+  it('calls the first finish the best', () => {
+    const result = operationResultModel(finished(30_550), best(30_550), null, true)
+    expect(result.bestLabel).toBe('Best 30,550')
+  })
+
 })
