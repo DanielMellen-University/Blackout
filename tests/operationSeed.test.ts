@@ -5,4 +5,8 @@ describe('operation seed', () => {
   it('keeps a finite positive seed', () => {
     expect(normalizeOperationSeed(42)).toBe(42)
   })
+
+  it('replays the same seed', () => {
+    expect(normalizeOperationSeed(1337)).toBe(normalizeOperationSeed(1337))
+  })
 })
