@@ -96,4 +96,9 @@ describe('operation formatting', () => {
     expect(hud.stageLabel).toContain('Complete')
   })
 
+  it('uses a short step while motion is on', () => {
+    expect(operationStepsPerFrame(false)).toBe(8)
+    expect(operationReplayStepsPerFrame(false)).toBe(20)
+  })
+
 })
