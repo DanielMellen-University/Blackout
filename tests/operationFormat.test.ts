@@ -59,4 +59,8 @@ describe('operation formatting', () => {
     expect(operationChoiceLabel('ridge')).toBe('Ridge')
   })
 
+  it('names conserve', () => {
+    expect(operationChoiceLabel('conserve')).toBe('Conserve')
+  })
+
 })
