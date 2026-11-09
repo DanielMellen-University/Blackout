@@ -44,4 +44,11 @@ describe('operation stage HUD', () => {
     expect(hud.brief).toContain('valley or ridge')
   })
 
+  it('names the chosen route during transit', () => {
+    const attempt = { ...createAttempt(42), phase: 'transit' as const, route: 'valley' as const }
+    const hud = operationHudModel(attempt, sample)
+    expect(hud.stageLabel).toContain('valley')
+    expect(hud.decisions).toEqual([])
+  })
+
 })
