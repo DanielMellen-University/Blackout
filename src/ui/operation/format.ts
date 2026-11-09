@@ -1,4 +1,7 @@
 import type { OperationMedal } from '../../systems/operation/medal'
+import type { OperationStageId } from '../../systems/operation/identity'
+import type { StageResult } from '../../systems/operation/score'
+import type { OperationStick } from '../../systems/operation/stick'
 
 /** Grouped score for the stage HUD and the results screen. */
 export function formatOperationScore(score: number): string {
@@ -33,4 +36,27 @@ export function operationChoiceLabel(choice: string): string {
   if (choice === 'conserve') return 'Conserve'
   if (choice === 'commit') return 'Commit'
   return ''
+}
+
+function axis(value: number): string {
+  return (Number.isFinite(value) ? value : 0).toFixed(2)
+}
+
+/** Live stick, rudder and the keys that move them. */
+export function formatOperationStick(stick: OperationStick): string {
+  const power = Number.isFinite(stick.throttle) ? Math.round(Math.max(0, Math.min(1, stick.throttle)) * 100) : 0
+  return `You fly · pitch ${axis(stick.pitch)} · roll ${axis(stick.roll)} · rudder ${axis(stick.yaw)} · power ${power}% · W/S pitch · A/D roll · Q/E rudder · Shift power · Space nitro`
+}
+
+function whole(value: number | undefined): string {
+  return Number.isFinite(value) ? `${Math.round(value!)}` : '0'
+}
+
+/** One stage on the results screen: score plus the measured flight. */
+export function formatStageLine(id: OperationStageId, stage: StageResult): string {
+  const name = id.charAt(0).toUpperCase() + id.slice(1)
+  const verdict = stage.passed ? formatOperationScore(stage.score) : stage.reason
+  const fuel = Number.isFinite(stage.fuelUsed) ? stage.fuelUsed.toFixed(1) : '0.0'
+  const nitro = Number.isFinite(stage.nitroUsed) ? `${Math.round(stage.nitroUsed * 100)}%` : '0%'
+  return `${name} ${verdict} · ${Number.isFinite(stage.elapsedSec) ? stage.elapsedSec.toFixed(1) : '0.0'} s · path ${whole(stage.pathDeviationM)} m · alt ${whole(stage.altitudeErrorM)} m · ${whole(stage.meanSpeedMps)} m/s · fuel ${fuel} · nitro ${nitro}`
 }

@@ -2890,6 +2890,8 @@ body,
 .operation-telemetry div { padding: 10px 12px; border: 1px solid rgba(var(--accent-rgb), 0.28); border-radius: 10px; }
 .operation-telemetry dt { color: var(--ink-mute); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
 .operation-telemetry dd { margin: 4px 0 0; font-family: var(--mono); font-size: 18px; }
+.operation-controls { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 10px; }
+.operation-stick, .operation-guide { margin: 0 0 8px; color: var(--ink); font-family: var(--mono); font-size: 13px; line-height: 1.45; }
 .operation-trace { display: block; width: 100%; height: 140px; margin-bottom: 16px; color: var(--amber); background: rgba(var(--accent-rgb), 0.06); border-radius: 10px; }
 .operation-choices { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
 .operation-choices[hidden] { display: none; }
@@ -2913,6 +2915,16 @@ body,
 #operation-result-medal[data-medal="silver"],
 #operation-result-medal[data-medal="bronze"] { color: var(--amber); font-family: var(--mono); letter-spacing: .12em; text-transform: uppercase; }
 .operation-result-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.operation-stage-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.operation-stage-list li {
+  padding: 8px 10px;
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
+  border-radius: 10px;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.45;
+}
 @media (max-width: 640px) {
   .operation-sheet { padding: 18px; }
   .operation-telemetry { grid-template-columns: repeat(2, minmax(0, 1fr)); }

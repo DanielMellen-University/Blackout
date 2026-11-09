@@ -2,9 +2,11 @@ import type { OperationSession } from './session'
 import { OperationSession as Session } from './session'
 import { browserOperationStore } from './store'
 import { operationTracePath } from './trace'
-import { operationStepsPerFrame, operationReplayStepsPerFrame } from './pace'
+import { operationStepsPerFrame, operationReplayStepsPerFrame, operationStickStepsPerFrame } from './pace'
 import { OPERATION_PLAY_SEED } from './playSeed'
 import { operationDeckView, type OperationDeckView } from './view'
+import { OperationStickInput } from './stickInput'
+import { OPERATION_DT_SEC } from '../../systems/operation/layout'
 
 export interface OperationClock {
   reducedMotion: boolean
@@ -23,6 +25,11 @@ export interface OperationDeckElements {
   best: HTMLElement
   airborne: HTMLElement
   trace: Element
+  controls: HTMLElement
+  modeStick: HTMLButtonElement
+  modeModel: HTMLButtonElement
+  stick: HTMLElement
+  guide: HTMLElement
   choices: HTMLElement
   results: HTMLElement
   resultTitle: HTMLElement
@@ -32,6 +39,7 @@ export interface OperationDeckElements {
   resultBest: HTMLElement
   resultTime: HTMLElement
   resultSummary: HTMLElement
+  resultStages: HTMLElement
   replay: HTMLButtonElement
   again: HTMLButtonElement
   close: HTMLButtonElement
@@ -40,9 +48,10 @@ export interface OperationDeckElements {
 const DECK_IDS = [
   'operation-title', 'operation-stage', 'operation-brief', 'operation-speed', 'operation-clearance',
   'operation-progress', 'operation-score', 'operation-best', 'operation-airborne', 'operation-trace',
+  'operation-controls', 'operation-mode-stick', 'operation-mode-model', 'operation-stick', 'operation-guide',
   'operation-choices', 'operation-results', 'operation-result-title', 'operation-result-score',
   'operation-result-medal', 'operation-result-path', 'operation-result-best', 'operation-result-time',
-  'operation-result-summary', 'operation-replay', 'operation-again', 'operation-close',
+  'operation-result-summary', 'operation-result-stages', 'operation-replay', 'operation-again', 'operation-close',
 ] as const
 
 function must(root: ParentNode, id: string): HTMLElement {
@@ -64,6 +73,11 @@ export function bindOperationDeck(root: HTMLElement): OperationDeckElements {
     best: must(root, 'operation-best'),
     airborne: must(root, 'operation-airborne'),
     trace: must(root, 'operation-trace'),
+    controls: must(root, 'operation-controls'),
+    modeStick: must(root, 'operation-mode-stick') as HTMLButtonElement,
+    modeModel: must(root, 'operation-mode-model') as HTMLButtonElement,
+    stick: must(root, 'operation-stick'),
+    guide: must(root, 'operation-guide'),
     choices: must(root, 'operation-choices'),
     results: must(root, 'operation-results'),
     resultTitle: must(root, 'operation-result-title'),
@@ -73,6 +87,7 @@ export function bindOperationDeck(root: HTMLElement): OperationDeckElements {
     resultBest: must(root, 'operation-result-best'),
     resultTime: must(root, 'operation-result-time'),
     resultSummary: must(root, 'operation-result-summary'),
+    resultStages: must(root, 'operation-result-stages'),
     replay: must(root, 'operation-replay') as HTMLButtonElement,
     again: must(root, 'operation-again') as HTMLButtonElement,
     close: must(root, 'operation-close') as HTMLButtonElement,
@@ -112,6 +127,16 @@ export function paintOperationDeck(els: OperationDeckElements, view: OperationDe
   els.resultBest.textContent = view.resultBest
   els.resultTime.textContent = view.resultTime
   els.resultSummary.textContent = view.resultSummary
+  els.resultStages.replaceChildren(...view.resultStages.map(stage => {
+    const item = document.createElement('li')
+    item.dataset.stage = stage.id
+    item.textContent = stage.text
+    return item
+  }))
+  els.modeStick.setAttribute('aria-pressed', view.controlMode === 'stick' ? 'true' : 'false')
+  els.modeModel.setAttribute('aria-pressed', view.controlMode === 'model' ? 'true' : 'false')
+  els.stick.textContent = view.stickLabel
+  els.guide.textContent = view.guide
   els.replay.hidden = !view.showReplay
   const path = els.trace.querySelector('path')
   if (path) path.setAttribute('d', tracePath)
@@ -132,14 +157,17 @@ function defaultClock(): OperationClock {
 export class OperationDeck {
   private queued = false
   private paintedStatus = ''
+  private armedStage = ''
   private readonly els: OperationDeckElements
   private readonly session: OperationSession
   private readonly clock: OperationClock
+  private readonly stickInput: OperationStickInput
 
-  constructor(els: OperationDeckElements, session: OperationSession, clock: OperationClock = defaultClock()) {
+  constructor(els: OperationDeckElements, session: OperationSession, clock: OperationClock = defaultClock(), stickInput?: OperationStickInput) {
     this.els = els
     this.session = session
     this.clock = clock
+    this.stickInput = stickInput ?? new OperationStickInput(typeof window === 'undefined' ? null : window)
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     path.setAttribute('fill', 'none')
     path.setAttribute('stroke', 'currentColor')
@@ -158,9 +186,21 @@ export class OperationDeck {
       this.paint()
       this.queue()
     })
+    this.els.controls.addEventListener('click', (event) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const button = target.closest<HTMLElement>('[data-mode]')
+      const mode = button?.dataset.mode
+      if (mode !== 'stick' && mode !== 'model') return
+      this.session.setControlMode(mode)
+      this.paint()
+      this.queue()
+    })
   }
 
   open(): void {
+    this.armedStage = ''
+    this.stickInput.attach()
     this.session.start()
     this.els.root.hidden = false
     this.paint()
@@ -168,12 +208,16 @@ export class OperationDeck {
   }
 
   close(): void {
+    this.stickInput.detach()
+    this.armedStage = ''
     this.session.close()
     this.els.root.hidden = true
     this.paintedStatus = ''
   }
 
   flyAgain(): void {
+    this.armedStage = ''
+    this.stickInput.attach()
     this.session.start()
     this.paint()
     this.queue()
@@ -188,7 +232,16 @@ export class OperationDeck {
   /** One animation frame. Tests call this directly. */
   tick(): void {
     if (this.els.root.hidden) return
-    if (this.session.status === 'flying') this.session.advance(operationStepsPerFrame(this.clock.reducedMotion))
+    this.stickInput.setCapture(this.session.status === 'flying' && this.session.controlMode === 'stick')
+    if (this.session.status === 'flying' && this.session.controlMode === 'stick') {
+      const stage = this.session.currentStage()
+      if (stage && stage !== this.armedStage) {
+        this.stickInput.setThrottle(this.session.briefedThrottle())
+        this.armedStage = stage
+      }
+      this.session.setStick(this.stickInput.sample(OPERATION_DT_SEC))
+      this.session.advance(operationStickStepsPerFrame())
+    } else if (this.session.status === 'flying') this.session.advance(operationStepsPerFrame(this.clock.reducedMotion))
     else if (this.session.status === 'replay') this.session.advanceReplay(operationReplayStepsPerFrame(this.clock.reducedMotion))
     this.paint()
     if (this.session.status === 'flying' || this.session.status === 'replay') this.queue()
@@ -216,7 +269,7 @@ export class OperationDeck {
 
 export function mountOperationDeck(
   root: HTMLElement,
-  session = new Session(browserOperationStore(), OPERATION_PLAY_SEED),
+  session = new Session(browserOperationStore(), OPERATION_PLAY_SEED, 36, 'stick'),
   clock?: OperationClock,
 ): OperationDeck {
   return new OperationDeck(bindOperationDeck(root), session, clock)

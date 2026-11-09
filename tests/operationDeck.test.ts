@@ -70,9 +70,10 @@ class TestElement {
 const IDS = [
   'operation-title', 'operation-stage', 'operation-brief', 'operation-speed', 'operation-clearance',
   'operation-progress', 'operation-score', 'operation-best', 'operation-airborne', 'operation-trace',
+  'operation-controls', 'operation-mode-stick', 'operation-mode-model', 'operation-stick', 'operation-guide',
   'operation-choices', 'operation-results', 'operation-result-title', 'operation-result-score',
   'operation-result-medal', 'operation-result-path', 'operation-result-best', 'operation-result-time',
-  'operation-result-summary', 'operation-replay', 'operation-again', 'operation-close',
+  'operation-result-summary', 'operation-result-stages', 'operation-replay', 'operation-again', 'operation-close',
 ]
 
 function buildRoot(): TestElement {
@@ -131,6 +132,11 @@ describe('operation deck', () => {
     expect(root.querySelector('#operation-result-medal')!.textContent).toBe('Gold')
     expect(root.querySelector('#operation-result-medal')!.getAttribute('data-medal')).toBe('gold')
     expect(root.querySelector('#operation-result-path')!.textContent).toBe('Valley then commit')
+    expect(root.querySelector('#operation-result-stages')!.textContent).toContain('Ingress')
+    expect(root.querySelector('#operation-result-stages')!.textContent).toContain('Transit')
+    expect(root.querySelector('#operation-result-stages')!.textContent).toContain('Egress')
+    expect(root.querySelector('#operation-result-stages')!.textContent).toContain('path')
+    expect(root.querySelector('#operation-stick')!.textContent).toBe('The model flew the legs')
     expect(root.querySelector('#operation-result-best')!.textContent).toContain('Best')
     expect(root.querySelector('#operation-replay')!.hidden).toBe(false)
     expect(root.querySelector('#operation-trace')!.querySelector('path')!.getAttribute('d')).toContain('M')

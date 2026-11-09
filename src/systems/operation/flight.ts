@@ -2,11 +2,13 @@ import { Quaternion, Vector3 } from 'three'
 import { Aircraft } from '../../aircraft/Aircraft'
 import { getWorldSeed, setWorldSeed } from '../../world/noise'
 import { getTerrainProfile, setTerrainProfile, type TerrainProfile } from '../../world/TerrainProfile'
-import { clearOpsPad, getOpsPad, sampleTerrainSurfaceHeightFast, setOpsPad, type OpsPadSnapshot } from '../../world/terrainSample'
+import { clearOpsPad, getOpsPad, setOpsPad, type OpsPadSnapshot } from '../../world/terrainSample'
 import { chooseEnergy, chooseRoute, createAttempt, recordStage, type AttemptStep, type OperationAttempt } from './attempt'
+import { captureFlightSample } from './capture'
 import type { OperationStageId } from './identity'
 import { OPERATION_DT_SEC } from './layout'
 import { pilotForStage, type PilotPose } from './pilot'
+import { clampOperationStick, type OperationStick } from './stick'
 import { buildOperationPlan, stageSpec } from './plan'
 import { createTranscript, type OperationTranscript } from './replay'
 import type { FlightSample } from './samples'
@@ -133,7 +135,7 @@ export function closeOperationFlight(flight: OperationFlight): void {
  * Advance the live stage by up to `maxSteps` physics steps.
  * Stops when the stage ends so the caller can ask for the next decision.
  */
-export function stepOperationFlight(flight: OperationFlight, maxSteps = 1): OperationFlight {
+export function stepOperationFlight(flight: OperationFlight, maxSteps = 1, stick?: OperationStick | null): OperationFlight {
   const body = bodies.get(flight)
   if (!body || body.closed) return flight
   const budget = Number.isFinite(maxSteps) ? Math.max(0, Math.floor(maxSteps)) : 0
@@ -149,27 +151,20 @@ export function stepOperationFlight(flight: OperationFlight, maxSteps = 1): Oper
       const plan = buildOperationPlan(flight.seed, flight.attempt.route, flight.attempt.energy)
       const spec = stageSpec(plan, id)
       const aircraft = body.aircraft
-      const command = pilotForStage(id, flight.attempt.route, flight.attempt.energy, poseOf(aircraft, spec.altitudeM, spec.lateralM))
+      const player = stick == null ? null : clampOperationStick(stick)
+      const command = player ?? pilotForStage(id, flight.attempt.route, flight.attempt.energy, poseOf(aircraft, spec.altitudeM, spec.lateralM))
       aircraft.controls.pitch = command.pitch
       aircraft.controls.roll = command.roll
       aircraft.controls.yaw = command.yaw
       aircraft.controls.throttle = command.throttle
       aircraft.controls.boost = command.boost
       aircraft.controls.gearDown = false
-      aircraft.controls.airbrake = false
+      aircraft.controls.airbrake = player?.airbrake === true
+      aircraft.controls.stabilityAssist = player != null
       aircraft.step(OPERATION_DT_SEC, body.time * 1000)
       body.time += OPERATION_DT_SEC
       body.steps += 1
-      const clearance = aircraft.position.y - sampleTerrainSurfaceHeightFast(aircraft.position.x, aircraft.position.z)
-      const sample: FlightSample = {
-        t: body.time,
-        x: aircraft.position.x,
-        y: aircraft.position.y,
-        z: aircraft.position.z,
-        speed: aircraft.speed,
-        clearance,
-        airborne: aircraft.status === 'ok' && !aircraft.onGround,
-      }
+      const sample: FlightSample = captureFlightSample(aircraft, body.time)
       flight.samples[id].push(sample)
       flight.live = sample
       const crossed = aircraft.position.z >= spec.endZ

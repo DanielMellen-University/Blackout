@@ -6,6 +6,10 @@ export interface FlightSample {
   speed: number
   clearance: number
   airborne: boolean
+  /** Fuel still in the tank, 0..100. Absent on a hand-built trace. */
+  fuel?: number
+  /** Nitro still held, 0..1. Absent on a hand-built trace. */
+  nitro?: number
 }
 
 const NUMERIC_KEYS = ['t', 'x', 'y', 'z', 'speed', 'clearance'] as const

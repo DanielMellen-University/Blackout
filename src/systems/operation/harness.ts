@@ -2,7 +2,7 @@ import { Quaternion, Vector3 } from 'three'
 import { Aircraft } from '../../aircraft/Aircraft'
 import { getWorldSeed, setWorldSeed } from '../../world/noise'
 import { getTerrainProfile, setTerrainProfile } from '../../world/TerrainProfile'
-import { clearOpsPad, sampleTerrainSurfaceHeightFast } from '../../world/terrainSample'
+import { clearOpsPad } from '../../world/terrainSample'
 import {
   chooseEnergy,
   chooseRoute,
@@ -10,6 +10,7 @@ import {
   recordStage,
   type OperationAttempt,
 } from './attempt'
+import { captureFlightSample } from './capture'
 import type { EnergyChoice, RouteChoice } from './choices'
 import { OPERATION_STAGES, type OperationStageId } from './identity'
 import { OPERATION_DT_SEC } from './layout'
@@ -33,6 +34,12 @@ export interface MeasuredStage {
   peakSpeedMps: number
   minClearanceM: number
   endAltitudeM: number
+  pathDeviationM: number
+  altitudeErrorM: number
+  meanSpeedMps: number
+  fuelUsed: number
+  nitroUsed: number
+  disciplineScore: number
   steps: number
 }
 
@@ -129,16 +136,7 @@ function flyWithWorld(seed: number, route: RouteChoice, energy: EnergyChoice): M
     aircraft.step(OPERATION_DT_SEC, time * 1000)
     time += OPERATION_DT_SEC
     stageSteps[id] += 1
-    const clearance = aircraft.position.y - sampleTerrainSurfaceHeightFast(aircraft.position.x, aircraft.position.z)
-    samples[id].push({
-      t: time,
-      x: aircraft.position.x,
-      y: aircraft.position.y,
-      z: aircraft.position.z,
-      speed: aircraft.speed,
-      clearance,
-      airborne: aircraft.status === 'ok' && !aircraft.onGround,
-    })
+    samples[id].push(captureFlightSample(aircraft, time))
     const crossed = aircraft.position.z >= spec.endZ
     const stopped = aircraft.status !== 'ok' || aircraft.onGround
     if (!crossed && !stopped) continue
@@ -177,6 +175,12 @@ function flyWithWorld(seed: number, route: RouteChoice, energy: EnergyChoice): M
       peakSpeedMps: result.peakSpeedMps,
       minClearanceM: result.minClearanceM,
       endAltitudeM: result.endAltitudeM,
+      pathDeviationM: result.pathDeviationM,
+      altitudeErrorM: result.altitudeErrorM,
+      meanSpeedMps: result.meanSpeedMps,
+      fuelUsed: result.fuelUsed,
+      nitroUsed: result.nitroUsed,
+      disciplineScore: result.disciplineScore,
       steps: stageSteps[id],
     }]
   })
