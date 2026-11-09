@@ -122,4 +122,13 @@ describe('operation flight', () => {
     expect(flight.attempt.phase).toBe('energy-choice')
   })
 
+  it('rejects an unknown energy choice', () => {
+    const flight = open()
+    stepOperationFlight(flight, 100_000)
+    chooseOperationRoute(flight, 'ridge')
+    stepOperationFlight(flight, 100_000)
+    expect(chooseOperationEnergy(flight, 'boost').ok).toBe(false)
+    expect(flight.attempt.energy).toBeNull()
+  })
+
 })
