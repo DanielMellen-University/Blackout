@@ -31,4 +31,17 @@ describe('operation plan', () => {
     const signatures = paths.map(plan => JSON.stringify(plan.stages.slice(1)))
     expect(new Set(signatures).size).toBe(4)
   })
+
+  it('keeps every gate inside its stage and on the seeded line', () => {
+    const plan = buildOperationPlan(43, 'ridge', 'commit')
+    for (const stage of plan.stages) {
+      for (const gate of stage.gates) {
+        expect(gate.z).toBeGreaterThan(stage.endZ - 2400)
+        expect(gate.z).toBeLessThanOrEqual(stage.endZ)
+        expect(gate.x).toBe(stage.lateralM)
+        expect(gate.y).toBe(stage.altitudeM)
+      }
+    }
+    expect(plan.stages[0]?.lateralM).not.toBe(buildOperationPlan(42, null, null).stages[0]?.lateralM)
+  })
 })
