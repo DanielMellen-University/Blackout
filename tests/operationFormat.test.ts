@@ -83,4 +83,17 @@ describe('operation formatting', () => {
     expect(operationLegProgress(createAttempt(42), sample(2400))).toBe('100%')
   })
 
+  it('hides decisions when the run is complete', () => {
+    const attempt = {
+      ...createAttempt(42),
+      phase: 'complete' as const,
+      route: 'valley' as const,
+      energy: 'commit' as const,
+    }
+    const hud = operationHudModel(attempt, sample(7200))
+    expect(hud.decisions).toEqual([])
+    expect(hud.prompt).toBe('')
+    expect(hud.stageLabel).toContain('Complete')
+  })
+
 })
