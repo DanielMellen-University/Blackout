@@ -38,4 +38,18 @@ describe('operation replay', () => {
     expect(sameAttemptScore(first.attempt, second.attempt)).toBe(true)
     expect(first.attempt.score).toBe(second.attempt.score)
   })
+
+  it('changes the score when a stored sample is tampered', () => {
+    const transcript = createTranscript(42, 'valley', 'commit', samples())!
+    const original = replayOperation(transcript).attempt.score
+    const tampered = {
+      ...transcript,
+      samples: {
+        ...transcript.samples,
+        egress: transcript.samples.egress.map(sample => ({ ...sample, airborne: false })),
+      },
+    }
+    expect(replayOperation(tampered).attempt.phase).toBe('failed')
+    expect(replayOperation(tampered).attempt.score).not.toBe(original)
+  })
 })
