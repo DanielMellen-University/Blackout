@@ -59,4 +59,9 @@ describe('operation results', () => {
     expect(result.title).toBe('Ridge relay complete')
   })
 
+  it('shows silver and bronze from the score bands', () => {
+    expect(operationResultModel(finished(44_097), null, null, true).medalLabel).toBe(formatOperationMedal('silver'))
+    expect(operationResultModel(finished(30_550), null, null, true).medalLabel).toBe('Bronze')
+  })
+
 })
