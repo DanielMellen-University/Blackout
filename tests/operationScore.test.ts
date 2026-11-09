@@ -60,4 +60,12 @@ describe('operation scoring', () => {
     const high = low.map(sample => ({ ...sample, y: 900, clearance: 700 }))
     expect(flyingScoreFor(low, weights)).toBeGreaterThan(flyingScoreFor(high, weights))
   })
+
+  it('passes an airborne trace that reaches the stage end inside the allowance', () => {
+    const spec = stageSpec(buildOperationPlan(42, 'valley', 'conserve'), 'ingress')
+    const scored = scoreStage(spec, line(spec))
+    expect(scored.passed).toBe(true)
+    expect(scored.reason).toBe('complete')
+    expect(scored.score).toBeGreaterThan(0)
+  })
 })
