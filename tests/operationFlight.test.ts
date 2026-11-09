@@ -212,4 +212,13 @@ describe('operation flight', () => {
     expect(operationFlightTranscript(flight)).toBeNull()
   })
 
+  it('flies the valley lower than the ridge', () => {
+    const valley = flyChoices('valley', 'conserve')
+    const ridge = flyChoices('ridge', 'conserve')
+    const low = Math.min(...valley.samples.transit.map(sample => sample.clearance))
+    const high = Math.min(...ridge.samples.transit.map(sample => sample.clearance))
+    expect(low).toBeLessThan(high)
+    expect(valley.attempt.phase).toBe('complete')
+    expect(ridge.attempt.phase).toBe('complete')
+  })
 })
