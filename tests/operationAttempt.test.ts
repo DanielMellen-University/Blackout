@@ -43,4 +43,9 @@ describe('operation attempt', () => {
   it('rejects a route choice before ingress is complete', () => {
     expect(chooseRoute(createAttempt(42), 'valley')).toMatchObject({ ok: false, reason: 'route-not-open' })
   })
+
+  it('rejects an unknown route', () => {
+    const ready = recordStage(createAttempt(42), line(42, null, null, 'ingress')).attempt
+    expect(chooseRoute(ready, 'commit')).toMatchObject({ ok: false, reason: 'bad-route' })
+  })
 })
