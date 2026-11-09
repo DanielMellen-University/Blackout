@@ -74,4 +74,11 @@ describe('operation save', () => {
     const repeat = commitAttempt(twice, first)
     expect(repeat.best?.score).toBe(second.score)
   })
+
+  it('does not replace the best with an equal score', () => {
+    const attempt = finish('valley')
+    const saved = commitAttempt(commitAttempt(emptyProgress(), attempt), attempt)
+    expect(saved.best?.score).toBe(attempt.score)
+    expect(saved.history).toHaveLength(2)
+  })
 })
