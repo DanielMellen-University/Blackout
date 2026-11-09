@@ -157,4 +157,14 @@ describe('operation flight', () => {
     expect(operationFlightTranscript(flight)).toBeNull()
   })
 
+  it('ignores steps and choices after close', () => {
+    const flight = open()
+    stepOperationFlight(flight, 1)
+    closeOperationFlight(flight)
+    closeOperationFlight(flight)
+    stepOperationFlight(flight, 5)
+    expect(flight.samples.ingress).toHaveLength(1)
+    expect(chooseOperationRoute(flight, 'valley').ok).toBe(false)
+  })
+
 })
