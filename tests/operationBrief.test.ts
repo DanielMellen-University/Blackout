@@ -21,4 +21,10 @@ describe('operation brief', () => {
     expect(text).toContain('conserve or commit')
     expect(text).toContain('stage 3 of 3')
   })
+
+  it('names the decisions when the run is complete', () => {
+    const text = operationBrief(buildOperationPlan(42, 'ridge', 'commit'), 'complete')
+    expect(text).toContain('complete in the air')
+    expect(text).toContain('ridge then commit')
+  })
 })
