@@ -76,4 +76,14 @@ describe('operation attempt', () => {
     attempt = recordStage(attempt, line(7, null, null, 'ingress')).attempt
     expect(chooseEnergy(attempt, 'conserve')).toMatchObject({ ok: false, reason: 'energy-not-open' })
   })
+
+  it('does not record a stage after the run is complete', () => {
+    let attempt = createAttempt(42)
+    attempt = recordStage(attempt, line(42, null, null, 'ingress')).attempt
+    attempt = chooseRoute(attempt, 'ridge').attempt
+    attempt = recordStage(attempt, line(42, 'ridge', null, 'transit')).attempt
+    attempt = chooseEnergy(attempt, 'conserve').attempt
+    attempt = recordStage(attempt, line(42, 'ridge', 'conserve', 'egress')).attempt
+    expect(recordStage(attempt, line(42, 'ridge', 'conserve', 'egress'))).toMatchObject({ ok: false, reason: 'no-live-stage' })
+  })
 })
