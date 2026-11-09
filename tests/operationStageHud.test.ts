@@ -67,4 +67,9 @@ describe('operation stage HUD', () => {
     expect(hud.bestLabel).toBe('Best 1,000')
   })
 
+  it('shows the running score', () => {
+    const attempt = { ...createAttempt(42), score: 1200 }
+    expect(operationHudModel(attempt, sample).scoreLabel).toBe('1,200')
+  })
+
 })
