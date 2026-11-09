@@ -94,4 +94,23 @@ describe('operation session', () => {
     expect(replayOperation(saved.replay).attempt.score.toLocaleString('en-US')).toBe(score)
   })
 
+  it('holds the replay on a decision', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 2)
+    finish(session, 'valley', 'conserve')
+    expect(session.replay()).toBe(true)
+    let sawChoice = false
+    for (let n = 0; n < 400 && session.status === 'replay'; n += 1) {
+      if (session.hud?.chosen === 'valley') {
+        sawChoice = true
+        const stage = session.hud.stageLabel
+        session.advanceReplay(1)
+        expect(session.hud?.stageLabel).toBe(stage)
+        expect(session.hud?.chosen).toBe('valley')
+        break
+      }
+      session.advanceReplay(30)
+    }
+    expect(sawChoice).toBe(true)
+  })
+
 })
