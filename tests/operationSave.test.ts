@@ -101,4 +101,16 @@ describe('operation save', () => {
     expect(saved.active).toBeNull()
     expect(saved.best?.route).toBe('valley')
   })
+
+  it('reloads progress from the store', () => {
+    const store = memoryOperationStore()
+    const transcript = createTranscript(42, 'valley', 'conserve', {
+      ingress: line('ingress', null, null),
+      transit: line('transit', 'valley', null),
+      egress: line('egress', 'valley', 'conserve'),
+    })
+    expect(writeProgress(store, commitAttempt(emptyProgress(), finish('valley'), transcript))).toBe(true)
+    expect(loadProgress(store)?.best?.energy).toBe('conserve')
+    expect(loadProgress(store)?.replay?.route).toBe('valley')
+  })
 })
