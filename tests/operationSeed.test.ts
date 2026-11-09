@@ -9,4 +9,9 @@ describe('operation seed', () => {
   it('replays the same seed', () => {
     expect(normalizeOperationSeed(1337)).toBe(normalizeOperationSeed(1337))
   })
+
+  it('turns NaN and infinity into seed 1', () => {
+    expect(normalizeOperationSeed(Number.NaN)).toBe(1)
+    expect(normalizeOperationSeed(Number.POSITIVE_INFINITY)).toBe(1)
+  })
 })
