@@ -27,4 +27,10 @@ describe('operation brief', () => {
     expect(text).toContain('complete in the air')
     expect(text).toContain('ridge then commit')
   })
+
+  it('does not call a stopped run a landing', () => {
+    const text = operationBrief(buildOperationPlan(42, 'valley', 'conserve'), 'failed')
+    expect(text.toLowerCase()).not.toContain('land')
+    expect(text).toContain('did not finish')
+  })
 })
