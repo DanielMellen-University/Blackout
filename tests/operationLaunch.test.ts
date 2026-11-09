@@ -37,4 +37,12 @@ describe('operation launch', () => {
     expect(store.read()).toBe('{"version":1}')
   })
 
+  it('fails closed when storage throws', () => {
+    const store = browserOperationStore({
+      getItem: () => { throw new Error('blocked') },
+      setItem: () => { throw new Error('blocked') },
+    })
+    expect(store.read()).toBeNull()
+    expect(() => store.write('x')).toThrow()
+  })
 })
