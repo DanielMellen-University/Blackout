@@ -14,4 +14,8 @@ describe('operation choices', () => {
     expect(isEnergyChoice('commit')).toBe(true)
     expect(isEnergyChoice('valley')).toBe(false)
   })
+
+  it('names a decision path', () => {
+    expect(operationPathKey('valley', 'commit')).toBe('valley-commit')
+  })
 })
