@@ -19,4 +19,15 @@ describe('operation performance record', () => {
     expect(record).toEqual(operationPerformanceRecord(42))
     expect(pathOutcomesDiffer(record.paths)).toBe(true)
   })
+
+  it('gives the four flown paths different scores and medals', () => {
+    expect(stored.paths['valley-commit'].medal).toBe('gold')
+    expect(stored.paths['valley-commit'].score).toBe(48516)
+    expect(stored.paths['valley-conserve'].medal).toBe('silver')
+    expect(stored.paths['ridge-commit'].medal).toBe('silver')
+    expect(stored.paths['ridge-conserve'].medal).toBe('bronze')
+    expect(stored.paths['ridge-conserve'].score).toBe(30550)
+    expect(stored.paths['valley-commit'].peakSpeedMps).toBeGreaterThan(700)
+    expect(stored.paths['valley-conserve'].minClearanceM).toBeLessThan(stored.paths['ridge-conserve'].minClearanceM)
+  })
 })
