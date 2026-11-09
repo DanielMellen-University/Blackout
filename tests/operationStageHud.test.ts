@@ -72,4 +72,10 @@ describe('operation stage HUD', () => {
     expect(operationHudModel(attempt, sample).scoreLabel).toBe('1,200')
   })
 
+  it('does not call a stopped run a landing', () => {
+    const attempt = { ...createAttempt(42), phase: 'failed' as const }
+    const hud = operationHudModel(attempt, { ...sample, airborne: false })
+    expect(hud.stageLabel).toContain('Stopped')
+    expect(`${hud.stageLabel} ${hud.brief} ${hud.airborneLabel}`.toLowerCase()).not.toContain('land')
+  })
 })
