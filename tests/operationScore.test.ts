@@ -75,4 +75,9 @@ describe('operation scoring', () => {
     expect(scored.reason).toBe('ground')
     expect(scored.score).toBe(0)
   })
+
+  it('fails a trace that drops through the clearance floor', () => {
+    const spec = stageSpec(buildOperationPlan(42, null, null), 'ingress')
+    expect(scoreStage(spec, line(spec, { clearance: 10 })).reason).toBe('clearance')
+  })
 })
