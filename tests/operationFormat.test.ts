@@ -51,4 +51,8 @@ describe('operation formatting', () => {
     expect(formatOperationMedal('none')).toBe('No medal')
   })
 
+  it('names valley', () => {
+    expect(operationChoiceLabel('valley')).toBe('Valley')
+  })
+
 })
