@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.037**. Previous roadmap chunk: **11.036**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.038**. Previous roadmap chunk: **11.037**.
 
-Recent changes from **11.037**. Ridge relay is a three-stage operation: valley or ridge, then conserve or commit, with saved results and replay. A CPU flight on seed 42 scores 48,516 for valley/commit and 30,550 for ridge/conserve; that measurement is not FPS. From **11.036**: Waterway workers keep one drainage recipe across profile clones. From **11.035**: `smoothstep` with equal edges is a hard step instead of NaN, and terrain, water and hydrology helpers gain unit tests and doc comments. From **11.034**: River ribbons drop millimetre-wide needle triangles at lake mouths. From **11.033**: Far lakes no longer clip the sun to a flat white blob. From **11.032**: Hydrology sampling culls lakes with an exact bounds box.
+Recent changes from **11.038**. Ridge relay can be flown on the stick or by the model. Each stage scores the flown path, altitude, speed, fuel and nitro, and the results list that breakdown. A model flight on seed 42 scores 61,472 for valley/commit and 42,947 for ridge/conserve; that measurement is not FPS. From **11.037**: the operation is ingress, transit and egress, with valley or ridge and then conserve or commit. From **11.036**: Waterway workers keep one drainage recipe across profile clones.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -25,7 +25,7 @@ Run `npm run perf:terrain -- --seed=42 --samples=16` for a CPU geometry profile 
 
 For the b32 developer feel test, add `?dev=perfect-line` to the URL to reveal **Perfect Line (prototype)** on the title screen. Start airborne at 150 m/s, follow 15 gates down the canyon and finish in the air. Press **R** any time to retry immediately. Results are transient and do not affect mission records.
 
-Add `?dev=operation` to launch **Ridge relay** from the flight plan. Ingress, transit and egress are flown in the air. After ingress choose valley or ridge; after transit choose conserve or commit. The results show the score, medal and best. Replay plays the saved transcript. The featured row stays Free flight, Training orbit and Daily challenge, and the course catalog stays at 82.
+Add `?dev=operation` to launch **Ridge relay** from the flight plan. Fly each leg yourself or leave the model on the controls. Stick mode uses W/S pitch, A/D roll, Q/E rudder, Shift/Ctrl power and Space nitro, and a standard gamepad does the same. After ingress choose valley or ridge; after transit choose conserve or commit. The results show the score, medal, best and a per-stage breakdown. Replay plays the saved transcript. The featured row stays Free flight, Training orbit and Daily challenge, and the course catalog stays at 82.
 
 Default keyboard controls:
 
