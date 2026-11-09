@@ -149,4 +149,12 @@ describe('operation flight', () => {
     expect(flight.attempt.energy).toBe('commit')
   })
 
+  it('stops a flight that runs out of steps without calling it a landing', () => {
+    const flight = open(42, 2)
+    stepOperationFlight(flight, 10)
+    expect(flight.attempt.phase).toBe('failed')
+    expect(flight.attempt.failure).not.toBe('complete')
+    expect(operationFlightTranscript(flight)).toBeNull()
+  })
+
 })
