@@ -113,4 +113,13 @@ describe('operation save', () => {
     expect(loadProgress(store)?.best?.energy).toBe('conserve')
     expect(loadProgress(store)?.replay?.route).toBe('valley')
   })
+
+  it('fails closed when the store throws', () => {
+    const store = {
+      read: () => { throw new Error('denied') },
+      write: () => { throw new Error('full') },
+    }
+    expect(loadProgress(store)).toBeNull()
+    expect(writeProgress(store, emptyProgress())).toBe(false)
+  })
 })
