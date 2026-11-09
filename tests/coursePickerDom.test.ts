@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CoursePicker, coursePickerOwnsGlobalKey, perfectLinePickerItem, type CoursePickerItem } from '../src/ui/CoursePicker'
+import { operationLaunchItem } from '../src/ui/operation/launch'
 
 /** Minimal native-element test adapter; no browser, layout engine, or world boot. */
 class TestElement {
@@ -156,6 +157,26 @@ describe('course picker interaction', () => {
     expect(element('.course-picker-grid').querySelector('[data-course-id="perfect-line"]')).not.toBeNull()
     picker.setFilter('no matches')
     expect(options().map(node => node.dataset.courseId)).toEqual(['free-flight', 'training-orbit', 'daily-ops', 'random'])
+  })
+
+  it('puts ridge relay in the course grid only when the operation flag is set', () => {
+    expect(operationLaunchItem(vi.fn())).toBeNull()
+    const activate = vi.fn()
+    picker.setItems([
+      { id: 'free-flight', label: 'Free flight', detail: 'Explore', meta: '', stats: '' },
+      { id: 'training-orbit', label: 'Training orbit', detail: 'Learn', meta: '', stats: '' },
+      { id: 'daily-ops', label: 'Daily challenge', detail: 'Today', meta: '', stats: '' },
+      { id: 'contour-circuit', label: 'Contour circuit', detail: '', meta: '', stats: '' },
+      operationLaunchItem(activate, '?dev=operation')!,
+    ], 'training-orbit')
+    expect(element('.course-picker-featured').children.map(node => node.dataset.courseId))
+      .toEqual(['free-flight', 'training-orbit', 'daily-ops'])
+    expect(element('.course-picker-featured').querySelector('[data-course-id="ridge-relay"]')).toBeNull()
+    const card = element('.course-picker-grid').querySelector<TestElement>('[data-course-id="ridge-relay"]')!
+    expect(card.textContent).toContain('Ridge relay')
+    element('.course-picker-list').dispatch('click', { target: card })
+    expect(activate).toHaveBeenCalledOnce()
+    expect(picker.value).toBe('training-orbit')
   })
 
   it('features modes in fixed order, pins Random world, and filters/counts only ordinary missions', () => {

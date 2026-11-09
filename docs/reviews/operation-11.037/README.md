@@ -19,4 +19,4 @@ Progress, the best result and the sample transcript are stored under `blackout.o
 
 Valley stays lower than ridge. Commit reaches the egress leg much faster than conserve. All four scores differ, and every path finishes airborne. The full stage breakdown is in [performance.json](performance.json).
 
-Browser play of the operation is not wired into the flight-plan screen, so manual handling is unverified.
+`?dev=operation` launches Ridge relay from the flight plan. The stage HUD flies ingress, asks for valley or ridge, flies transit, asks for conserve or commit, then shows the score, medal and best. Replay plays the saved transcript back through that HUD. The featured row and the 82-course catalog stay unchanged. The player chooses the two decisions; the aircraft model flies the legs. Stick-and-rudder handling of this operation is not a separate control mode.
