@@ -58,4 +58,15 @@ describe('operation session', () => {
     expect(session.hud?.prompt).toBe('Valley or ridge')
   })
 
+  it('does not replace the best with a lower finish', () => {
+    const store = memoryOperationStore()
+    const session = new OperationSession(store, 42, 0)
+    finish(session, 'valley', 'commit')
+    const best = session.result?.scoreLabel
+    finish(session, 'ridge', 'conserve')
+    expect(session.result?.medal).toBe(medalForScore(30_550, true))
+    expect(session.result?.bestLabel).toBe(`Best ${best}`)
+    expect(session.result?.bestLabel.startsWith('New best')).toBe(false)
+  })
+
 })
