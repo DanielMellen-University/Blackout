@@ -14,4 +14,8 @@ describe('operation seed', () => {
     expect(normalizeOperationSeed(Number.NaN)).toBe(1)
     expect(normalizeOperationSeed(Number.POSITIVE_INFINITY)).toBe(1)
   })
+
+  it('uses the absolute value of a negative seed', () => {
+    expect(normalizeOperationSeed(-18)).toBe(18)
+  })
 })
