@@ -6,6 +6,15 @@ const css = ['../src/style.css', '../src/ui/settingsDeck.css']
   .map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n')
 
 describe('unified flight deck contracts', () => {
+  it('hides the ridge relay launch before the operation flag is set', () => {
+    expect(html).toMatch(/<button[^>]*id="btn-ridge-relay"[^>]* hidden[^>]*>/)
+    expect(html).toMatch(/<p[^>]*id="ridge-relay-description"[^>]* hidden[^>]*>/)
+    expect(html).toMatch(/<div[^>]*id="operation-deck"[^>]* hidden[^>]*>/)
+    expect(html).toContain('id="operation-choices"')
+    expect(html).toContain('id="operation-replay"')
+    expect(html).toContain('id="operation-result-medal"')
+  })
+
   it('hides the Perfect Line title button before startup', () => {
     expect(html).toMatch(/<button[^>]*id="btn-perfect-line"[^>]* hidden[^>]*>/)
     expect(html).toMatch(/<p[^>]*id="perfect-line-description"[^>]* hidden[^>]*>/)
