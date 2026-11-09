@@ -26,4 +26,11 @@ describe('operation identity', () => {
     expect(nextStage('transit')).toBe('egress')
     expect(nextStage('egress')).toBeNull()
   })
+
+  it('rejects unknown stage ids', () => {
+    expect(isOperationStageId('ingress')).toBe(true)
+    expect(isOperationStageId('landing')).toBe(false)
+    expect(isOperationStageId('')).toBe(false)
+    expect(isOperationStageId(null)).toBe(false)
+  })
 })
