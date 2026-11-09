@@ -51,4 +51,15 @@ describe('operation flight harness', () => {
     expect(replayed.attempt.phase).toBe('complete')
     expect(replayed.attempt.score).toBe(measured.score)
   })
+
+  it('saves the finish and reloads it', () => {
+    const measured = flyOperation(42, 'ridge', 'conserve')
+    const store = memoryOperationStore()
+    writeProgress(store, commitAttempt(emptyProgress(), measured.attempt, measured.transcript))
+    const loaded = loadProgress(store)
+    expect(loaded?.best?.score).toBe(measured.score)
+    expect(loaded?.best?.route).toBe('ridge')
+    expect(loaded?.replay?.energy).toBe('conserve')
+    expect(replayOperation(loaded!.replay!).attempt.score).toBe(measured.score)
+  })
 })
