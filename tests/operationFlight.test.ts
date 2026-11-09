@@ -82,4 +82,11 @@ describe('operation flight', () => {
     expect(flight.samples.ingress).toHaveLength(before)
   })
 
+  it('rejects a route before the choice is open', () => {
+    const flight = open()
+    stepOperationFlight(flight, 1)
+    expect(chooseOperationRoute(flight, 'valley').ok).toBe(false)
+    expect(flight.attempt.phase).toBe('ingress')
+  })
+
 })
