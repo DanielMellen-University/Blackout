@@ -15,4 +15,17 @@ describe('operation samples', () => {
     expect(isFlightSample(null)).toBe(false)
     expect(isFlightSample({ ...sample(), airborne: 'yes' })).toBe(false)
   })
+
+  it('reduces elapsed time, distance, peak speed and clearance', () => {
+    const stats = sampleStats([
+      sample({ t: 1, z: 0, speed: 100, clearance: 80 }),
+      sample({ t: 3, z: 400, speed: 180, clearance: 50, y: 300 }),
+    ], 0)
+    expect(stats?.elapsedSec).toBe(2)
+    expect(stats?.distanceM).toBeCloseTo(Math.hypot(0, 100, 400), 6)
+    expect(stats?.peakSpeedMps).toBe(180)
+    expect(stats?.minClearanceM).toBe(50)
+    expect(stats?.minAltitudeM).toBe(300)
+    expect(stats?.endZ).toBe(400)
+  })
 })
