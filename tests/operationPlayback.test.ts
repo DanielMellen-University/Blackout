@@ -32,4 +32,16 @@ describe('operation replay cues', () => {
     expect(first && first.kind === 'sample' && first.sample.speed).toBeGreaterThan(0)
   })
 
+  it('shows the route decision on the replay HUD', () => {
+    const stored = transcript()
+    const cue = operationReplayCues(stored).find(item => item.kind === 'choice' && item.choice === 'valley')
+    expect(cue).toBeDefined()
+    const hud = operationReplayHud(stored, cue!, stored.samples.ingress.at(-1) ?? null)
+    expect(hud.prompt).toBe('Valley or ridge')
+    expect(hud.decisions).toEqual(['valley', 'ridge'])
+    expect(hud.chosen).toBe('valley')
+    expect(hud.scoreLabel).toBe('Replay')
+    expect(hud.brief.toLowerCase()).not.toContain('land')
+  })
+
 })
