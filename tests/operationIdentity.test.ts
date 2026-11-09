@@ -33,4 +33,8 @@ describe('operation identity', () => {
     expect(isOperationStageId('')).toBe(false)
     expect(isOperationStageId(null)).toBe(false)
   })
+
+  it('finishes in the air', () => {
+    expect(OPERATION_FINISH).toBe('airborne')
+  })
 })
