@@ -20,4 +20,15 @@ describe('operation plan', () => {
     const ridge = stageSpec(buildOperationPlan(42, 'ridge', 'commit'), 'ingress')
     expect(valley).toEqual(ridge)
   })
+
+  it('changes the later stages across the four decision paths', () => {
+    const paths = [
+      buildOperationPlan(42, 'valley', 'conserve'),
+      buildOperationPlan(42, 'valley', 'commit'),
+      buildOperationPlan(42, 'ridge', 'conserve'),
+      buildOperationPlan(42, 'ridge', 'commit'),
+    ]
+    const signatures = paths.map(plan => JSON.stringify(plan.stages.slice(1)))
+    expect(new Set(signatures).size).toBe(4)
+  })
 })
