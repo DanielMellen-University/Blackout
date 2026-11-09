@@ -41,4 +41,10 @@ describe('operation formatting', () => {
     expect(formatOperationClearance(Number.NaN)).toBe('—')
   })
 
+  it('names gold, silver and bronze', () => {
+    expect(formatOperationMedal('gold')).toBe('Gold')
+    expect(formatOperationMedal('silver')).toBe('Silver')
+    expect(formatOperationMedal('bronze')).toBe('Bronze')
+  })
+
 })
