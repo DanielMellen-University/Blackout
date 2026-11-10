@@ -1,16 +1,21 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { getWorldSeed, setWorldSeed } from '../src/world/noise'
-import { getTerrainProfile } from '../src/world/TerrainProfile'
+import { getTerrainProfile, setTerrainProfile } from '../src/world/TerrainProfile'
 import { clearOpsPad, getOpsPad, setOpsPad } from '../src/world/terrainSample'
 import {
   chooseOperationEnergy,
   chooseOperationRoute,
   closeOperationFlight,
+  holdOperationPresentation,
   openOperationFlight,
+  operationFlightPose,
   operationFlightTranscript,
   stepOperationFlight,
   type OperationFlight,
 } from '../src/systems/operation/flight'
+import { lateralForSeed } from '../src/systems/operation/gates'
+import { stageAltitude } from '../src/systems/operation/bands'
+import { OPERATION_TERRAIN } from '../src/systems/operation/terrain'
 import { flyOperation } from '../src/systems/operation/harness'
 import { replayOperation } from '../src/systems/operation/replay'
 import type { EnergyChoice, RouteChoice } from '../src/systems/operation/choices'
@@ -26,6 +31,7 @@ function open(seed = 42, maxSteps?: number): OperationFlight {
 afterEach(() => {
   for (const flight of openFlights) closeOperationFlight(flight)
   openFlights.length = 0
+  holdOperationPresentation(null)
   clearOpsPad()
 })
 
@@ -53,6 +59,45 @@ describe('operation flight', () => {
       expect(getOpsPad()).toEqual({ x: 4, z: 5, y: 6, yaw: 0.2 })
     } finally {
       setWorldSeed(seed)
+    }
+  })
+
+  it('reports the live pose and drops it when the flight closes', () => {
+    const flight = open(42)
+    const pose = operationFlightPose(flight)
+    expect(pose).not.toBeNull()
+    expect(pose!.x).toBeCloseTo(lateralForSeed(42))
+    expect(pose!.y).toBeCloseTo(stageAltitude('ingress', null, null))
+    expect(pose!.z).toBeCloseTo(-200)
+    stepOperationFlight(flight, 1)
+    const moved = operationFlightPose(flight)
+    expect(moved!.z).toBeGreaterThan(pose!.z)
+    expect(moved!.z).toBeCloseTo(flight.live!.z)
+    closeOperationFlight(flight)
+    expect(operationFlightPose(flight)).toBeNull()
+  })
+
+  it('keeps the operation world while a presentation is held', () => {
+    const seed = getWorldSeed()
+    const profile = getTerrainProfile()
+    setWorldSeed(99)
+    setOpsPad(4, 5, 6, 0.2)
+    try {
+      holdOperationPresentation(42)
+      const flight = open(42)
+      stepOperationFlight(flight, 2)
+      expect(getWorldSeed()).toBe(42)
+      expect(getTerrainProfile()).toBe(OPERATION_TERRAIN)
+      expect(getOpsPad()).toBeNull()
+      holdOperationPresentation(null)
+      expect(getWorldSeed()).toBe(99)
+      expect(getTerrainProfile()).toBe(profile)
+      expect(getOpsPad()).toEqual({ x: 4, z: 5, y: 6, yaw: 0.2 })
+    } finally {
+      holdOperationPresentation(null)
+      setWorldSeed(seed)
+      setTerrainProfile(profile)
+      clearOpsPad()
     }
   })
 

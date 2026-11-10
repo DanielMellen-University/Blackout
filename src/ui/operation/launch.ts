@@ -10,7 +10,7 @@ export function operationLaunchItem(activate: () => void, search = ''): CoursePi
   return {
     id: 'ridge-relay',
     label: 'Ridge relay',
-    detail: 'Three stages in the air',
+    detail: 'Three stages in the air, from the cockpit',
     meta: 'Stick or model, then valley or ridge',
     stats: '',
     activate,
