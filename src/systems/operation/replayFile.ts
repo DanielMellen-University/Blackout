@@ -30,7 +30,7 @@ export type ReplayFileReason =
   | 'invalid-json' | 'duplicate-key' | 'invalid-shape' | 'wrong-format' | 'wrong-version' | 'wrong-operation'
   | 'invalid-seed' | 'invalid-decisions' | 'invalid-flight-mode' | 'missing-stage'
   | 'invalid-sample' | 'non-finite' | 'out-of-order' | 'invalid-claim'
-  | 'invalid-integrity' | 'integrity-mismatch'
+  | 'invalid-integrity' | 'integrity-mismatch' | 'too-deep'
 
 export interface ReplayFileFailure {
   ok: false
@@ -192,6 +192,9 @@ function rejectDuplicateKeys(text: string): void {
   const value = (path: string): void => {
     whitespace()
     const char = text[offset]
+    // A replay needs only four container levels. Bound unknown input before
+    // retaining its paths or asking JSON.parse to allocate the complete tree.
+    if ((char === '{' || char === '[') && stack.length >= 32) fail('too-deep', path)
     if (char === '{') {
       offset += 1
       stack.push({ kind: 'object', path, keys: new Set(), state: 'first' })

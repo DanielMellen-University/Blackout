@@ -82,6 +82,17 @@ describe('operation replay file', () => {
       .toEqual({ ok: false, reason: 'invalid-shape', path: '$.extra' })
   })
 
+  it('bounds JSON nesting before retaining a deep stack of field paths', () => {
+    const deep = '['.repeat(1000) + '0' + ']'.repeat(1000)
+    expect(parseOperationReplayFile(deep)).toEqual({
+      ok: false, reason: 'too-deep', path: '$' + '[0]'.repeat(32),
+    })
+    const edge = '['.repeat(32) + '0' + ']'.repeat(32)
+    expect(parseOperationReplayFile(edge)).toEqual({ ok: false, reason: 'invalid-shape', path: '$' })
+    expect(parseOperationReplayFile(JSON.stringify({ extra: '['.repeat(1000) })))
+      .toEqual({ ok: false, reason: 'invalid-shape', path: '$.extra' })
+  })
+
   it('preserves absent telemetry and unknown mode rather than inventing values', () => {
     const transcript = replayFileTranscript(structuredClone(fixture))
     for (const samples of Object.values(transcript.samples)) {
