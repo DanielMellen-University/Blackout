@@ -62,3 +62,5 @@ CLI read errors name the quoted input path and the filesystem error code. Direct
 The CLI checks the opened file’s type and byte length before decoding. Reads are bounded to the same 16 MiB budget (plus one detection byte), including when a file grows after inspection; descriptors close on success and failure. Nonblocking open avoids waiting on a FIFO.
 
 `exportLatestOperationReplay` also returns `null` for malformed progress/history containers, not just malformed traces. It does not throw while attempting to find the latest saved result.
+
+A new completed result clears the previous transcript if its own transcript is unavailable or has a different identity/decision path. This prevents an older flight on the same seed and decisions from being exported against a new result’s claims. Failed or unfinished attempts still retain the last completed replay.

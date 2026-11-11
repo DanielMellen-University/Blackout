@@ -155,6 +155,9 @@ export function commitAttempt(
   replay: OperationTranscript | null = null,
 ): OperationProgress {
   const finished = toBest(attempt)
+  const matchingReplay = replay && finished && replay.version === 1 && replay.id === finished.id
+    && replay.seed === finished.seed && replay.route === finished.route && replay.energy === finished.energy
+    ? replay : null
   const history = finished
     ? [...progress.history, finished].slice(-OPERATION_HISTORY_LIMIT)
     : progress.history
@@ -166,7 +169,7 @@ export function commitAttempt(
     active: attempt,
     best,
     history,
-    replay: finished && replay ? replay : progress.replay,
+    replay: finished ? matchingReplay : progress.replay,
   }
 }
 

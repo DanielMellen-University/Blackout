@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { exportLatestOperationReplay } from '../src/systems/operation/replayExport'
 import { verifyOperationReplayFile } from '../src/systems/operation/replayVerification'
-import { emptyProgress, memoryOperationStore } from '../src/systems/operation/save'
+import { commitAttempt, emptyProgress, memoryOperationStore } from '../src/systems/operation/save'
+import { replayOperation } from '../src/systems/operation/replay'
 import { OperationSession } from '../src/ui/operation/session'
 
 function finish(session: OperationSession, route: string, energy: string): void {
@@ -61,6 +62,25 @@ describe('latest operation replay export', () => {
     session.close()
     expect(session.exportReplay()).toBe(file)
   })
+
+  it.each(['missing', 'different-seed', 'different-route', 'different-energy'] as const)(
+    'does not attach an older or mismatched replay to a new finish (%s)', kind => {
+      const store = memoryOperationStore()
+      finish(new OperationSession(store), 'valley', 'commit')
+      const progress = JSON.parse(store.snapshot()!)
+      const attempt = replayOperation(progress.replay).attempt
+      const replay = kind === 'missing' ? null : structuredClone(progress.replay)
+      if (kind === 'different-seed') replay.seed = 73
+      if (kind === 'different-route') replay.route = 'ridge'
+      if (kind === 'different-energy') replay.energy = 'conserve'
+      const saved = commitAttempt(progress, attempt, replay)
+      expect(saved.history).toHaveLength(2)
+      expect(saved.best).toEqual(progress.best)
+      expect(saved.replay).toBeNull()
+      expect(exportLatestOperationReplay(saved)).toBeNull()
+      expect(new OperationSession(memoryOperationStore(JSON.stringify(saved))).exportReplay()).toBeNull()
+    },
+  )
 
   it('exports recorded claims without repairing an incorrect score', () => {
     const store = memoryOperationStore()
