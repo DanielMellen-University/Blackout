@@ -66,3 +66,5 @@ The CLI checks the opened file’s type and byte length before decoding. Reads a
 A new completed result clears the previous transcript if its own transcript is unavailable or has a different identity/decision path. This prevents an older flight on the same seed and decisions from being exported against a new result’s claims. Failed or unfinished attempts still retain the last completed replay.
 
 The terrain-evidence suite probes the same synchronous Git archive read the validator needs. Missing or denied Git subprocess access skips only the nine Git-dependent checks with an explicit reason. The unauthorized-seed check still runs; unexpected errors and nonzero Git command statuses remain failures. Archive validation assertions are unchanged when Git is available.
+
+The cockpit deck test uses a controlled monotonic-clock spy and restores it after each test. It asserts exact one-step pacing, the eight-step late-frame cap, backward-clock clamping and three-step catch-up. The production clock, camera, UI and pacing are unchanged.
