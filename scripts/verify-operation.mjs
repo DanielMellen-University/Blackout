@@ -2,10 +2,14 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 
+class UsageError extends Error {}
+
 const args = process.argv.slice(2)
 let loader
 try {
-  if (args.length !== 1) throw new Error('usage: npm run verify:operation -- <file>')
+  if (args.length !== 1) {
+    throw new UsageError(`usage: npm run verify:operation -- <file>\nExpected exactly one replay file; received ${args.length} arguments.\nExit codes: 0 match, 1 mismatch, 2 unreadable or invalid.`)
+  }
   const text = readFileSync(args[0], 'utf8')
   // Load the same TypeScript scorer as the browser, without opening a listening port.
   loader = await createServer({
@@ -25,7 +29,7 @@ try {
   console.log(`Total: claimed ${result.claimedTotal}, actual ${summary.score}, difference ${result.totalDifference}`)
   process.exitCode = result.matches ? 0 : 1
 } catch (error) {
-  console.error(`Invalid replay: ${error instanceof Error ? error.message : String(error)}`)
+  console.error(error instanceof UsageError ? error.message : `Invalid replay: ${error instanceof Error ? error.message : String(error)}`)
   process.exitCode = 2
 } finally {
   if (loader) await loader.close()

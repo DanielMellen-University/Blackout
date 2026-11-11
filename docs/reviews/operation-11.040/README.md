@@ -54,3 +54,5 @@ Boundary regression tests pin inclusive fuel/nitro limits, zero time/speed, safe
 Export requires plain data records (ordinary or null prototype) with own enumerable data properties. Inherited fields, hidden fields and accessors are rejected as `invalid-shape`, preventing validation and hashing from seeing different content.
 
 Error paths use dot notation for ordinary field names and JSON-quoted brackets for unusual names. Dots, brackets, quotes, newlines and terminal control characters inside a key remain unambiguous and escaped in CLI output.
+
+Missing or extra CLI arguments print usage, the received argument count and the exit-code legend to stderr, with no score output and exit 2. They are reported as invocation mistakes rather than invalid replay content.
