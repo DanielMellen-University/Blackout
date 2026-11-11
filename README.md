@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.039**. Previous roadmap chunk: **11.038**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.040**. Previous roadmap chunk: **11.039**.
 
-Recent changes from **11.039**. Ridge relay now flies from the cockpit camera: ingress, transit and egress, with the stage HUD over the view and the gates and altitude band drawn in the world. Stick and model are both still there. A model flight on seed 42 still scores 61,472 for valley then commit. From **11.038**: the stick and the measured stage score. From **11.037**: the three airborne stages and the two decisions.
+Recent changes from **11.040**. A completed Ridge relay can be exported as versioned JSON, imported and checked against its claimed stage and total scores outside the browser. The seed-42 model sample verifies at 61,472 gold. From **11.039**: cockpit flight with the stage HUD, gates and altitude band. From **11.038**: the stick and measured stage score. From **11.037**: the three airborne stages and two decisions.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -26,6 +26,8 @@ Run `npm run perf:terrain -- --seed=42 --samples=16` for a CPU geometry profile 
 For the b32 developer feel test, add `?dev=perfect-line` to the URL to reveal **Perfect Line (prototype)** on the title screen. Start airborne at 150 m/s, follow 15 gates down the canyon and finish in the air. Press **R** any time to retry immediately. Results are transient and do not affect mission records.
 
 Add `?dev=operation` to launch **Ridge relay** from the flight plan. It opens in the cockpit, with the stage HUD over the view and the gates and altitude band drawn on the line you are scored against. Fly each leg yourself or leave the model on the controls. Stick mode uses W/S pitch, A/D roll, Q/E rudder, Shift/Ctrl power and Space nitro, and a standard gamepad does the same. After ingress choose valley or ridge; after transit choose conserve or commit. The results show the score, medal, best and a per-stage breakdown. Replay plays the saved transcript on that HUD. The featured row stays Free flight, Training orbit and Daily challenge, and the course catalog stays at 82.
+
+`OperationSession.exportReplay()` returns the latest completed replay as a JSON string, or `null` when unavailable. It also works after reloading the saved session. The pure `exportLatestOperationReplay(progress)` helper accepts stored progress. Save that string to a file, then run `npm run verify:operation -- <file>` with Node 22 and the installed project dependencies. Exit codes are 0 for a score match, 1 for a mismatch and 2 for unreadable or invalid input. Try `npm run verify:operation -- docs/reviews/operation-11.040/seed-42-valley-commit.replay.json`. The file includes a canonical-content checksum and exact samples; the summary model includes stage measurements, gates, medal and decisions. See [replay file review](docs/reviews/operation-11.040/README.md).
 
 Default keyboard controls:
 

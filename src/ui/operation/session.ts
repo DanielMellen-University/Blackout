@@ -26,6 +26,7 @@ import {
   type OperationStore,
 } from '../../systems/operation/save'
 import { normalizeOperationSeed } from '../../systems/operation/seed'
+import { exportLatestOperationReplay } from '../../systems/operation/replayExport'
 import { clampOperationStick, neutralOperationStick, type OperationStick } from '../../systems/operation/stick'
 import { formatOperationScore } from './format'
 import { operationHudModel, type OperationHudModel } from './hud'
@@ -160,6 +161,11 @@ export class OperationSession {
     this.status = 'replay'
     this.advanceReplay(1)
     return true
+  }
+
+  /** File contents for the latest saved finish, or null when none can be exported. */
+  exportReplay(): string | null {
+    return exportLatestOperationReplay(this.progress)
   }
 
   /** Move through the transcript. A decision holds so the HUD can show it. */
