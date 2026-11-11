@@ -24,6 +24,13 @@ describe('latest operation replay export', () => {
     session.close()
   })
 
+  it.each([null, {}, { history: null }, { history: {} }, { history: [null], replay: {} }])(
+    'returns null for malformed stored progress %#', progress => {
+      expect(() => exportLatestOperationReplay(progress as never)).not.toThrow()
+      expect(exportLatestOperationReplay(progress as never)).toBeNull()
+    },
+  )
+
   it('exports the latest finish, preserving the stored claims, result, best and save', () => {
     const store = memoryOperationStore()
     const session = new OperationSession(store, 42, 0)

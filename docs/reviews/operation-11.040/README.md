@@ -60,3 +60,5 @@ Missing or extra CLI arguments print usage, the received argument count and the 
 CLI read errors name the quoted input path and the filesystem error code. Directories and other non-regular inputs are rejected explicitly. Invalid JSON or replay content includes the filename as well as the validation reason and field path. All of these errors exit 2 and leave stdout empty.
 
 The CLI checks the opened file’s type and byte length before decoding. Reads are bounded to the same 16 MiB budget (plus one detection byte), including when a file grows after inspection; descriptors close on success and failure. Nonblocking open avoids waiting on a FIFO.
+
+`exportLatestOperationReplay` also returns `null` for malformed progress/history containers, not just malformed traces. It does not throw while attempting to find the latest saved result.
