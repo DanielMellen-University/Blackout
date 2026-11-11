@@ -59,6 +59,15 @@ function fail(reason: ReplayFileReason, path: string): never {
 
 function object(value: unknown, path: string): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) fail('invalid-shape', path)
+  const prototype = Object.getPrototypeOf(value)
+  if (prototype !== Object.prototype && prototype !== null) fail('invalid-shape', path)
+  // Export accepts JSON data records, so validation and canonicalization see
+  // the same stable, enumerable values. Parsed JSON already has this shape.
+  for (const key of Reflect.ownKeys(value)) {
+    if (typeof key !== 'string') fail('invalid-shape', path)
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)!
+    if (!descriptor.enumerable || !('value' in descriptor)) fail('invalid-shape', `${path}.${key}`)
+  }
   return value as Record<string, unknown>
 }
 

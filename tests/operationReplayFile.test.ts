@@ -158,6 +158,35 @@ describe('operation replay file', () => {
       .toThrow('invalid-claim at $.claimed.total')
   })
 
+  it('rejects inherited sample fields that canonical JSON would omit', () => {
+    const transcript = replayFileTranscript(structuredClone(fixture))
+    transcript.samples.ingress[0] = Object.create(transcript.samples.ingress[0]!)
+    expect(() => serializeOperationReplayFile(transcript, fixture.claimed))
+      .toThrow('invalid-shape at $.samples.ingress[0]')
+  })
+
+  it('rejects hidden sample fields that canonical JSON would omit', () => {
+    const transcript = replayFileTranscript(structuredClone(fixture))
+    Object.defineProperty(transcript.samples.ingress[0]!, 'speed', { enumerable: false })
+    expect(() => serializeOperationReplayFile(transcript, fixture.claimed))
+      .toThrow('invalid-shape at $.samples.ingress[0].speed')
+  })
+
+  it('rejects sample accessors before their values can change between validation and hashing', () => {
+    const transcript = replayFileTranscript(structuredClone(fixture))
+    let reads = 0
+    Object.defineProperty(transcript.samples.ingress[0]!, 'speed', { get: () => ++reads === 1 ? 150 : Infinity })
+    expect(() => serializeOperationReplayFile(transcript, fixture.claimed))
+      .toThrow('invalid-shape at $.samples.ingress[0].speed')
+    expect(reads).toBe(0)
+  })
+
+  it('accepts plain data records with a null prototype', () => {
+    const transcript = replayFileTranscript(structuredClone(fixture))
+    Object.setPrototypeOf(transcript.samples.ingress[0]!, null)
+    expect(parseOperationReplayFile(serializeOperationReplayFile(transcript, fixture.claimed))).toMatchObject({ ok: true })
+  })
+
   it('preserves absent telemetry and unknown mode rather than inventing values', () => {
     const transcript = replayFileTranscript(structuredClone(fixture))
     for (const samples of Object.values(transcript.samples)) {
