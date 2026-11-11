@@ -1,8 +1,24 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, type TestContext } from 'vitest'
 import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, readdirSync, existsSync, symlinkSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
+import { unavailableGitReason } from './helpers/gitCapability'
+
+// Match the validator's synchronous Git read, including pipe capture. A working
+// `git --version` alone does not prove this capability in restricted runners.
+const gitProbe = spawnSync('git', ['ls-tree', '-r', '--name-only', '-z', 'e3fe1a2', '--', 'src'], { encoding: 'utf8' })
+const gitUnavailable = unavailableGitReason(gitProbe.error)
+let reportedGitSkip = false
+function requireArchiveGit(context: TestContext): void {
+  if (gitUnavailable) {
+    if (!reportedGitSkip) console.warn(gitUnavailable)
+    reportedGitSkip = true
+    context.skip(gitUnavailable)
+  }
+  if (gitProbe.error) throw gitProbe.error
+  if (gitProbe.status !== 0) throw new Error(`Git archive probe failed: ${gitProbe.stderr}`)
+}
 
 const archive = resolve('docs/reviews/terrain-closeout-b19')
 const temporary: string[] = []
@@ -27,7 +43,8 @@ function check(dir: string, record: unknown) {
 }
 
 describe('terrain close-out evidence acceptance', () => {
-  it('accepts all retained flights including the authorized alternative seed', () => {
+  it('accepts all retained flights including the authorized alternative seed', context => {
+    requireArchiveGit(context)
     const { dir, record } = fixture()
     // Give the validator Git but no ripgrep, matching the CI dependency contract.
     const bin = join(dir, 'bin')
@@ -47,7 +64,8 @@ describe('terrain close-out evidence acceptance', () => {
     expect(summary.imageFindings).toHaveLength(1)
   })
 
-  it('rejects a changed alternative-seed route', () => {
+  it('rejects a changed alternative-seed route', context => {
+    requireArchiveGit(context)
     const { dir, record } = fixture()
     const selection = JSON.parse(readFileSync(join(archive, 'endurance-selection.json'), 'utf8'))
     const seed = selection.seeds.find((value: number) => ![42, 73].includes(value))
@@ -71,7 +89,7 @@ describe('terrain close-out evidence acceptance', () => {
     expect(result.stderr).toContain('Unauthorized endurance seed')
   })
 
-  it.each([
+  it.for([
     ['diagnostic', (r: any) => { r.diagnosticOnly = true }, 'Diagnostic flight cannot be accepted'],
     ['short', (r: any) => { r.final.seconds = 599 }, 'Duration endurance/42'],
     ['frame gap', (r: any) => { r.metrics.hitches = [{ seconds: 171.9, gapMs: 100.1 }] }, 'Unexplained frame gap'],
@@ -79,7 +97,8 @@ describe('terrain close-out evidence acceptance', () => {
     ['missing coverage', (r: any) => { r.metrics.coverageMisses.push({ seconds: 5 }) }, 'Missing terrain after reset warmup'],
     ['route change', (r: any) => { r.route.x += 1 }, 'AssertionError'],
     ['runtime mismatch', (r: any) => { r.sourceHashes['src/main.ts'] = 'invalid' }, 'Source differs from frozen runtime'],
-  ])('rejects %s evidence without writing a successful summary', (_, mutate, message) => {
+  ])('rejects %s evidence without writing a successful summary', ([_, mutate, message], context) => {
+    requireArchiveGit(context)
     const { dir, record } = fixture()
     mutate(record)
     const result = check(dir, record)

@@ -64,3 +64,5 @@ The CLI checks the opened file’s type and byte length before decoding. Reads a
 `exportLatestOperationReplay` also returns `null` for malformed progress/history containers, not just malformed traces. It does not throw while attempting to find the latest saved result.
 
 A new completed result clears the previous transcript if its own transcript is unavailable or has a different identity/decision path. This prevents an older flight on the same seed and decisions from being exported against a new result’s claims. Failed or unfinished attempts still retain the last completed replay.
+
+The terrain-evidence suite probes the same synchronous Git archive read the validator needs. Missing or denied Git subprocess access skips only the nine Git-dependent checks with an explicit reason. The unauthorized-seed check still runs; unexpected errors and nonzero Git command statuses remain failures. Archive validation assertions are unchanged when Git is available.
