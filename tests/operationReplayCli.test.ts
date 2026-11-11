@@ -61,6 +61,7 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
     const result = await run([path])
     expect(result.status).toBe(2)
     expect(result.stderr).toContain(`Invalid replay: ${reason} at $`)
+    expect(result.stderr).toContain(JSON.stringify(path))
     expect(result.stdout).toBe('')
   })
 
@@ -81,7 +82,16 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
   it('exits 2 for an unreadable file', async () => {
     const result = await run([join(dir, 'missing.json')])
     expect(result.status).toBe(2)
-    expect(result.stderr).toContain('ENOENT')
+    expect(result.stderr).toContain(`Cannot read replay ${JSON.stringify(join(dir, 'missing.json'))}: ENOENT`)
+    expect(result.stderr).not.toContain('Invalid replay:')
+    expect(result.stdout).toBe('')
+  })
+
+  it('rejects directories explicitly rather than depending on OS read behavior', async () => {
+    const result = await run([dir])
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain(`Cannot read replay ${JSON.stringify(dir)}: expected a regular file`)
+    expect(result.stdout).toBe('')
   })
 
   it.each([{ args: [] }, { args: [fixturePath, fixturePath] }])('exits 2 for incorrect arguments %#', async ({ args }) => {

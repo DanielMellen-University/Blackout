@@ -56,3 +56,5 @@ Export requires plain data records (ordinary or null prototype) with own enumera
 Error paths use dot notation for ordinary field names and JSON-quoted brackets for unusual names. Dots, brackets, quotes, newlines and terminal control characters inside a key remain unambiguous and escaped in CLI output.
 
 Missing or extra CLI arguments print usage, the received argument count and the exit-code legend to stderr, with no score output and exit 2. They are reported as invocation mistakes rather than invalid replay content.
+
+CLI read errors name the quoted input path and the filesystem error code. Directories and other non-regular inputs are rejected explicitly. Invalid JSON or replay content includes the filename as well as the validation reason and field path. All of these errors exit 2 and leave stdout empty.
