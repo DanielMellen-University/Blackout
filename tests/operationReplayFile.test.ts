@@ -111,6 +111,53 @@ describe('operation replay file', () => {
     expect(() => serializeOperationReplayFile(transcript, fixture.claimed)).toThrow('too-large at $')
   })
 
+  it('hashes numeric values independently of integer, decimal and exponent spelling', () => {
+    const alternate = text.replace('"seed":42', '"seed":4.2e1')
+      .replace('"version":1', '"version":1.0')
+      .replace('"total":61472', '"total":614720e-1')
+    expect(parseOperationReplayFile(alternate)).toEqual({ ok: true, file: fixture })
+    const transcript = replayFileTranscript(structuredClone(fixture))
+    transcript.samples.ingress[0]!.t = -0
+    transcript.samples.ingress[0]!.speed = 0
+    transcript.samples.ingress[0]!.fuel = 0
+    transcript.samples.ingress[0]!.nitro = 1
+    const zeroes = serializeOperationReplayFile(transcript, fixture.claimed)
+    expect(parseOperationReplayFile(zeroes.replace('"speed":0', '"speed":-0.0'))).toMatchObject({ ok: true })
+    expect(parseOperationReplayFile(zeroes.replace('"fuel":0', '"fuel":0e10'))).toMatchObject({ ok: true })
+  })
+
+  it.each([
+    ['fuel', 0], ['fuel', 100], ['nitro', 0], ['nitro', 1], ['speed', 0], ['t', 0],
+  ] as const)('round-trips the valid %s boundary %s', (key, value) => {
+    const transcript = replayFileTranscript(structuredClone(fixture))
+    transcript.samples.ingress[0]![key] = value
+    const parsed = parseOperationReplayFile(serializeOperationReplayFile(transcript, fixture.claimed))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) throw new Error(parsed.reason)
+    expect(parsed.file.samples.ingress[0]![key]).toBe(value)
+  })
+
+  it.each([[], null, {}, [null]])('rejects empty or malformed stage containers %#', samples => {
+    expect(parseOperationReplayFile(change(file => { file.samples.ingress = samples as never })))
+      .toEqual({ ok: false, reason: 'missing-stage', path: '$.samples.ingress' })
+  })
+
+  it('rejects equal time at the exact stage boundary', () => {
+    expect(parseOperationReplayFile(change(file => { file.samples.transit[0]!.t = file.samples.ingress.at(-1)!.t })))
+      .toEqual({ ok: false, reason: 'out-of-order', path: '$.samples.transit[0].t' })
+  })
+
+  it.each([Number.MAX_SAFE_INTEGER, -Number.MAX_SAFE_INTEGER])('round-trips a safe integer claim %s', total => {
+    const claimed = { ...fixture.claimed, total }
+    expect(parseOperationReplayFile(serializeOperationReplayFile(replayFileTranscript(fixture), claimed)))
+      .toMatchObject({ ok: true, file: { claimed: { total } } })
+  })
+
+  it.each([Number.MAX_SAFE_INTEGER + 1, Number.MIN_SAFE_INTEGER - 1])('rejects unsafe integer claims %s', total => {
+    expect(() => serializeOperationReplayFile(replayFileTranscript(fixture), { ...fixture.claimed, total }))
+      .toThrow('invalid-claim at $.claimed.total')
+  })
+
   it('preserves absent telemetry and unknown mode rather than inventing values', () => {
     const transcript = replayFileTranscript(structuredClone(fixture))
     for (const samples of Object.values(transcript.samples)) {
@@ -132,11 +179,11 @@ describe('operation replay file', () => {
     expect(parsed).toMatchObject({ ok: true, file: { flightMode } })
   })
 
-  it.each(['', '{', text.slice(0, -50), 'NaN'])('rejects truncated or invalid JSON %#', broken => {
+  it.each(['', '{', text.slice(0, -50), 'NaN', '\uFEFF' + text, text + '{}', text + 'garbage', text + '\0'])('rejects truncated or invalid JSON %#', broken => {
     expect(parseOperationReplayFile(broken)).toEqual({ ok: false, reason: 'invalid-json', path: '$' })
   })
 
-  it.each(['null', '[]', '42'])('rejects non-object JSON %s', broken => {
+  it.each(['null', '[]', '42', 'true', 'false', '"replay"'])('rejects non-object JSON %s', broken => {
     expect(parseOperationReplayFile(broken)).toEqual({ ok: false, reason: 'invalid-shape', path: '$' })
   })
 
@@ -218,7 +265,7 @@ describe('operation replay file', () => {
       .toEqual({ ok: false, reason: 'invalid-shape', path: '$.extra' })
   })
 
-  it.each(['', 'fnv1a64:abcd', 'sha256:1234', null])('rejects malformed integrity %s', integrity => {
+  it.each(['', 'fnv1a64:abcd', 'sha256:1234', null, fixture.integrity + '\n', fixture.integrity + '\r\n', fixture.integrity.toUpperCase(), 'fnv1a64:00000000000000000'])('rejects malformed integrity %s', integrity => {
     expect(parseOperationReplayFile(JSON.stringify({ ...fixture, integrity })))
       .toEqual({ ok: false, reason: 'invalid-integrity', path: '$.integrity' })
   })

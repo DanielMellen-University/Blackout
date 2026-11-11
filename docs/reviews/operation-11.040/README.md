@@ -48,3 +48,5 @@ Invalid route, energy, airborne, negative time and negative speed report their e
 Import rejects JSON nesting beyond 32 containers as `too-deep`, with the path of the rejected container. Brackets inside strings do not count. The format itself needs only four container levels.
 
 Import and export cap file size at 16 MiB of UTF-8, including whitespace and the export newline, reporting `too-large at $`. Oversized input is rejected before the JSON walk. This is above the live flight recorder’s 5,400-sample ceiling and does not change flight limits.
+
+Boundary regression tests pin inclusive fuel/nitro limits, zero time/speed, safe integer claims, empty stages, non-object roots and exact stage-boundary time ordering. BOM-prefixed JSON and trailing non-whitespace data are rejected as `invalid-json`; JSON whitespace is allowed. Equivalent integer, decimal, exponent and signed-zero spellings share the same canonical checksum.
