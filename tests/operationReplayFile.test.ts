@@ -63,10 +63,19 @@ describe('operation replay file', () => {
     ['escape-equivalent', text.replace('"total":', String.raw`"\u0074otal":99999,"total":`), '$.claimed.total'],
     ['identical values', text.replace('{', '{"seed":42,'), '$.seed'],
     ['nested arrays', '{"extra":[[],[{"key":1,"key":2}]]}', '$.extra[1][0].key'],
-    ['escaped quotes and backslashes', String.raw`{"a\"\\":1,"a\u0022\u005c":2}`, '$.a"\\'],
-    ['surrogate escapes', String.raw`{"😀":1,"\ud83d\ude00":2}`, '$.😀'],
+    ['escaped quotes and backslashes', String.raw`{"a\"\\":1,"a\u0022\u005c":2}`, '$[' + JSON.stringify('a"\\') + ']'],
+    ['surrogate escapes', String.raw`{"😀":1,"\ud83d\ude00":2}`, '$["😀"]'],
   ])('rejects duplicate keys: %s', (_name, broken, path) => {
     expect(parseOperationReplayFile(broken)).toEqual({ ok: false, reason: 'duplicate-key', path })
+  })
+
+  it.each(['a.b', 'a[0]', 'line\nbreak', '\u001b[31m', ''])('escapes unusual error-path keys %#', key => {
+    const path = `$[${JSON.stringify(key)}]`
+    expect(parseOperationReplayFile(JSON.stringify({ ...fixture, [key]: true })))
+      .toEqual({ ok: false, reason: 'invalid-shape', path })
+    const encoded = JSON.stringify(key)
+    expect(parseOperationReplayFile(`{${encoded}:1,${encoded}:2}`))
+      .toEqual({ ok: false, reason: 'duplicate-key', path })
   })
 
   it('accepts escaped keys and values with JSON whitespace and unchanged integrity', () => {

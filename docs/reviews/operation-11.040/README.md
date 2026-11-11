@@ -52,3 +52,5 @@ Import and export cap file size at 16 MiB of UTF-8, including whitespace and the
 Boundary regression tests pin inclusive fuel/nitro limits, zero time/speed, safe integer claims, empty stages, non-object roots and exact stage-boundary time ordering. BOM-prefixed JSON and trailing non-whitespace data are rejected as `invalid-json`; JSON whitespace is allowed. Equivalent integer, decimal, exponent and signed-zero spellings share the same canonical checksum.
 
 Export requires plain data records (ordinary or null prototype) with own enumerable data properties. Inherited fields, hidden fields and accessors are rejected as `invalid-shape`, preventing validation and hashing from seeing different content.
+
+Error paths use dot notation for ordinary field names and JSON-quoted brackets for unusual names. Dots, brackets, quotes, newlines and terminal control characters inside a key remain unambiguous and escaped in CLI output.

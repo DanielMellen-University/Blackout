@@ -57,6 +57,11 @@ function fail(reason: ReplayFileReason, path: string): never {
   throw new ReplayFileError(reason, path)
 }
 
+/** Keep member paths unambiguous and control characters escaped in CLI errors. */
+function memberPath(path: string, key: string): string {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key) ? `${path}.${key}` : `${path}[${JSON.stringify(key)}]`
+}
+
 function object(value: unknown, path: string): Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) fail('invalid-shape', path)
   const prototype = Object.getPrototypeOf(value)
@@ -66,14 +71,14 @@ function object(value: unknown, path: string): Record<string, unknown> {
   for (const key of Reflect.ownKeys(value)) {
     if (typeof key !== 'string') fail('invalid-shape', path)
     const descriptor = Object.getOwnPropertyDescriptor(value, key)!
-    if (!descriptor.enumerable || !('value' in descriptor)) fail('invalid-shape', `${path}.${key}`)
+    if (!descriptor.enumerable || !('value' in descriptor)) fail('invalid-shape', memberPath(path, key))
   }
   return value as Record<string, unknown>
 }
 
 function keys(value: Record<string, unknown>, allowed: readonly string[], path: string): void {
   for (const key of Object.keys(value)) {
-    if (!allowed.includes(key)) fail('invalid-shape', `${path}.${key}`)
+    if (!allowed.includes(key)) fail('invalid-shape', memberPath(path, key))
   }
 }
 
@@ -238,7 +243,7 @@ function rejectDuplicateKeys(text: string): void {
       frame.state = frame.kind === 'object' ? 'key' : 'value'
     } else if (frame.kind === 'object') {
       const key = string()
-      const path = `${frame.path}.${key}`
+      const path = memberPath(frame.path, key)
       if (frame.keys.has(key)) fail('duplicate-key', path)
       frame.keys.add(key)
       whitespace()
