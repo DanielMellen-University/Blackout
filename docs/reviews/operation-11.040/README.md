@@ -58,3 +58,5 @@ Error paths use dot notation for ordinary field names and JSON-quoted brackets f
 Missing or extra CLI arguments print usage, the received argument count and the exit-code legend to stderr, with no score output and exit 2. They are reported as invocation mistakes rather than invalid replay content.
 
 CLI read errors name the quoted input path and the filesystem error code. Directories and other non-regular inputs are rejected explicitly. Invalid JSON or replay content includes the filename as well as the validation reason and field path. All of these errors exit 2 and leave stdout empty.
+
+The CLI checks the opened file’s type and byte length before decoding. Reads are bounded to the same 16 MiB budget (plus one detection byte), including when a file grows after inspection; descriptors close on success and failure. Nonblocking open avoids waiting on a FIFO.

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { closeSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { closeSync, mkdtempSync, openSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -91,6 +91,16 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
     const result = await run([dir])
     expect(result.status).toBe(2)
     expect(result.stderr).toContain(`Cannot read replay ${JSON.stringify(dir)}: expected a regular file`)
+    expect(result.stdout).toBe('')
+  })
+
+  it('rejects an oversized file at the reader before decoding its content', async () => {
+    const path = join(dir, 'oversized.json')
+    writeFileSync(path, '')
+    truncateSync(path, 16 * 1024 * 1024 + 1)
+    const result = await run([path])
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain(`Cannot read replay ${JSON.stringify(path)}: too-large at $`)
     expect(result.stdout).toBe('')
   })
 
