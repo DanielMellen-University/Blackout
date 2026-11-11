@@ -6,6 +6,8 @@ import { normalizeOperationSeed } from './seed'
 
 export const OPERATION_REPLAY_FORMAT = 'blackout-operation-replay' as const
 export const OPERATION_REPLAY_VERSION = 1 as const
+/** UTF-8 input/output budget, well above the live flight's 5,400 samples. */
+export const OPERATION_REPLAY_MAX_BYTES = 16 * 1024 * 1024
 export type ReplayFlightMode = 'model' | 'stick'
 
 export interface OperationReplayClaim {
@@ -30,7 +32,7 @@ export type ReplayFileReason =
   | 'invalid-json' | 'duplicate-key' | 'invalid-shape' | 'wrong-format' | 'wrong-version' | 'wrong-operation'
   | 'invalid-seed' | 'invalid-decisions' | 'invalid-flight-mode' | 'missing-stage'
   | 'invalid-sample' | 'non-finite' | 'out-of-order' | 'invalid-claim'
-  | 'invalid-integrity' | 'integrity-mismatch' | 'too-deep'
+  | 'invalid-integrity' | 'integrity-mismatch' | 'too-deep' | 'too-large'
 
 export interface ReplayFileFailure {
   ok: false
@@ -139,9 +141,9 @@ function canonical(value: unknown): string {
 }
 
 /** FNV-1a 64 over canonical UTF-8. An integrity checksum, not an authenticity proof. */
-function integrity(content: Omit<OperationReplayFile, 'integrity'>): string {
+function integrity(canonicalContent: string): string {
   let hash = 0xcbf29ce484222325n
-  for (const byte of new TextEncoder().encode(canonical(content))) {
+  for (const byte of new TextEncoder().encode(canonicalContent)) {
     hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n)
   }
   return `fnv1a64:${hash.toString(16).padStart(16, '0')}`
@@ -163,7 +165,10 @@ export function serializeOperationReplayFile(
     claimed,
   }
   validateContent(content)
-  return `${canonical({ ...content, integrity: integrity(content) })}\n`
+  const canonicalContent = canonical(content)
+  // The integrity member adds 39 bytes to the object, plus the export newline.
+  assertTextBudget(canonicalContent, 40)
+  return `${canonical({ ...content, integrity: integrity(canonicalContent) })}\n`
 }
 
 /** Walk JSON before parsing objects: JSON.parse would discard earlier duplicate members.
@@ -240,9 +245,15 @@ function rejectDuplicateKeys(text: string): void {
   if (offset !== text.length) invalid()
 }
 
+function assertTextBudget(text: string, extraBytes = 0): void {
+  const limit = OPERATION_REPLAY_MAX_BYTES - extraBytes
+  if (text.length > limit || new TextEncoder().encode(text).byteLength > limit) fail('too-large', '$')
+}
+
 export function parseOperationReplayFile(text: string): ReplayFileParse {
   let value: unknown
   try {
+    assertTextBudget(text)
     rejectDuplicateKeys(text)
     value = JSON.parse(text)
   } catch (error) {
@@ -256,7 +267,7 @@ export function parseOperationReplayFile(text: string): ReplayFileParse {
       fail('invalid-integrity', '$.integrity')
     }
     const { integrity: stored, ...content } = file
-    if (stored !== integrity(content)) fail('integrity-mismatch', '$.integrity')
+    if (stored !== integrity(canonical(content))) fail('integrity-mismatch', '$.integrity')
     return { ok: true, file }
   } catch (error) {
     if (!(error instanceof ReplayFileError)) throw error

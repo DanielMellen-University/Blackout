@@ -93,6 +93,24 @@ describe('operation replay file', () => {
       .toEqual({ ok: false, reason: 'invalid-shape', path: '$.extra' })
   })
 
+  it.each([
+    ['ASCII', ' '.repeat(16 * 1024 * 1024 + 1)],
+    ['UTF-8', '"' + 'é'.repeat(8 * 1024 * 1024) + '"'],
+  ])('rejects oversized %s input before JSON scanning', (_name, oversized) => {
+    expect(parseOperationReplayFile(oversized)).toEqual({ ok: false, reason: 'too-large', path: '$' })
+  })
+
+  it('does not export a file larger than the import byte budget', () => {
+    const transcript = replayFileTranscript(structuredClone(fixture))
+    let t = 0
+    for (const id of ['ingress', 'transit', 'egress'] as const) {
+      transcript.samples[id] = Array.from({ length: 60_000 }, () => ({
+        ...fixture.samples[id][0]!, t: t++, x: 1.234567890123456e100,
+      }))
+    }
+    expect(() => serializeOperationReplayFile(transcript, fixture.claimed)).toThrow('too-large at $')
+  })
+
   it('preserves absent telemetry and unknown mode rather than inventing values', () => {
     const transcript = replayFileTranscript(structuredClone(fixture))
     for (const samples of Object.values(transcript.samples)) {
