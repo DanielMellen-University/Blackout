@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 11.041. Harden the shipped operation replay validator with exact field paths for invalid decisions and sample values. See [replay follow-ups](reviews/operation-11.040/README.md#follow-ups-11041).
+
 Chunk 11.040. Export a completed Ridge relay to versioned JSON, import it and verify its claimed stage and total scores outside the browser session. Strict validation rejects malformed samples, reversed time and changed content using a canonical-content checksum. A pure summary holds the stage measurements, gates, medal and decisions. The session exposes the latest saved replay for export, and `npm run verify:operation -- <file>` checks it with the existing scorer. The seed-42 model sample verifies at 61,472 gold. Flight, cockpit, controls and existing results are unchanged. See [replay file review](reviews/operation-11.040/README.md).
 
 Chunk 11.039. Fly the ridge relay from the cockpit. Ingress, transit and egress run in the existing flight scene, with the stage HUD over the view. The gates and the briefed altitude band are drawn in the world. Stick, gamepad and model stay available, and the measured stage score is unchanged. On seed 42 the model still scores valley then commit 61,472 (gold) in 28.850 s. With `?dev=operation`, the flight plan launches it. The featured row and the 82-course catalog stay unchanged. A headless SwiftShader pass rendered at about 8 frames per second. See [operation review](reviews/operation-11.039/README.md).
@@ -179,7 +181,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.040** is current. Previous ship: **11.039**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.041** is current. Previous ship: **11.040**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 

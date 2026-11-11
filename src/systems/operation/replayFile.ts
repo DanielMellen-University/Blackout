@@ -85,7 +85,8 @@ function validateContent(value: unknown): asserts value is Omit<OperationReplayF
   if (seed !== normalizeOperationSeed(seed)) fail('invalid-seed', '$.seed')
   const decisions = object(file.decisions, '$.decisions')
   keys(decisions, ['route', 'energy'], '$.decisions')
-  if (!isRouteChoice(decisions.route) || !isEnergyChoice(decisions.energy)) fail('invalid-decisions', '$.decisions')
+  if (!isRouteChoice(decisions.route)) fail('invalid-decisions', '$.decisions.route')
+  if (!isEnergyChoice(decisions.energy)) fail('invalid-decisions', '$.decisions.energy')
   if ('flightMode' in file && file.flightMode !== 'model' && file.flightMode !== 'stick') {
     fail('invalid-flight-mode', '$.flightMode')
   }
@@ -102,8 +103,9 @@ function validateContent(value: unknown): asserts value is Omit<OperationReplayF
       const sample = object(samples[index], at)
       keys(sample, [...SAMPLE_NUMBERS, 'airborne', 'fuel', 'nitro'], at)
       for (const key of SAMPLE_NUMBERS) finite(sample[key], `${at}.${key}`, 'invalid-sample')
-      if (typeof sample.airborne !== 'boolean' || (sample.t as number) < 0 || (sample.speed as number) < 0) {
-        fail('invalid-sample', at)
+      if (typeof sample.airborne !== 'boolean') fail('invalid-sample', `${at}.airborne`)
+      for (const key of ['t', 'speed'] as const) {
+        if ((sample[key] as number) < 0) fail('invalid-sample', `${at}.${key}`)
       }
       for (const [key, max] of [['fuel', 100], ['nitro', 1]] as const) {
         if (!(key in sample)) continue

@@ -40,3 +40,7 @@ Run `npm run verify:operation -- docs/reviews/operation-11.040/seed-42-valley-co
 The Node 22.23.2 sandbox observations are separate from the independent run. In that sandbox the first candidate grew operation tests from 199 to 277 and Vitest from 3,126 to 3,204. Its default baseline had 14 failures, its default final run added a real-clock cockpit timing failure, and a one-worker 20 s run passed 3,195 with nine terrain-evidence checks failing on `spawnSync git EPERM`. The accepted candidate in that sandbox passed 291 operation/replay tests, and its full npm test passed 3,205 with 13 failures (nine git EPERM and four timeouts; a retry left the nine EPERM). No hydrology hash failures were reported there.
 
 The independent Node 22.23.4 run, at default workers, passed all 291 operation/replay tests and all 3,218 Vitest tests. The Node script test, production build and version check passed, and `npm test` exited 0. No GUI or browser was exercised.
+
+## Follow-ups 11.041
+
+Invalid route, energy, airborne, negative time and negative speed report their exact field paths. Fuel and nitro range failures retain their precise paths. Flight and scoring rules are unchanged.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.041** Harden shipped operation replays: validation identifies the exact invalid decision or sample field. See [replay follow-ups](docs/reviews/operation-11.040/README.md#follow-ups-11041).
+
 - **11.040** Export one completed Ridge relay as versioned JSON and import it for deterministic verification outside the browser session. Strict validation checks samples, ordering and a canonical-content checksum before the existing scorer compares the claimed stage and total scores. Add a pure replay summary, a session export method and `npm run verify:operation -- <file>`. The checked-in seed-42 model replay verifies at 61,472 gold. Flight, cockpit, controls and existing results are unchanged. See [replay file review](docs/reviews/operation-11.040/README.md).
 
 - **11.039** Fly the ridge relay from the cockpit camera. Ingress, transit and egress use the existing flight scene, with the stage HUD over the view and the gates and briefed altitude band drawn in the world. Stick, gamepad and model stay available. The measured stage score is unchanged: on seed 42 the model still scores valley then commit 61,472 (gold, 28.850 s). With `?dev=operation`, the flight plan launches it, and the featured row and the 82-course catalog stay unchanged. A headless SwiftShader pass rendered at about 8 frames per second. See [operation review](docs/reviews/operation-11.039/README.md).

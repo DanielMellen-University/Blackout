@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.040**. Previous roadmap chunk: **11.039**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.041**. Previous roadmap chunk: **11.040**.
 
-Recent changes from **11.040**. A completed Ridge relay can be exported as versioned JSON, imported and checked against its claimed stage and total scores outside the browser. The seed-42 model sample verifies at 61,472 gold. From **11.039**: cockpit flight with the stage HUD, gates and altitude band. From **11.038**: the stick and measured stage score. From **11.037**: the three airborne stages and two decisions.
+Recent changes from **11.041**. Replay validation now identifies the exact invalid decision or sample field. From **11.040**: A completed Ridge relay can be exported as versioned JSON, imported and checked against its claimed stage and total scores outside the browser. The seed-42 model sample verifies at 61,472 gold. From **11.039**: cockpit flight with the stage HUD, gates and altitude band. From **11.038**: the stick and measured stage score. From **11.037**: the three airborne stages and two decisions.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

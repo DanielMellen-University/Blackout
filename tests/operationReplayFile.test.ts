@@ -125,9 +125,9 @@ describe('operation replay file', () => {
     expect(parseOperationReplayFile(JSON.stringify(broken))).toEqual({ ok: false, reason, path: `$.${key}` })
   })
 
-  it('rejects a bad decision', () => {
-    expect(parseOperationReplayFile(change(file => { file.decisions.route = 'coast' as never })))
-      .toEqual({ ok: false, reason: 'invalid-decisions', path: '$.decisions' })
+  it.each(['route', 'energy'] as const)('points to the invalid %s decision', key => {
+    expect(parseOperationReplayFile(change(file => { file.decisions[key] = 'coast' as never })))
+      .toEqual({ ok: false, reason: 'invalid-decisions', path: `$.decisions.${key}` })
   })
 
   it.each(['ingress', 'transit', 'egress'] as const)('requires at least two samples in %s', id => {
@@ -151,10 +151,11 @@ describe('operation replay file', () => {
   })
 
   it.each([
-    ['airborne', 'yes'], ['speed', -1], ['t', -1], ['fuel', 101], ['nitro', 1.01], ['nitro', null],
+    ['airborne', 'yes'], ['airborne', null], ['speed', -1], ['t', -1],
+    ['fuel', -0.001], ['fuel', 100.001], ['fuel', null], ['nitro', -Number.MIN_VALUE], ['nitro', 1.01], ['nitro', null],
   ])('rejects invalid sample %s=%s', (key, value) => {
     const broken = change(file => { Object.assign(file.samples.ingress[0]!, { [key]: value }) })
-    expect(parseOperationReplayFile(broken)).toMatchObject({ ok: false, reason: 'invalid-sample' })
+    expect(parseOperationReplayFile(broken)).toEqual({ ok: false, reason: 'invalid-sample', path: `$.samples.ingress[0].${key}` })
   })
 
   it('rejects missing numeric fields and unknown sample fields', () => {
