@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **11.041** Harden shipped operation replays with precise escaped field paths, 16 MiB UTF-8 and 32-level JSON limits, stable export records, bounded CLI file reads and clearer usage/read/validation errors. Keep saved replay samples paired with their completed result. Add boundary/checksum regression coverage, explicit skips for unavailable Git archive reads and deterministic cockpit pacing tests. See [replay follow-ups](docs/reviews/operation-11.040/README.md#follow-ups-11041).
+- **11.041** Harden shipped operation replays with precise escaped field paths, 16 MiB UTF-8 and 32-level JSON limits, stable export records, bounded CLI file reads and clearer usage/read/validation errors. Keep saved replay samples paired with their completed result. Keep the newest saved history, validate stored trace samples and restore the surrounding world pad after model harness flights. Add boundary/checksum regression coverage, explicit skips for unavailable Git archive reads and deterministic cockpit pacing tests. See [replay follow-ups](docs/reviews/operation-11.040/README.md#follow-ups-11041).
 
 - **11.040** Export one completed Ridge relay as versioned JSON and import it for deterministic verification outside the browser session. Strict validation checks samples, ordering and a canonical-content checksum before the existing scorer compares the claimed stage and total scores. Add a pure replay summary, a session export method and `npm run verify:operation -- <file>`. The checked-in seed-42 model replay verifies at 61,472 gold. Flight, cockpit, controls and existing results are unchanged. See [replay file review](docs/reviews/operation-11.040/README.md).
 
