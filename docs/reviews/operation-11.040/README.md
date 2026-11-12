@@ -74,3 +74,5 @@ Oversized saved histories now retain the newest twelve finishes on both load and
 Stored browser transcripts now require at least two finite, correctly shaped samples per stage and nondecreasing time within each stage. Corrupt traces fail save parsing rather than entering playback. Legacy hand-built transcripts with stage-local clocks remain loadable; file import still requires strictly increasing time across all stages.
 
 The model harness now restores the surrounding world’s pad along with its seed and terrain profile. Running a model replay fixture no longer clears unrelated pad state. The seed-42 replay bytes and operation performance records remain unchanged.
+
+See [follow-up verification](followup-verification.md) for failing reproductions, local commit SHAs/messages, exact targeted commands, full-suite results and sandbox limits.
