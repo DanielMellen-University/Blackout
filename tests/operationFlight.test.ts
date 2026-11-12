@@ -251,6 +251,17 @@ describe('operation flight', () => {
     expect(replayed.attempt.phase).toBe('complete')
   })
 
+  it('keeps captured sample time increasing across all three stages', () => {
+    const transcript = operationFlightTranscript(flyChoices('valley', 'commit'))!
+    const samples = [...transcript.samples.ingress, ...transcript.samples.transit, ...transcript.samples.egress]
+    expect(samples.length).toBeGreaterThan(3)
+    for (let index = 1; index < samples.length; index += 1) {
+      expect(samples[index]!.t).toBeGreaterThan(samples[index - 1]!.t)
+    }
+    expect(transcript.samples.ingress.at(-1)!.t).toBeLessThan(transcript.samples.transit[0]!.t)
+    expect(transcript.samples.transit.at(-1)!.t).toBeLessThan(transcript.samples.egress[0]!.t)
+  })
+
   it('withholds a transcript until the run is complete', () => {
     const flight = open()
     stepOperationFlight(flight, 100_000)
