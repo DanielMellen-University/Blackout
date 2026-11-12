@@ -1,6 +1,7 @@
 import { flightStart, announcesLanding } from './systems/AirborneStart'
 import { operationDevRequested } from './systems/operation/devFlag'
 import { OperationCockpit } from './ui/operation/cockpit'
+import { applyOperationAudioInputs, flightAudioMuted } from './ui/operation/audio'
 import { operationLaunchItem } from './ui/operation/launch'
 import type { OperationDeck } from './ui/operation/deck'
 import { sampleTerrainSurfaceHeightFast } from './world/terrainSample'
@@ -481,6 +482,8 @@ export async function boot(): Promise<void> {
   let operationCockpit: OperationCockpit | null = null
   const openRidgeRelay = (): void => {
     if (!operationDevRequested(replayParams?.toString() ?? '')) return
+    // Resume on the opening gesture, before the lazy import can consume it.
+    void audio.resume()
     if (ridgeRelayDeck) {
       ridgeRelayDeck.open()
       return
@@ -1385,7 +1388,12 @@ export async function boot(): Promise<void> {
       void audio.suspend()
       return
     }
-    if (playing && !menu.paused && !results.open) void audio.resume()
+    if (!flightAudioMuted({
+      audioMuted, hidden: document.hidden, playing,
+      operationActive: !!operationCockpit?.audioInputs(),
+      paused: menu.paused, resultsOpen: results.open,
+      crashed: aircraft.status === 'crashed', crashCinematic: crashCinematic.active,
+    })) void audio.resume()
     refreshOpsCatalog()
   }
   document.addEventListener('visibilitychange', onVisibilityChange)
@@ -2738,12 +2746,7 @@ export async function boot(): Promise<void> {
     audioFrame.airbrake = airbrakeOpen
     audioFrame.speed = aircraft.speed
     const operationAudio = operationCockpit?.audioInputs()
-    if (operationAudio) {
-      audioFrame.throttle = operationAudio.throttle
-      audioFrame.boost = operationAudio.boost
-      audioFrame.effectivePower = operationAudio.effectivePower
-      audioFrame.speed = operationAudio.speed
-    }
+    applyOperationAudioInputs(audioFrame, operationAudio)
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain * world.atmosphere.precipitationVisibility
     audioFrame.snow = precipitation.snow * world.atmosphere.precipitationVisibility
@@ -2754,9 +2757,11 @@ export async function boot(): Promise<void> {
     audioFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
     audioFrame.cockpit = cameras.mode === 'cockpit'
     audioFrame.impactOnly = crashCinematic.active
-    audioFrame.mute =
-      audioMuted || document.hidden || !playing || menu.paused || results.open ||
-      (aircraft.status === 'crashed' && !crashCinematic.active)
+    audioFrame.mute = flightAudioMuted({
+      audioMuted, hidden: document.hidden, playing, operationActive: !!operationAudio,
+      paused: menu.paused, resultsOpen: results.open,
+      crashed: aircraft.status === 'crashed', crashCinematic: crashCinematic.active,
+    })
     audioFrame.dt = visualDt || 1 / 60
     audio.update(audioFrame)
 
