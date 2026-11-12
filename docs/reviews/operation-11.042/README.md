@@ -10,7 +10,7 @@ Warm terrain through ingress before scored flight starts using one quadtree plan
 - `tests/terrainStreaming.test.ts`: seed-42 ingress at x=50, z=-200 through `stageEndZ(0)=2400` requests fine endpoint coverage with no desired parent/child overlap and fewer than 900 tiles. Actual build requests use player-distance LOD; the frozen-clock check retains the 16-upload cap. The overlap and density regressions failed before the fix and passed afterward.
 - `tests/operationFlight.test.ts`: operation pose and flight behavior regression checks pass.
 - Targeted Vitest runs: 90 terrain streaming/layout/LOD/seam tests passed; 39 audio/operation-flight tests passed.
-- Full test suite: `npm test -- --testTimeout=0 --maxWorkers=4` passes: Vitest reports 3,303 passed, 0 failed and 9 skipped across 263 passing files (3,312 tests total). The Node frame-metrics wrapper also passes: 1 passed, 0 failed, 0 skipped. The 9 `requireArchiveGit` skips are environment-dependent: restricted runners may deny the synchronous Git archive probe. When that capability is available, those checks run and must pass; 9 is not a fixed skip count.
+- Full test suite: `npm test -- --testTimeout=0 --maxWorkers=4` passes: Vitest reports 3,303 passed, 0 failed and 9 skipped across 263 passing files (3,312 tests total). The Node frame-metrics wrapper also passes: 2 passed, 0 failed, 0 skipped. The 9 `requireArchiveGit` skips are environment-dependent: restricted runners may deny the synchronous Git archive probe. When that capability is available, those checks run and must pass; 9 is not a fixed skip count.
 - Production build: `npm run build` passes. Vite reports its existing advisory that some chunks exceed 500 kB after minification.
 
 ## Not verified
