@@ -15,6 +15,55 @@ water gets its own finer grid budget (`waterSegsForLod`). Contact tiles
 (distance 4 cells or less) build first, then missing coverage, then LOD
 rebuilds (`terrainBuildPriority`).
 
+## Browser flight frame and streaming capture
+
+Use the development-only flight review to measure rendered frame intervals while
+the normal browser game loop runs. It also records terrain readiness, startup
+coverage time, pixel ratio, renderer identity, and sampled heap/resource counts.
+The route is prescribed at the aircraft's maximum speed, so this measures a
+repeatable rendering and streaming workload, not pilot handling. It does not
+replace a real stick or keyboard flight when assessing controls.
+
+With the repository dependencies and Playwright/Chromium already available,
+start Vite on a separate local port:
+
+```sh
+npm run dev -- --host 127.0.0.1 --port 5174 --strictPort
+```
+
+In another terminal, set the installed Playwright module and Chromium paths,
+then capture one seed-1337 city route (three runs across `city,world` is the
+default if `REVIEW_ROUTES` and `REVIEW_RUNS` are omitted):
+
+```sh
+PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs \
+CHROMIUM_PATH=/path/to/chromium \
+REVIEW_URL=http://127.0.0.1:5174 \
+REVIEW_DIRECTORY=/tmp/blackout-flight-review \
+REVIEW_ROUTES=city REVIEW_RUNS=1 \
+node scripts/profile-flight.mjs measured
+```
+
+The review opens Free flight with seed 1337, Balanced quality, a 1280 by 720
+viewport, a fixed pixel ratio of 1, and the development-only review panel. Keep
+the tab visible. The default run measures 120 simulated seconds (81.6 km); a
+single browser run takes at least that long. The script rejects software
+renderers, changing pixel ratio, an incomplete route, browser errors, or an
+unmatched viewport and seed. Set `REVIEW_CAPTURE=1` to save an endpoint image.
+Keep runs sequential and avoid running builds, tests, or other profilers during
+the measurement.
+
+Read `<route>-<run>.json` in the output directory. `flightFrames` gives the
+number of rendered intervals and their median, p95, p99, maximum, and counts
+over 50 and 100 ms. `longFrames.flight` retains intervals over 100 ms with
+their start and end offsets. `ratioRange` must remain `[1, 1]` for an equal
+resolution comparison. `launchToCoverageWallMs` measures startup until terrain
+has no pending, in-flight, or ready uploads. `streaming` and `resourceSamples`
+show tile work, geometry, texture, and heap readings during the route. Heap is
+JavaScript heap, not total process memory or VRAM. Frame intervals are browser
+render intervals, not a direct GPU-time measurement; neither a single run nor
+the prescribed path proves a player-device FPS result.
+
 ## Implementation
 
 ### Chunk 11.036 shared Waterway recipe
