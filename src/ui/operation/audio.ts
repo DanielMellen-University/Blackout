@@ -39,3 +39,16 @@ export function flightAudioMuted(state: FlightAudioGate): boolean {
   return state.audioMuted || state.hidden || (!state.playing && !state.operationActive) || state.paused || state.resultsOpen ||
     (!state.operationActive && state.crashed && !state.crashCinematic)
 }
+
+/** Resolve both the sustained burner flag and its edge cue from the same aircraft. */
+export function flightAfterburnerAudio(
+  previous: boolean,
+  sceneBoost: boolean,
+  operation: OperationAudioInputs | null | undefined,
+  gate: FlightAudioGate & { simLive: boolean },
+): { active: boolean; cue: 'ab' | 'ab-off' | null } {
+  const active = operation?.boost ?? sceneBoost
+  const audible = !flightAudioMuted(gate) &&
+    (!!operation || (gate.simLive && gate.playing && !gate.crashed))
+  return { active, cue: audible && active !== previous ? active ? 'ab' : 'ab-off' : null }
+}

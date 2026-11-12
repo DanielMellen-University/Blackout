@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  applyOperationAudioInputs, flightAudioMuted, operationAudioInputs,
+  applyOperationAudioInputs, flightAfterburnerAudio, flightAudioMuted, operationAudioInputs,
   type FlightAudioGate,
 } from '../src/ui/operation/audio'
 import {
@@ -13,6 +13,41 @@ const gate: FlightAudioGate = {
 }
 
 describe('main flight audio routing', () => {
+  it('cues nitro on and off from the stepped operation while the scene sortie is idle', () => {
+    const flight = openOperationFlight(42)
+    const routing = { ...gate, simLive: false }
+    try {
+      const stick = { pitch: 0, roll: 0, yaw: 0, throttle: 1, boost: true, airbrake: false }
+      stepOperationFlight(flight, 1, stick)
+      const on = operationAudioInputs(operationFlightPose(flight))!
+      expect(on.boost).toBe(true)
+      const burnerOn = flightAfterburnerAudio(false, false, on, routing)
+      expect(burnerOn).toEqual({ active: true, cue: 'ab' })
+      expect(flightAfterburnerAudio(burnerOn.active, false, on, routing).cue).toBeNull()
+      stepOperationFlight(flight, 1, { ...stick, boost: false })
+      const off = operationAudioInputs(operationFlightPose(flight))!
+      expect(off.boost).toBe(false)
+      // Deliberately oppose the scene flag to catch the wrong aircraft source.
+      expect(flightAfterburnerAudio(burnerOn.active, true, off, routing)).toEqual({ active: false, cue: 'ab-off' })
+    } finally {
+      closeOperationFlight(flight)
+    }
+  })
+
+  it.each(['audioMuted', 'hidden', 'paused', 'resultsOpen'] as const)('suppresses nitro cues while %s', key => {
+    const inputs = { throttle: 1, effectivePower: 1, boost: true, speed: 200 }
+    expect(flightAfterburnerAudio(false, false, inputs, { ...gate, simLive: false, [key]: true }).cue).toBeNull()
+  })
+
+  it('retains normal sortie nitro cues and suppresses idle or crashed scene cues', () => {
+    const scene = { ...gate, operationActive: false, playing: true, simLive: true }
+    expect(flightAfterburnerAudio(false, true, null, scene)).toEqual({ active: true, cue: 'ab' })
+    expect(flightAfterburnerAudio(true, false, null, scene).cue).toBe('ab-off')
+    expect(flightAfterburnerAudio(false, true, null, { ...scene, simLive: false }).cue).toBeNull()
+    expect(flightAfterburnerAudio(false, true, null, { ...scene, crashed: true }).cue).toBeNull()
+    expect(flightAfterburnerAudio(false, true, null, { ...scene, crashed: true, crashCinematic: true }).cue).toBeNull()
+  })
+
   it('maps the real stepped operation into the mixer frame while no sortie is playing', () => {
     const flight = openOperationFlight(42)
     try {

@@ -1,7 +1,7 @@
 import { flightStart, announcesLanding } from './systems/AirborneStart'
 import { operationDevRequested } from './systems/operation/devFlag'
 import { OperationCockpit } from './ui/operation/cockpit'
-import { applyOperationAudioInputs, flightAudioMuted } from './ui/operation/audio'
+import { applyOperationAudioInputs, flightAfterburnerAudio, flightAudioMuted } from './ui/operation/audio'
 import { operationLaunchItem } from './ui/operation/launch'
 import type { OperationDeck } from './ui/operation/deck'
 import { sampleTerrainSurfaceHeightFast } from './world/terrainSample'
@@ -2644,17 +2644,16 @@ export async function boot(): Promise<void> {
     }
     prevGearDown = gearDown
 
-    const afterburnerOn = aircraft.engineState.afterburnerActive
-    if (
-      simLive &&
-      playing &&
-      !menu.paused &&
-      !results.open &&
-      aircraft.status !== 'crashed' &&
-      afterburnerOn !== prevAfterburner
-    ) {
-      audio.playCue(afterburnerOn ? 'ab' : 'ab-off')
+    const operationAudio = operationCockpit?.audioInputs()
+    const audioGate = {
+      audioMuted, hidden: document.hidden, playing, operationActive: !!operationAudio,
+      paused: menu.paused, resultsOpen: results.open,
+      crashed: aircraft.status === 'crashed', crashCinematic: crashCinematic.active,
     }
+    const afterburner = flightAfterburnerAudio(prevAfterburner, aircraft.engineState.afterburnerActive,
+      operationAudio, { ...audioGate, simLive })
+    const afterburnerOn = afterburner.active
+    if (afterburner.cue) audio.playCue(afterburner.cue)
     prevAfterburner = afterburnerOn
     const airbrakeOpen = aircraft.controls.airbrake
     if (
@@ -2745,7 +2744,6 @@ export async function boot(): Promise<void> {
     audioFrame.effectivePower = aircraft.engineState.effectivePower
     audioFrame.airbrake = airbrakeOpen
     audioFrame.speed = aircraft.speed
-    const operationAudio = operationCockpit?.audioInputs()
     applyOperationAudioInputs(audioFrame, operationAudio)
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain * world.atmosphere.precipitationVisibility
@@ -2757,11 +2755,7 @@ export async function boot(): Promise<void> {
     audioFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
     audioFrame.cockpit = cameras.mode === 'cockpit'
     audioFrame.impactOnly = crashCinematic.active
-    audioFrame.mute = flightAudioMuted({
-      audioMuted, hidden: document.hidden, playing, operationActive: !!operationAudio,
-      paused: menu.paused, resultsOpen: results.open,
-      crashed: aircraft.status === 'crashed', crashCinematic: crashCinematic.active,
-    })
+    audioFrame.mute = flightAudioMuted(audioGate)
     audioFrame.dt = visualDt || 1 / 60
     audio.update(audioFrame)
 
