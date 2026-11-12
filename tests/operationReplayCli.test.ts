@@ -87,6 +87,17 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
     expect(result.stdout).toBe('')
   })
 
+  it.skipIf(process.platform === 'win32')('escapes quotes and control characters in replay paths', async () => {
+    const path = join(dir, 'invalid"\nreplay.json')
+    writeFileSync(path, '{')
+    const result = await run([path])
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain(JSON.stringify(path))
+    expect(result.stderr).toContain('invalid-json at $')
+    expect(result.stderr).not.toContain(path)
+    expect(result.stdout).toBe('')
+  })
+
   it('rejects directories explicitly rather than depending on OS read behavior', async () => {
     const result = await run([dir])
     expect(result.status).toBe(2)
