@@ -4,7 +4,7 @@ export interface TerrainTile {
   cz: number
   /** Side length in cells (1, 2, 4, 8, 16 or 32). */
   size: number
-  /** Distance from the planning point to the tile centre, in cells. */
+  /** Distance from the player to the tile centre, in cells, including warm-up plans. */
   dist: number
 }
 
@@ -38,13 +38,18 @@ export function planTerrainTiles(
   out?: TerrainTile[],
   previousSplits?: Set<string>,
   scratchSplits?: Set<string>,
+  /** Extra refinement/coverage points in cells; density and priority still use x/z. */
+  warmFocuses: readonly { x: number; z: number }[] = [],
 ): TerrainTile[] {
   const tiles = out ?? []
   const nextSplits = previousSplits ? scratchSplits ?? new Set<string>() : null
   nextSplits?.clear()
   let count = 0
   function visit(cx: number, cz: number, size: number): void {
-    const edgeDistance = tileDistance(cx, cz, size, x, z)
+    let edgeDistance = tileDistance(cx, cz, size, x, z)
+    for (const focus of warmFocuses) {
+      edgeDistance = Math.min(edgeDistance, tileDistance(cx, cz, size, focus.x, focus.z))
+    }
     if (edgeDistance > radius) return
     const splitAt = size === 32 ? 48 : size === 16 ? 32 : size === 8 ? 20 : size === 4 ? 12 : 8
     // Refine at the normal boundary, but do not merge again after a tiny
@@ -72,10 +77,17 @@ export function planTerrainTiles(
     }
   }
   const rootSize = TERRAIN_ROOT_SIZE
-  const minX = Math.floor((x - radius) / rootSize) * rootSize
-  const minZ = Math.floor((z - radius) / rootSize) * rootSize
-  for (let cx = minX; cx <= x + radius; cx += rootSize) {
-    for (let cz = minZ; cz <= z + radius; cz += rootSize) visit(cx, cz, rootSize)
+  let minFocusX = x, maxFocusX = x, minFocusZ = z, maxFocusZ = z
+  for (const focus of warmFocuses) {
+    minFocusX = Math.min(minFocusX, focus.x)
+    maxFocusX = Math.max(maxFocusX, focus.x)
+    minFocusZ = Math.min(minFocusZ, focus.z)
+    maxFocusZ = Math.max(maxFocusZ, focus.z)
+  }
+  const minX = Math.floor((minFocusX - radius) / rootSize) * rootSize
+  const minZ = Math.floor((minFocusZ - radius) / rootSize) * rootSize
+  for (let cx = minX; cx <= maxFocusX + radius; cx += rootSize) {
+    for (let cz = minZ; cz <= maxFocusZ + radius; cz += rootSize) visit(cx, cz, rootSize)
   }
   tiles.length = count
   if (previousSplits) {

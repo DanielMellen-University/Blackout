@@ -2,7 +2,8 @@ import { BackSide, DoubleSide, FrontSide, Group, Mesh, MeshStandardMaterial, Per
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateTerrainGeometry, type TerrainGeometryData, type TerrainGeometrySteps } from '../src/world/TerrainGeometry'
 import { TERRAIN_ROOT_SIZE, tileKey } from '../src/world/TerrainLayout'
-import { CHUNK_SIZE, TerrainSystem } from '../src/world/TerrainSystem'
+import { CHUNK_SIZE, lodFromDist, TerrainSystem } from '../src/world/TerrainSystem'
+import { stageEndZ } from '../src/systems/operation/layout'
 import type { TerrainBuildRequest, TerrainBuildReply } from '../src/world/TerrainWorkerPool'
 import { setWorldSeed } from '../src/world/noise'
 import { clearOpsPad } from '../src/world/terrainSample'
@@ -42,6 +43,7 @@ interface Internals {
   focusX: number
   focusZ: number
   scheduleAround(cx: number, cz: number): void
+  requestFor(job: Tile & { rebuild: boolean }): TerrainBuildRequest | null
   dispatchWorkers(): void
   drainBuildQueue(): void
   install(job: TerrainBuildRequest, data: TerrainGeometryData): void
@@ -158,6 +160,48 @@ describe('terrain streaming integration', () => {
     expect([...internal.desiredTiles.values()].some(tile =>
       tile.size === 1 && tile.cx <= 0 && tile.cx + tile.size > 0 && tile.cz <= 6 && tile.cz + tile.size > 6,
     )).toBe(true)
+  })
+
+  it('keeps seed-42 ingress warm-up bounded and free of overlapping parent/child leaves', () => {
+    setWorldSeed(42)
+    terrain.warmCorridor(50, -200, 50, stageEndZ(0))
+    terrain.update(50, -200, 0)
+    const tiles = [...internal.desiredTiles.values()]
+    const overlaps: string[] = []
+    for (const tile of tiles) {
+      for (let size = tile.size * 2; size <= TERRAIN_ROOT_SIZE; size *= 2) {
+        const parent = tileKey(Math.floor(tile.cx / size) * size, Math.floor(tile.cz / size) * size, size)
+        if (internal.desiredTiles.has(parent)) overlaps.push(parent)
+      }
+    }
+    expect(overlaps).toEqual([])
+    expect(tiles.length).toBeLessThan(900)
+    const endCell = Math.floor(stageEndZ(0) / CHUNK_SIZE)
+    expect(internal.desiredTiles.has(tileKey(0, endCell))).toBe(true)
+  })
+
+  it('builds warm corridor leaves at density based on player distance rather than corridor distance', () => {
+    setWorldSeed(42)
+    terrain.warmCorridor(50, -200, 50, stageEndZ(0))
+    terrain.update(50, -200, 0)
+    const tile = internal.desiredTiles.get(tileKey(0, Math.floor(stageEndZ(0) / CHUNK_SIZE)))!
+    expect(tile.size).toBe(1)
+    const playerDistance = Math.hypot(tile.cx + .5 - 50 / CHUNK_SIZE, tile.cz + .5 + 200 / CHUNK_SIZE)
+    const request = internal.requestFor({ ...tile, rebuild: false })!
+    expect(request.lod).toBe(lodFromDist(playerDistance))
+    expect(request.lod).toBe(1)
+    expect(tile.dist).toBeCloseTo(playerDistance)
+  })
+
+  it('retains the 16-upload cap even when the upload clock is frozen', () => {
+    for (let cx = 20; cx < 40; cx++) {
+      desire(cx, cx)
+      internal.ready.push({ job: job(cx, 2), data: fixture })
+    }
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    internal.drainBuildQueue()
+    expect(internal.chunks.size).toBe(16)
+    expect(terrain.streamingStats.ready).toBe(4)
   })
 
   it('fills caller-owned streaming telemetry without allocating a snapshot', () => {

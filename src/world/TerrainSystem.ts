@@ -680,7 +680,7 @@ export class TerrainSystem {
     this.warmFocuses.length = 0
     for (let index = 0; index <= steps; index += 1) {
       const t = index / steps
-      this.warmFocuses.push({ x: sx + (ex - sx) * t, z: sz + (ez - sz) * t })
+      this.warmFocuses.push({ x: (sx + (ex - sx) * t) / CHUNK_SIZE, z: (sz + (ez - sz) * t) / CHUNK_SIZE })
     }
   }
 
@@ -943,11 +943,6 @@ export class TerrainSystem {
     const includeTile = (tile: DesiredTile): void => {
         const { cx: kx, cz: kz, size, dist } = tile
         const key = tileKey(kx, kz, size)
-        const previous = this.desiredTiles.get(key)
-        if (previous) {
-          if (dist < previous.dist) previous.dist = dist
-          return
-        }
         this.desiredTiles.set(key, tile)
         const rootCx = Math.floor(kx / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
         const rootCz = Math.floor(kz / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
@@ -984,10 +979,7 @@ export class TerrainSystem {
         }
     }
     for (const tile of planTerrainTiles(this.focusX / CHUNK_SIZE, this.focusZ / CHUNK_SIZE,
-      this.viewRadius, this.plannedTiles, this.layoutSplits, this.layoutNextSplits)) includeTile(tile)
-    for (const focus of this.warmFocuses) {
-      for (const tile of planTerrainTiles(focus.x / CHUNK_SIZE, focus.z / CHUNK_SIZE, this.viewRadius)) includeTile(tile)
-    }
+      this.viewRadius, this.plannedTiles, this.layoutSplits, this.layoutNextSplits, this.warmFocuses)) includeTile(tile)
 
     for (const p of this.pending) {
       p.dist = Math.hypot(p.cx + p.size / 2 - this.focusX / CHUNK_SIZE,
