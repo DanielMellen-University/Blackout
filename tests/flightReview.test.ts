@@ -41,7 +41,7 @@ describe('fixed-route frame measurement', () => {
     const frames = new ReviewFrames()
     frames.record(100, true); frames.record(120, true); frames.record(1000, false)
     frames.record(20000, true); frames.record(20040, true)
-    expect(frames.summary()).toEqual({ samples: 2, median: 40, p95: 40, p99: 40, max: 40, over50: 0, over100: 0 })
+    expect(frames.summary()).toEqual({ samples: 2, median: 30, p95: 40, p99: 40, max: 40, over50: 0, over100: 0 })
   })
   it('keeps only a bounded recent window and safely handles empty input', () => {
     const frames = new ReviewFrames(3)
