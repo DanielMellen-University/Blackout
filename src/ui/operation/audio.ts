@@ -38,10 +38,15 @@ export interface FlightAudioGate {
   crashCinematic: boolean
 }
 
-/** Shared by frame routing and visibility recovery. */
+/** Mute the mixer unless an active flight is audible. */
 export function flightAudioMuted(state: FlightAudioGate): boolean {
   return state.audioMuted || state.hidden || (!state.playing && !state.operationActive) || state.paused || state.resultsOpen ||
     (!state.operationActive && state.crashed && !state.crashCinematic)
+}
+
+/** Keep the context ready on tab return, including while its output is muted. */
+export function shouldResumeFlightAudio(state: FlightAudioGate): boolean {
+  return !state.hidden && (state.playing || state.operationActive) && !state.paused && !state.resultsOpen
 }
 
 /** Resolve both the sustained burner flag and its edge cue from the same aircraft. */

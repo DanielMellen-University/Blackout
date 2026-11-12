@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  applyOperationAudioInputs, flightAfterburnerAudio, flightAudioMuted, operationAudioInputs,
+  applyOperationAudioInputs, flightAfterburnerAudio, flightAudioMuted, operationAudioInputs, shouldResumeFlightAudio,
   type FlightAudioGate,
 } from '../src/ui/operation/audio'
 import {
@@ -13,6 +13,17 @@ const gate: FlightAudioGate = {
 }
 
 describe('main flight audio routing', () => {
+  it('resumes the context on tab return while output stays muted, so a later unmute works', () => {
+    expect(shouldResumeFlightAudio({ ...gate, audioMuted: true })).toBe(true)
+    const scene = { ...gate, playing: true, operationActive: false, audioMuted: true }
+    expect(shouldResumeFlightAudio(scene)).toBe(true)
+    expect(flightAudioMuted(scene)).toBe(true)
+    expect(shouldResumeFlightAudio({ ...scene, playing: false })).toBe(false)
+    expect(shouldResumeFlightAudio({ ...scene, paused: true })).toBe(false)
+    expect(shouldResumeFlightAudio({ ...scene, hidden: true })).toBe(false)
+    expect(shouldResumeFlightAudio({ ...scene, resultsOpen: true })).toBe(false)
+  })
+
   it('cues nitro on and off from the stepped operation while the scene sortie is idle', () => {
     const flight = openOperationFlight(42)
     const routing = { ...gate, simLive: false }

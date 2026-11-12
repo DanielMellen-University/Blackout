@@ -1,7 +1,7 @@
 import { flightStart, announcesLanding } from './systems/AirborneStart'
 import { operationDevRequested } from './systems/operation/devFlag'
 import { OperationCockpit } from './ui/operation/cockpit'
-import { applyOperationAudioInputs, flightAfterburnerAudio, flightAudioMuted } from './ui/operation/audio'
+import { applyOperationAudioInputs, flightAfterburnerAudio, flightAudioMuted, shouldResumeFlightAudio } from './ui/operation/audio'
 import { operationLaunchItem } from './ui/operation/launch'
 import type { OperationDeck } from './ui/operation/deck'
 import { sampleTerrainSurfaceHeightFast } from './world/terrainSample'
@@ -1388,7 +1388,7 @@ export async function boot(): Promise<void> {
       void audio.suspend()
       return
     }
-    if (!flightAudioMuted({
+    if (shouldResumeFlightAudio({
       audioMuted, hidden: document.hidden, playing,
       operationActive: !!operationCockpit?.audioInputs(),
       paused: menu.paused, resultsOpen: results.open,
