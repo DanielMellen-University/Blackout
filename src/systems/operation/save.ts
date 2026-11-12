@@ -65,6 +65,9 @@ export function isAttempt(value: unknown): value is OperationAttempt {
   if (!(attempt.route === null || isRouteChoice(attempt.route))) return false
   if (!(attempt.energy === null || isEnergyChoice(attempt.energy))) return false
   if (!Number.isFinite(attempt.score) || attempt.stages == null || typeof attempt.stages !== 'object') return false
+  const stages = attempt.stages as Record<string, unknown>
+  if (Object.keys(stages).some(id => !isOperationStageId(id))) return false
+  if (!OPERATION_STAGES.every(id => !(id in stages) || isStageResult(stages[id], id))) return false
   return true
 }
 

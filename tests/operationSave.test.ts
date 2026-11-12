@@ -58,6 +58,13 @@ describe('operation save', () => {
     expect(parseProgress(JSON.stringify({ version: 2, active: null, best: null, history: [], replay: null }))).toBeNull()
   })
 
+  it('rejects an active attempt with a malformed nested stage result', () => {
+    const attempt = finish()
+    const saved = commitAttempt(emptyProgress(), attempt)
+    const progress = { ...saved, active: { ...attempt, stages: { ...attempt.stages, ingress: { ...attempt.stages.ingress!, passed: 'yes' } } } }
+    expect(parseProgress(JSON.stringify(progress))).toBeNull()
+  })
+
   it('rejects truncated and garbage documents', () => {
     expect(parseProgress('{')).toBeNull()
     expect(parseProgress('[]')).toBeNull()
