@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { closeSync, mkdtempSync, openSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -102,6 +102,16 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
     const result = await run([dir])
     expect(result.status).toBe(2)
     expect(result.stderr).toContain(`Cannot read replay ${JSON.stringify(dir)}: expected a regular file`)
+    expect(result.stdout).toBe('')
+  })
+
+  it.skipIf(process.platform === 'win32')('rejects a FIFO without waiting for a writer', async () => {
+    const path = join(dir, 'replay.pipe')
+    const created = spawnSync('mkfifo', [path])
+    expect(created.status).toBe(0)
+    const result = await run([path])
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain('expected a regular file')
     expect(result.stdout).toBe('')
   })
 
