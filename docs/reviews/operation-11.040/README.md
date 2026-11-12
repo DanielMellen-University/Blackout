@@ -70,3 +70,5 @@ The terrain-evidence suite probes the same synchronous Git archive read the vali
 The cockpit deck test uses a controlled monotonic-clock spy and restores it after each test. It asserts exact one-step pacing, the eight-step late-frame cap, backward-clock clamping and three-step catch-up. The production clock, camera, UI and pacing are unchanged.
 
 Oversized saved histories now retain the newest twelve finishes on both load and serialization, matching live retention. Loading an old oversized save no longer discards the latest result that should pair with its replay.
+
+Stored browser transcripts now require at least two finite, correctly shaped samples per stage and nondecreasing time within each stage. Corrupt traces fail save parsing rather than entering playback. Legacy hand-built transcripts with stage-local clocks remain loadable; file import still requires strictly increasing time across all stages.

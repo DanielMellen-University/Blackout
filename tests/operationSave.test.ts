@@ -125,6 +125,24 @@ describe('operation save', () => {
     expect(loadProgress(store)?.replay?.route).toBe('valley')
   })
 
+  it.each(['empty', 'single', 'null', 'missing-fields', 'non-finite', 'backward-time'] as const)(
+    'rejects a stored replay with a malformed %s stage', kind => {
+      const transcript = createTranscript(42, 'valley', 'conserve', {
+        ingress: line('ingress', null, null),
+        transit: line('transit', 'valley', null),
+        egress: line('egress', 'valley', 'conserve'),
+      })!
+      if (kind === 'empty') transcript.samples.transit = []
+      if (kind === 'single') transcript.samples.transit.length = 1
+      if (kind === 'null') transcript.samples.transit[0] = null as never
+      if (kind === 'missing-fields') transcript.samples.transit[0] = {} as never
+      if (kind === 'non-finite') transcript.samples.transit[0]!.speed = Infinity
+      if (kind === 'backward-time') transcript.samples.transit[1]!.t = -1
+      const progress = commitAttempt(emptyProgress(), finish(), transcript)
+      expect(parseProgress(serializeProgress(progress)) === null).toBe(true)
+    },
+  )
+
   it('fails closed when the store throws', () => {
     const store = {
       read: () => { throw new Error('denied') },
