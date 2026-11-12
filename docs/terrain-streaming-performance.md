@@ -55,7 +55,8 @@ the measurement.
 
 Read `<route>-<run>.json` in the output directory. `flightFrames` gives the
 number of rendered intervals and their median, p95, p99, maximum, and counts
-over 50 and 100 ms. `longFrames.flight` retains intervals over 100 ms with
+over 50 and 100 ms. Median averages the middle pair for an even sample count;
+p95 and p99 use the nearest-rank definition. `longFrames.flight` retains intervals over 100 ms with
 their start and end offsets. `ratioRange` must remain `[1, 1]` for an equal
 resolution comparison. `launchToCoverageWallMs` measures startup until terrain
 has no pending, in-flight, or ready uploads. `streaming` and `resourceSamples`

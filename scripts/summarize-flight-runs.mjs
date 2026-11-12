@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
+import { matchesCurrentOrLegacy } from './lib/frame-percentiles.mjs'
 const directory = process.argv[2] || 'docs/reviews/performance-10.914'
 const runtime = await readFile(`${directory}/before/AdaptiveResolution.runtime.js`, 'utf8')
 if (runtime !== await readFile(`${directory}/after/AdaptiveResolution.runtime.js`, 'utf8')) {
@@ -15,8 +16,7 @@ for (const stage of ['before', 'after']) for (const route of ['city', 'world']) 
     || data.seed !== (route === 'city' ? 1337 : 73) || data.viewport.join(',') !== '1280,720'
     || data.ratioRange.join(',') !== '1,1') throw new Error(`Unmatched run: ${path}`)
   const frames = data.rawFrames.flight.slice().sort((a, b) => a - b)
-  const p99 = frames[Math.floor(frames.length * .99)]
-  if (p99 !== data.flightFrames.p99 || frames.length !== data.flightFrames.samples) throw new Error(`Bad raw samples: ${path}`)
+  if (!matchesCurrentOrLegacy(frames, .99, data.flightFrames.p99) || frames.length !== data.flightFrames.samples) throw new Error(`Bad raw samples: ${path}`)
   for (const [path, hash] of Object.entries(data.instrumentation)) {
     if (manifests[stage][path] !== hash) throw new Error(`Instrumentation source differs: ${stage}/${path}`)
   }

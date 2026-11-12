@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict'
 import { readFile, writeFile } from 'node:fs/promises'
+import { recordedQuantile } from './lib/frame-percentiles.mjs'
 
 const directory = process.argv[2] || 'docs/reviews/performance-10.948'
 const manifest = JSON.parse(await readFile(`${directory}/record/source-sha256.json`, 'utf8'))
 const rows = [], environments = new Set(), commits = new Set()
-const summarize = values => {
+const summarize = (values, recordedP95) => {
   const sorted = values.slice().sort((a, b) => a - b)
   assert.ok(sorted.length > 0 && sorted.every(ms => Number.isFinite(ms) && ms > 0))
   const mean = sorted.reduce((sum, ms) => sum + ms, 0) / sorted.length
   return { samples: sorted.length, mean, fps: 1000 / mean,
-    p95: sorted[Math.floor(sorted.length * .95)], max: sorted.at(-1),
+    p95: recordedQuantile(sorted, .95, recordedP95), max: sorted.at(-1),
     over50: sorted.filter(ms => ms > 50).length, over100: sorted.filter(ms => ms > 100).length }
 }
 const routeFrames = { city: [], world: [] }
@@ -33,7 +34,7 @@ for (let run = 1; run <= 3; run++) for (const route of ['city', 'world']) {
   for (const [source, hash] of Object.entries(data.instrumentation)) assert.equal(manifest[source], hash, file)
   environments.add(JSON.stringify({ gpu: data.gpu, args: data.args, browser: data.browserVersion, instrumentation: data.instrumentation }))
   commits.add(data.sourceCommit)
-  const frames = summarize(data.rawFrames.flight)
+  const frames = summarize(data.rawFrames.flight, data.flightFrames.p95)
   for (const key of ['samples', 'p95', 'max', 'over50', 'over100']) assert.equal(frames[key], data.flightFrames[key], `${file}: ${key}`)
   assert.equal(frames.over100, data.longFrames.flight.length, file)
   assert.ok(data.heapBytes.peak >= data.heapBytes.current && data.heapBytes.peak > 0, file)

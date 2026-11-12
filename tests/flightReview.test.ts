@@ -37,6 +37,13 @@ describe('fixed-route frame measurement', () => {
     expect(frames.longFrames()).toEqual([{ startMs: 164, endMs: 1164, ms: 1000 }])
     expect(frames.summary()).toEqual({ samples: 5, median: 16, p95: 1000, p99: 1000, max: 1000, over50: 1, over100: 1 })
   })
+  it('uses nearest-rank p95 and p99 for capture windows', () => {
+    const frames = new ReviewFrames()
+    let now = 1
+    frames.record(now, true)
+    for (let delta = 1; delta <= 100; delta += 1) { now += delta; frames.record(now, true) }
+    expect(frames.summary()).toMatchObject({ samples: 100, p95: 95, p99: 99, max: 100 })
+  })
   it('excludes explicit hidden and paused gaps, not slow visible frames', () => {
     const frames = new ReviewFrames()
     frames.record(100, true); frames.record(120, true); frames.record(1000, false)
