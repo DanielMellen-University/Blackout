@@ -96,7 +96,7 @@ export function serializeProgress(progress: OperationProgress): string {
     version: OPERATION_SAVE_VERSION,
     active: progress.active,
     best: progress.best,
-    history: progress.history.slice(0, OPERATION_HISTORY_LIMIT),
+    history: progress.history.slice(-OPERATION_HISTORY_LIMIT),
     replay: progress.replay,
   })
 }
@@ -114,7 +114,7 @@ export function parseProgress(text: string | null): OperationProgress | null {
       version: OPERATION_SAVE_VERSION,
       active: value.active ?? null,
       best: value.best ?? null,
-      history: value.history.slice(0, OPERATION_HISTORY_LIMIT),
+      history: value.history.slice(-OPERATION_HISTORY_LIMIT),
       replay: value.replay ?? null,
     }
   } catch {

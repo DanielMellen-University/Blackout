@@ -68,3 +68,5 @@ A new completed result clears the previous transcript if its own transcript is u
 The terrain-evidence suite probes the same synchronous Git archive read the validator needs. Missing or denied Git subprocess access skips only the nine Git-dependent checks with an explicit reason. The unauthorized-seed check still runs; unexpected errors and nonzero Git command statuses remain failures. Archive validation assertions are unchanged when Git is available.
 
 The cockpit deck test uses a controlled monotonic-clock spy and restores it after each test. It asserts exact one-step pacing, the eight-step late-frame cap, backward-clock clamping and three-step catch-up. The production clock, camera, UI and pacing are unchanged.
+
+Oversized saved histories now retain the newest twelve finishes on both load and serialization, matching live retention. Loading an old oversized save no longer discards the latest result that should pair with its replay.

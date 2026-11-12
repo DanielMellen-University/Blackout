@@ -14,6 +14,7 @@ import {
   parseProgress,
   serializeProgress,
   stageIdsFromUnknown,
+  toBest,
   writeProgress,
 } from '../src/systems/operation/save'
 import type { FlightSample } from '../src/systems/operation/samples'
@@ -94,6 +95,16 @@ describe('operation save', () => {
     let progress = emptyProgress()
     for (let index = 0; index < OPERATION_HISTORY_LIMIT + 3; index += 1) progress = commitAttempt(progress, finish('valley'))
     expect(progress.history).toHaveLength(OPERATION_HISTORY_LIMIT)
+  })
+
+  it('keeps the newest finishes when loading or serializing an oversized history', () => {
+    const result = toBest(finish())!
+    const history = Array.from({ length: OPERATION_HISTORY_LIMIT + 3 }, (_, index) => ({ ...result, seed: index + 1 }))
+    const progress = { ...emptyProgress(), history }
+    const newest = history.slice(-OPERATION_HISTORY_LIMIT).map(entry => entry.seed)
+    expect(parseProgress(JSON.stringify(progress))?.history.map(entry => entry.seed)).toEqual(newest)
+    expect(parseProgress(serializeProgress(progress))?.history.map(entry => entry.seed)).toEqual(newest)
+    expect(progress.history).toHaveLength(OPERATION_HISTORY_LIMIT + 3)
   })
 
   it('clears the active attempt and keeps the best', () => {
