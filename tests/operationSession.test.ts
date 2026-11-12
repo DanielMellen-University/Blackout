@@ -127,6 +127,16 @@ describe('operation session', () => {
     expect(session.hud?.stageLabel).toContain('Stage 1 of 3')
   })
 
+  it('ignores zero, negative and non-finite replay frame deltas', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 0)
+    finish(session, 'ridge', 'commit')
+    session.replay()
+    const initialTrace = structuredClone(session.trace)
+    for (const count of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) session.advanceReplay(count)
+    expect(session.status).toBe('replay')
+    expect(session.trace).toEqual(initialTrace)
+  })
+
   it('holds the replay on a decision', () => {
     const session = new OperationSession(memoryOperationStore(), 42, 2)
     finish(session, 'valley', 'conserve')
