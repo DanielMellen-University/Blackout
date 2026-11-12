@@ -110,6 +110,23 @@ describe('operation session', () => {
     expect(replayOperation(saved.replay).attempt.score.toLocaleString('en-US')).toBe(score)
   })
 
+  it('restarts replay playback at ingress after closing midway through it', () => {
+    const store = memoryOperationStore()
+    const session = new OperationSession(store, 42, 0)
+    finish(session, 'valley', 'commit')
+    const transcript = JSON.parse(store.snapshot()!).replay
+    const firstSample = transcript.samples.ingress[0]
+    expect(session.replay()).toBe(true)
+    expect(session.trace).toEqual([firstSample])
+    session.advanceReplay(4)
+    expect(session.trace).toHaveLength(5)
+    session.close()
+    expect(session.trace).toEqual([])
+    expect(session.replay()).toBe(true)
+    expect(session.trace).toEqual([firstSample])
+    expect(session.hud?.stageLabel).toContain('Stage 1 of 3')
+  })
+
   it('holds the replay on a decision', () => {
     const session = new OperationSession(memoryOperationStore(), 42, 2)
     finish(session, 'valley', 'conserve')
