@@ -95,6 +95,13 @@ describe('operation save', () => {
     expect(parseProgress(JSON.stringify(malformed))).toBeNull()
   })
 
+  it('rejects noncanonical seeds in active and best records', () => {
+    const attempt = finish()
+    expect(parseProgress(JSON.stringify({ ...emptyProgress(), active: { ...attempt, seed: 0 } }))).toBeNull()
+    const saved = commitAttempt(emptyProgress(), attempt)
+    expect(parseProgress(JSON.stringify({ ...saved, best: { ...saved.best, seed: -42 } }))).toBeNull()
+  })
+
   it('rejects truncated and garbage documents', () => {
     expect(parseProgress('{')).toBeNull()
     expect(parseProgress('[]')).toBeNull()

@@ -4,6 +4,7 @@ import { OPERATION_ID, OPERATION_STAGES, isOperationStageId, type OperationStage
 import type { StageResult } from './score'
 import type { OperationTranscript } from './replay'
 import { isFlightSample } from './samples'
+import { normalizeOperationSeed } from './seed'
 
 export const OPERATION_SAVE_VERSION = 1 as const
 export const OPERATION_STORAGE_KEY = 'blackout.operation.ridge-relay'
@@ -85,7 +86,8 @@ function isStageResult(value: unknown, id: OperationStageId): value is StageResu
 export function isAttempt(value: unknown): value is OperationAttempt {
   if (!value || typeof value !== 'object') return false
   const attempt = value as OperationAttempt
-  if (attempt.id !== OPERATION_ID || !Number.isFinite(attempt.seed) || !isPhase(attempt.phase)) return false
+  if (attempt.id !== OPERATION_ID || !Number.isFinite(attempt.seed)
+    || attempt.seed !== normalizeOperationSeed(attempt.seed) || !isPhase(attempt.phase)) return false
   if (!(attempt.route === null || isRouteChoice(attempt.route))) return false
   if (!(attempt.energy === null || isEnergyChoice(attempt.energy))) return false
   if (!Number.isFinite(attempt.score) || attempt.stages == null || typeof attempt.stages !== 'object') return false
@@ -98,7 +100,8 @@ export function isAttempt(value: unknown): value is OperationAttempt {
 export function isBest(value: unknown): value is OperationBest {
   if (!value || typeof value !== 'object') return false
   const best = value as OperationBest
-  if (best.id !== OPERATION_ID || !Number.isFinite(best.seed) || !Number.isFinite(best.score)) return false
+  if (best.id !== OPERATION_ID || !Number.isFinite(best.seed)
+    || best.seed !== normalizeOperationSeed(best.seed) || !Number.isFinite(best.score)) return false
   if (!isRouteChoice(best.route) || !isEnergyChoice(best.energy) || !best.stages) return false
   return OPERATION_STAGES.every(id => isStageResult(best.stages[id], id))
 }
