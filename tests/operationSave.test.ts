@@ -14,6 +14,7 @@ import {
   parseProgress,
   serializeProgress,
   stageIdsFromUnknown,
+  toBest,
   writeProgress,
 } from '../src/systems/operation/save'
 import type { FlightSample } from '../src/systems/operation/samples'
@@ -96,6 +97,16 @@ describe('operation save', () => {
     expect(progress.history).toHaveLength(OPERATION_HISTORY_LIMIT)
   })
 
+  it('keeps the newest finishes when loading or serializing an oversized history', () => {
+    const result = toBest(finish())!
+    const history = Array.from({ length: OPERATION_HISTORY_LIMIT + 3 }, (_, index) => ({ ...result, seed: index + 1 }))
+    const progress = { ...emptyProgress(), history }
+    const newest = history.slice(-OPERATION_HISTORY_LIMIT).map(entry => entry.seed)
+    expect(parseProgress(JSON.stringify(progress))?.history.map(entry => entry.seed)).toEqual(newest)
+    expect(parseProgress(serializeProgress(progress))?.history.map(entry => entry.seed)).toEqual(newest)
+    expect(progress.history).toHaveLength(OPERATION_HISTORY_LIMIT + 3)
+  })
+
   it('clears the active attempt and keeps the best', () => {
     const saved = clearActive(commitAttempt(emptyProgress(), finish('valley')))
     expect(saved.active).toBeNull()
@@ -113,6 +124,24 @@ describe('operation save', () => {
     expect(loadProgress(store)?.best?.energy).toBe('conserve')
     expect(loadProgress(store)?.replay?.route).toBe('valley')
   })
+
+  it.each(['empty', 'single', 'null', 'missing-fields', 'non-finite', 'backward-time'] as const)(
+    'rejects a stored replay with a malformed %s stage', kind => {
+      const transcript = createTranscript(42, 'valley', 'conserve', {
+        ingress: line('ingress', null, null),
+        transit: line('transit', 'valley', null),
+        egress: line('egress', 'valley', 'conserve'),
+      })!
+      if (kind === 'empty') transcript.samples.transit = []
+      if (kind === 'single') transcript.samples.transit.length = 1
+      if (kind === 'null') transcript.samples.transit[0] = null as never
+      if (kind === 'missing-fields') transcript.samples.transit[0] = {} as never
+      if (kind === 'non-finite') transcript.samples.transit[0]!.speed = Infinity
+      if (kind === 'backward-time') transcript.samples.transit[1]!.t = -1
+      const progress = commitAttempt(emptyProgress(), finish(), transcript)
+      expect(parseProgress(serializeProgress(progress)) === null).toBe(true)
+    },
+  )
 
   it('fails closed when the store throws', () => {
     const store = {

@@ -92,6 +92,7 @@ function buildRoot(): TestElement {
 const clock: OperationClock = { reducedMotion: false, request() {} }
 
 afterEach(() => {
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
@@ -152,7 +153,8 @@ describe('operation deck', () => {
     expect(session.status).toBe('idle')
   })
 
-  it('overlays the stage HUD and flies one step per frame when the cockpit is bound', () => {
+  it('overlays the cockpit HUD and advances a controlled clock with capped catch-up', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
     const root = buildRoot()
     root.className = 'operation-deck'
     vi.stubGlobal('Element', TestElement)
@@ -176,9 +178,19 @@ describe('operation deck', () => {
     expect(phases.at(-1)).toBe('ingress')
     expect(session.snapshot().pose?.z).toBeCloseTo(-200)
     expect(session.trace).toHaveLength(0)
+    now.mockReturnValue(1000 + 1000 / 60)
     deck.tick()
-    expect(session.trace.length).toBeGreaterThan(0)
-    expect(session.trace.length).toBeLessThan(4)
+    expect(session.trace).toHaveLength(1)
+    // A late frame must catch up, even on a busy test runner.
+    now.mockReturnValue(1250)
+    deck.tick()
+    expect(session.trace).toHaveLength(9)
+    now.mockReturnValue(1240)
+    deck.tick()
+    expect(session.trace).toHaveLength(10)
+    now.mockReturnValue(1240 + 3 * 1000 / 60)
+    deck.tick()
+    expect(session.trace).toHaveLength(13)
     deck.close()
     expect(root.className).not.toContain('operation-cockpit')
     expect(root.hidden).toBe(true)

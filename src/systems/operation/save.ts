@@ -3,6 +3,7 @@ import { isEnergyChoice, isRouteChoice, type EnergyChoice, type RouteChoice } fr
 import { OPERATION_ID, OPERATION_STAGES, isOperationStageId, type OperationStageId } from './identity'
 import type { StageResult } from './score'
 import type { OperationTranscript } from './replay'
+import { isFlightSample } from './samples'
 
 export const OPERATION_SAVE_VERSION = 1 as const
 export const OPERATION_STORAGE_KEY = 'blackout.operation.ridge-relay'
@@ -96,7 +97,7 @@ export function serializeProgress(progress: OperationProgress): string {
     version: OPERATION_SAVE_VERSION,
     active: progress.active,
     best: progress.best,
-    history: progress.history.slice(0, OPERATION_HISTORY_LIMIT),
+    history: progress.history.slice(-OPERATION_HISTORY_LIMIT),
     replay: progress.replay,
   })
 }
@@ -114,7 +115,7 @@ export function parseProgress(text: string | null): OperationProgress | null {
       version: OPERATION_SAVE_VERSION,
       active: value.active ?? null,
       best: value.best ?? null,
-      history: value.history.slice(0, OPERATION_HISTORY_LIMIT),
+      history: value.history.slice(-OPERATION_HISTORY_LIMIT),
       replay: value.replay ?? null,
     }
   } catch {
@@ -128,7 +129,14 @@ function isStoredTranscript(value: unknown): value is OperationTranscript {
   if (transcript.version !== 1 || transcript.id !== OPERATION_ID) return false
   if (!Number.isFinite(transcript.seed) || !isRouteChoice(transcript.route) || !isEnergyChoice(transcript.energy)) return false
   if (!transcript.samples) return false
-  return OPERATION_STAGES.every(id => Array.isArray(transcript.samples[id]))
+  return OPERATION_STAGES.every(id => {
+    const stage = transcript.samples[id]
+    if (!Array.isArray(stage) || stage.length < 2) return false
+    // Legacy hand-built transcripts use stage-local clocks. Preserve those,
+    // while rejecting traces that cannot be safely replayed or measured.
+    return stage.every((sample, index) => isFlightSample(sample)
+      && (index === 0 || sample.t >= stage[index - 1]!.t))
+  })
 }
 
 export function loadProgress(store: OperationStore): OperationProgress | null {
@@ -155,6 +163,9 @@ export function commitAttempt(
   replay: OperationTranscript | null = null,
 ): OperationProgress {
   const finished = toBest(attempt)
+  const matchingReplay = replay && finished && replay.version === 1 && replay.id === finished.id
+    && replay.seed === finished.seed && replay.route === finished.route && replay.energy === finished.energy
+    ? replay : null
   const history = finished
     ? [...progress.history, finished].slice(-OPERATION_HISTORY_LIMIT)
     : progress.history
@@ -166,7 +177,7 @@ export function commitAttempt(
     active: attempt,
     best,
     history,
-    replay: finished && replay ? replay : progress.replay,
+    replay: finished ? matchingReplay : progress.replay,
   }
 }
 
