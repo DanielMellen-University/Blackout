@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { operationPerformanceRecord, pathOutcomesDiffer } from '../src/systems/operation/measure'
+import { OPERATION_STAGES } from '../src/systems/operation/identity'
 
 const stored = JSON.parse(readFileSync(new URL('../docs/reviews/operation-11.038/performance.json', import.meta.url), 'utf8'))
 
@@ -29,5 +30,14 @@ describe('operation performance record', () => {
     expect(stored.paths['ridge-conserve'].score).toBe(42947)
     expect(stored.paths['valley-commit'].peakSpeedMps).toBeGreaterThan(700)
     expect(stored.paths['valley-conserve'].minClearanceM).toBeLessThan(stored.paths['ridge-conserve'].minClearanceM)
+  })
+
+  it('keeps three measured stages in order and accounts for every model step', () => {
+    for (const path of Object.values(stored.paths)) {
+      expect(path.stages.map((stage: { id: string }) => stage.id)).toEqual(OPERATION_STAGES)
+      expect(path.steps).toBe(path.stages.reduce((steps: number, stage: { steps: number }) => steps + stage.steps, 0))
+      expect(path.elapsedSec).toBeCloseTo(path.stages.reduce((seconds: number, stage: { elapsedSec: number }) => seconds + stage.elapsedSec, 0), 2)
+      expect(path.stages.every((stage: { passed: boolean; steps: number }) => stage.passed && stage.steps > 0)).toBe(true)
+    }
   })
 })
