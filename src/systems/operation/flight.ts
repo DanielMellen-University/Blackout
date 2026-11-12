@@ -26,6 +26,10 @@ export interface OperationFlightPose {
   qy: number
   qz: number
   qw: number
+  throttle: number
+  effectivePower: number
+  boost: boolean
+  speed: number
 }
 
 interface HeldWorld {
@@ -190,6 +194,10 @@ export function operationFlightPose(flight: OperationFlight): OperationFlightPos
     qy: orientation.y,
     qz: orientation.z,
     qw: orientation.w,
+    throttle: body.aircraft.engineState.lever,
+    effectivePower: body.aircraft.engineState.effectivePower,
+    boost: body.aircraft.engineState.afterburnerActive,
+    speed: body.aircraft.speed,
   }
 }
 

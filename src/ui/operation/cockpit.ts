@@ -1,6 +1,7 @@
 import type { Aircraft } from '../../aircraft/Aircraft'
 import type { CameraSystem } from '../../camera/CameraSystem'
 import { holdOperationPresentation, type OperationFlightPose } from '../../systems/operation/flight'
+import { operationAudioInputs } from './audio'
 import { OperationCourseMarkers } from '../../systems/operation/markers'
 import type { World } from '../../world/World'
 import type { OperationDeck, OperationSceneFrame } from './deck'
@@ -40,6 +41,11 @@ export class OperationCockpit {
     if (pose) this.applyPose(pose)
     this.world.update(this.aircraft.position.x, this.aircraft.position.y, this.aircraft.position.z, 1 / 60, 1 / 60, 1 / 60)
     return true
+  }
+
+  /** Existing mixer inputs from the stepped aircraft while the operation is active. */
+  audioInputs(): ReturnType<typeof operationAudioInputs> {
+    return operationAudioInputs(this.active ? this.lastPose : null)
   }
 
   private onFrame(frame: OperationSceneFrame): void {

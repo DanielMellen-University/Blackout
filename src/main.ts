@@ -2737,6 +2737,13 @@ export async function boot(): Promise<void> {
     audioFrame.effectivePower = aircraft.engineState.effectivePower
     audioFrame.airbrake = airbrakeOpen
     audioFrame.speed = aircraft.speed
+    const operationAudio = operationCockpit?.audioInputs()
+    if (operationAudio) {
+      audioFrame.throttle = operationAudio.throttle
+      audioFrame.boost = operationAudio.boost
+      audioFrame.effectivePower = operationAudio.effectivePower
+      audioFrame.speed = operationAudio.speed
+    }
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain * world.atmosphere.precipitationVisibility
     audioFrame.snow = precipitation.snow * world.atmosphere.precipitationVisibility
