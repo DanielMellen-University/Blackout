@@ -98,6 +98,21 @@ describe('operation save', () => {
     expect(saved.active?.phase).toBe('failed')
   })
 
+  it('keeps the latest completed replay when a later attempt fails', () => {
+    const completed = finish('valley')
+    const transcript = createTranscript(42, 'valley', 'conserve', {
+      ingress: line('ingress', null, null),
+      transit: line('transit', 'valley', null),
+      egress: line('egress', 'valley', 'conserve'),
+    })
+    const saved = commitAttempt(emptyProgress(), completed, transcript)
+    const failed = recordStage(createAttempt(73), line('ingress', null, null).map(sample => ({ ...sample, airborne: false }))).attempt
+    const afterFailure = commitAttempt(saved, failed)
+    expect(afterFailure.replay).toEqual(transcript)
+    expect(afterFailure.best).toEqual(saved.best)
+    expect(afterFailure.history).toEqual(saved.history)
+  })
+
   it('caps remembered finishes', () => {
     let progress = emptyProgress()
     for (let index = 0; index < OPERATION_HISTORY_LIMIT + 3; index += 1) progress = commitAttempt(progress, finish('valley'))
