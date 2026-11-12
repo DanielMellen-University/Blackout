@@ -167,6 +167,21 @@ describe('operation session', () => {
     expect(session.hud?.stageLabel).toContain('Stage 1 of 3')
   })
 
+  it('clears an unfinished stage on close without saving it as a result', () => {
+    const store = memoryOperationStore()
+    const session = new OperationSession(store, 42, 0)
+    session.start()
+    session.advance(10)
+    expect(session.currentStage()).toBe('ingress')
+    expect(session.trace.length).toBeGreaterThan(0)
+    session.close()
+    expect(session.status).toBe('idle')
+    expect(session.currentStage()).toBeNull()
+    expect(session.trace).toEqual([])
+    expect(session.snapshot().pose).toBeNull()
+    expect(store.snapshot()).toBeNull()
+  })
+
   it('does not throw when the store rejects the write', () => {
     const broken: OperationStore = {
       read: () => null,
