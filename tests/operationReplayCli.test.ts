@@ -52,6 +52,20 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
     expect(result.stderr).toBe('')
   })
 
+  it('reports offsetting stage errors even when the total claim matches', async () => {
+    const claimed = structuredClone(fixture.claimed)
+    claimed.stages.ingress += 20
+    claimed.stages.transit -= 20
+    const path = join(dir, 'offsetting-score-errors.json')
+    writeFileSync(path, serializeOperationReplayFile(replayFileTranscript(fixture), claimed))
+    const result = await run([path])
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain('ingress: claimed 17265, actual 17245, difference -20')
+    expect(result.stdout).toContain('transit: claimed 18717, actual 18737, difference 20')
+    expect(result.stdout).toContain('Total: claimed 61472, actual 61472, difference 0')
+    expect(result.stderr).toBe('')
+  })
+
   it.each([
     ['truncated', '{', 'invalid-json'],
     ['tampered', JSON.stringify({ ...fixture, seed: 73 }), 'integrity-mismatch'],
