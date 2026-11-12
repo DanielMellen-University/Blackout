@@ -2,7 +2,7 @@ import { Quaternion, Vector3 } from 'three'
 import { Aircraft } from '../../aircraft/Aircraft'
 import { getWorldSeed, setWorldSeed } from '../../world/noise'
 import { getTerrainProfile, setTerrainProfile } from '../../world/TerrainProfile'
-import { clearOpsPad } from '../../world/terrainSample'
+import { clearOpsPad, getOpsPad, setOpsPad } from '../../world/terrainSample'
 import {
   chooseEnergy,
   chooseRoute,
@@ -90,6 +90,7 @@ function emptySamples(): Record<OperationStageId, FlightSample[]> {
 export function flyOperation(seed: number, route: RouteChoice, energy: EnergyChoice): MeasuredOperation {
   const previousSeed = getWorldSeed()
   const previousProfile = getTerrainProfile()
+  const previousPad = getOpsPad()
   const safeSeed = normalizeOperationSeed(seed)
   setWorldSeed(safeSeed)
   setTerrainProfile(OPERATION_TERRAIN)
@@ -99,7 +100,8 @@ export function flyOperation(seed: number, route: RouteChoice, energy: EnergyCho
   } finally {
     setWorldSeed(previousSeed)
     setTerrainProfile(previousProfile)
-    clearOpsPad()
+    if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
+    else clearOpsPad()
   }
 }
 

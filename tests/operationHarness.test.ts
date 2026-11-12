@@ -4,6 +4,7 @@ import { getTerrainProfile, setTerrainProfile, type TerrainProfile } from '../sr
 import { commitAttempt, emptyProgress, loadProgress, memoryOperationStore, writeProgress } from '../src/systems/operation/save'
 import { flyOperation } from '../src/systems/operation/harness'
 import { replayOperation } from '../src/systems/operation/replay'
+import { clearOpsPad, getOpsPad, setOpsPad } from '../src/world/terrainSample'
 import { OPERATION_TERRAIN } from '../src/systems/operation/terrain'
 
 const marker: TerrainProfile = { ...OPERATION_TERRAIN, baseHeight: 10, relief: 1 }
@@ -61,6 +62,18 @@ describe('operation flight harness', () => {
     expect(loaded?.best?.route).toBe('ridge')
     expect(loaded?.replay?.energy).toBe('conserve')
     expect(replayOperation(loaded!.replay!).attempt.score).toBe(measured.score)
+  })
+
+  it('restores the surrounding world pad after a harness flight', () => {
+    const previousPad = getOpsPad()
+    setOpsPad(4, 5, 6, 0.2)
+    try {
+      flyOperation(42, 'valley', 'commit')
+      expect(getOpsPad()).toEqual({ x: 4, z: 5, y: 6, yaw: 0.2 })
+    } finally {
+      if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
+      else clearOpsPad()
+    }
   })
 
   it('restores the world seed and terrain profile', () => {
