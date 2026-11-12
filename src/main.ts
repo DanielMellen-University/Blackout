@@ -1,6 +1,7 @@
 import { flightStart, announcesLanding } from './systems/AirborneStart'
 import { operationDevRequested } from './systems/operation/devFlag'
 import { OperationCockpit } from './ui/operation/cockpit'
+import { applyOperationAudioInputs, flightAfterburnerAudio, flightAudioMuted, shouldResumeFlightAudio } from './ui/operation/audio'
 import { operationLaunchItem } from './ui/operation/launch'
 import type { OperationDeck } from './ui/operation/deck'
 import { sampleTerrainSurfaceHeightFast } from './world/terrainSample'
@@ -481,6 +482,8 @@ export async function boot(): Promise<void> {
   let operationCockpit: OperationCockpit | null = null
   const openRidgeRelay = (): void => {
     if (!operationDevRequested(replayParams?.toString() ?? '')) return
+    // Resume on the opening gesture, before the lazy import can consume it.
+    void audio.resume()
     if (ridgeRelayDeck) {
       ridgeRelayDeck.open()
       return
@@ -1385,7 +1388,12 @@ export async function boot(): Promise<void> {
       void audio.suspend()
       return
     }
-    if (playing && !menu.paused && !results.open) void audio.resume()
+    if (shouldResumeFlightAudio({
+      audioMuted, hidden: document.hidden, playing,
+      operationActive: !!operationCockpit?.audioInputs(),
+      paused: menu.paused, resultsOpen: results.open,
+      crashed: aircraft.status === 'crashed', crashCinematic: crashCinematic.active,
+    })) void audio.resume()
     refreshOpsCatalog()
   }
   document.addEventListener('visibilitychange', onVisibilityChange)
@@ -2636,17 +2644,16 @@ export async function boot(): Promise<void> {
     }
     prevGearDown = gearDown
 
-    const afterburnerOn = aircraft.engineState.afterburnerActive
-    if (
-      simLive &&
-      playing &&
-      !menu.paused &&
-      !results.open &&
-      aircraft.status !== 'crashed' &&
-      afterburnerOn !== prevAfterburner
-    ) {
-      audio.playCue(afterburnerOn ? 'ab' : 'ab-off')
+    const operationAudio = operationCockpit?.audioInputs()
+    const audioGate = {
+      audioMuted, hidden: document.hidden, playing, operationActive: !!operationAudio,
+      paused: menu.paused, resultsOpen: results.open,
+      crashed: aircraft.status === 'crashed', crashCinematic: crashCinematic.active,
     }
+    const afterburner = flightAfterburnerAudio(prevAfterburner, aircraft.engineState.afterburnerActive,
+      operationAudio, { ...audioGate, simLive })
+    const afterburnerOn = afterburner.active
+    if (afterburner.cue) audio.playCue(afterburner.cue)
     prevAfterburner = afterburnerOn
     const airbrakeOpen = aircraft.controls.airbrake
     if (
@@ -2737,6 +2744,7 @@ export async function boot(): Promise<void> {
     audioFrame.effectivePower = aircraft.engineState.effectivePower
     audioFrame.airbrake = airbrakeOpen
     audioFrame.speed = aircraft.speed
+    applyOperationAudioInputs(audioFrame, operationAudio)
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain * world.atmosphere.precipitationVisibility
     audioFrame.snow = precipitation.snow * world.atmosphere.precipitationVisibility
@@ -2747,9 +2755,7 @@ export async function boot(): Promise<void> {
     audioFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
     audioFrame.cockpit = cameras.mode === 'cockpit'
     audioFrame.impactOnly = crashCinematic.active
-    audioFrame.mute =
-      audioMuted || document.hidden || !playing || menu.paused || results.open ||
-      (aircraft.status === 'crashed' && !crashCinematic.active)
+    audioFrame.mute = flightAudioMuted(audioGate)
     audioFrame.dt = visualDt || 1 / 60
     audio.update(audioFrame)
 

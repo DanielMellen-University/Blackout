@@ -703,7 +703,7 @@ export class World {
    * The caller has already switched the shared terrain profile.
    * A second call does not clear tiles that are already streaming.
    */
-  presentOperationCourse(x: number, z: number): void {
+  presentOperationCourse(x: number, z: number, ingressEndX = x, ingressEndZ = z): void {
     if (this.disposed || this.operationCourse) return
     this.operationCourse = {
       runway: this.runway.visible,
@@ -727,6 +727,7 @@ export class World {
     this.terrain.clearAll()
     const safeX = Number.isFinite(x) ? x : this.spawn.x
     const safeZ = Number.isFinite(z) ? z : this.spawn.z
+    this.terrain.warmCorridor(safeX, safeZ, ingressEndX, ingressEndZ)
     this.terrain.update(safeX, safeZ, 1 / 60)
   }
 
