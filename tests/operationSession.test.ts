@@ -107,6 +107,11 @@ describe('operation session', () => {
     expect(session.result?.scoreLabel).toBe(score)
     expect(session.result?.bestLabel).toBe(best)
     const saved = JSON.parse(store.snapshot() ?? '{}') as { replay: Parameters<typeof replayOperation>[0] }
+    expect(session.trace).toEqual([
+      ...saved.replay.samples.ingress,
+      ...saved.replay.samples.transit,
+      ...saved.replay.samples.egress,
+    ])
     expect(replayOperation(saved.replay).attempt.score.toLocaleString('en-US')).toBe(score)
   })
 
