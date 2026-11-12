@@ -13,7 +13,7 @@ One completed run can leave the browser as JSON and be rescored from exact sampl
 | `decisions` | `route`: valley or ridge; `energy`: conserve or commit |
 | `flightMode` | Optional model or stick, only when known by the source |
 | `samples` | Ingress, transit and egress arrays, at least two samples each |
-| `claimed` | Integer scores in `stages.ingress`, `stages.transit`, `stages.egress` and `total` |
+| `claimed` | Safe integer scores in `stages.ingress`, `stages.transit`, `stages.egress` and `total` |
 | `integrity` | `fnv1a64:` followed by 16 lowercase hexadecimal digits |
 
 Samples have finite `t`, `x`, `y`, `z`, `speed`, `clearance` and boolean `airborne`. Optional `fuel` is 0 to 100 and `nitro` is 0 to 1. Units are seconds, metres and m/s. Time is nonnegative and strictly increases across all stages. Speed is nonnegative. Unknown fields are rejected. Browser transcripts record neither flight mode nor stick commands, so session exports omit them. The sample's model mode is known from its harness.
