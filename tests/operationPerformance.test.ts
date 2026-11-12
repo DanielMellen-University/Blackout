@@ -32,6 +32,13 @@ describe('operation performance record', () => {
     expect(stored.paths['valley-conserve'].minClearanceM).toBeLessThan(stored.paths['ridge-conserve'].minClearanceM)
   })
 
+  it('does not report distinct outcomes when a canonical decision path is missing', () => {
+    const incomplete = { ...stored.paths }
+    delete incomplete['ridge-commit']
+    incomplete.unexpected = { ...stored.paths['ridge-commit'], score: stored.paths['ridge-commit'].score + 1 }
+    expect(pathOutcomesDiffer(incomplete)).toBe(false)
+  })
+
   it('keeps three measured stages in order and accounts for every model step', () => {
     for (const path of Object.values(stored.paths)) {
       expect(path.stages.map((stage: { id: string }) => stage.id)).toEqual(OPERATION_STAGES)
