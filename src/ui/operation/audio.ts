@@ -1,4 +1,5 @@
 import type { OperationFlightPose } from '../../systems/operation/flight'
+import type { FlightAudio } from '../../audio/FlightAudio'
 
 export interface OperationAudioInputs {
   throttle: number
@@ -19,7 +20,10 @@ export function operationAudioInputs(pose: OperationFlightPose | null): Operatio
 }
 
 /** Apply the operation override to the frame sent by main to FlightAudio. */
-export function applyOperationAudioInputs(frame: OperationAudioInputs, operation: OperationAudioInputs | null | undefined): void {
+export function applyOperationAudioInputs(
+  frame: Pick<Parameters<FlightAudio['update']>[0], keyof OperationAudioInputs>,
+  operation: OperationAudioInputs | null | undefined,
+): void {
   if (operation) Object.assign(frame, operation)
 }
 
