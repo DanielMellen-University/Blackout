@@ -65,6 +65,36 @@ describe('operation save', () => {
     expect(parseProgress(JSON.stringify(progress))).toBeNull()
   })
 
+  it('rejects a saved best with non-finite stage measurements', () => {
+    const saved = commitAttempt(emptyProgress(), finish())
+    const best = structuredClone(saved.best!)
+    best.stages.transit.altitudeErrorM = Number.NaN
+    expect(parseProgress(JSON.stringify({ ...saved, best }))).toBeNull()
+  })
+
+  it('keeps legacy version-1 best and history records without discipline measurements', () => {
+    const saved = commitAttempt(emptyProgress(), finish())
+    const legacy = structuredClone(saved)
+    for (const record of [legacy.best!, ...legacy.history]) {
+      for (const stage of Object.values(record.stages)) {
+        delete (stage as Partial<typeof stage>).pathDeviationM
+        delete (stage as Partial<typeof stage>).altitudeErrorM
+        delete (stage as Partial<typeof stage>).speedErrorMps
+        delete (stage as Partial<typeof stage>).meanSpeedMps
+        delete (stage as Partial<typeof stage>).fuelUsed
+        delete (stage as Partial<typeof stage>).nitroUsed
+        delete (stage as Partial<typeof stage>).disciplineScore
+      }
+    }
+    const parsed = parseProgress(JSON.stringify(legacy))
+    expect(parsed?.best).not.toBeNull()
+    expect(parsed?.history).toHaveLength(1)
+
+    const malformed = structuredClone(legacy)
+    malformed.history[0]!.stages.transit.pathDeviationM = Number.POSITIVE_INFINITY
+    expect(parseProgress(JSON.stringify(malformed))).toBeNull()
+  })
+
   it('rejects truncated and garbage documents', () => {
     expect(parseProgress('{')).toBeNull()
     expect(parseProgress('[]')).toBeNull()
