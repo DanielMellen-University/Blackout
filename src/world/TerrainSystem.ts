@@ -295,6 +295,7 @@ export class TerrainSystem {
   private readonly sampledChunkLookup = new Map<string, Chunk | null>()
   private focusX = 0
   private focusZ = 0
+  private warmFocuses: { x: number; z: number }[] = []
   private viewRadius = VIEW_RADIUS
   private readonly waterClock = { value: 0 }
   private readonly waterRain = { value: 0 }
@@ -606,6 +607,7 @@ export class TerrainSystem {
     this.neededKeys.clear()
     this.layoutSplits.clear()
     this.layoutNextSplits.clear()
+    this.warmFocuses.length = 0
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
@@ -664,6 +666,22 @@ export class TerrainSystem {
     this.workers.advance(dt)
     this.drainBuildQueue()
     this.updateFades(cx, cz, dt)
+  }
+
+  /** Keep existing terrain requests active along a short upcoming flight corridor. */
+  warmCorridor(startX: number, startZ: number, endX: number, endZ: number): void {
+    if (this.disposed) return
+    const sx = Number.isFinite(startX) ? startX : this.focusX
+    const sz = Number.isFinite(startZ) ? startZ : this.focusZ
+    const ex = Number.isFinite(endX) ? endX : sx
+    const ez = Number.isFinite(endZ) ? endZ : sz
+    const distance = Math.hypot(ex - sx, ez - sz)
+    const steps = Math.max(1, Math.ceil(distance / (CHUNK_SIZE * 2)))
+    this.warmFocuses.length = 0
+    for (let index = 0; index <= steps; index += 1) {
+      const t = index / steps
+      this.warmFocuses.push({ x: sx + (ex - sx) * t, z: sz + (ez - sz) * t })
+    }
   }
 
   get streamingStats(): TerrainStreamingStats {
@@ -922,10 +940,14 @@ export class TerrainSystem {
       this.desiredTileBucketPool.push(bucket)
     }
     this.desiredTileBuckets.clear()
-    for (const tile of planTerrainTiles(this.focusX / CHUNK_SIZE, this.focusZ / CHUNK_SIZE,
-      this.viewRadius, this.plannedTiles, this.layoutSplits, this.layoutNextSplits)) {
+    const includeTile = (tile: DesiredTile): void => {
         const { cx: kx, cz: kz, size, dist } = tile
         const key = tileKey(kx, kz, size)
+        const previous = this.desiredTiles.get(key)
+        if (previous) {
+          if (dist < previous.dist) previous.dist = dist
+          return
+        }
         this.desiredTiles.set(key, tile)
         const rootCx = Math.floor(kx / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
         const rootCz = Math.floor(kz / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
@@ -960,6 +982,11 @@ export class TerrainSystem {
           this.pendingKeys.add(key)
           this.pendingSorted = false
         }
+    }
+    for (const tile of planTerrainTiles(this.focusX / CHUNK_SIZE, this.focusZ / CHUNK_SIZE,
+      this.viewRadius, this.plannedTiles, this.layoutSplits, this.layoutNextSplits)) includeTile(tile)
+    for (const focus of this.warmFocuses) {
+      for (const tile of planTerrainTiles(focus.x / CHUNK_SIZE, focus.z / CHUNK_SIZE, this.viewRadius)) includeTile(tile)
     }
 
     for (const p of this.pending) {

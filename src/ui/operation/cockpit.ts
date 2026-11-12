@@ -2,6 +2,7 @@ import type { Aircraft } from '../../aircraft/Aircraft'
 import type { CameraSystem } from '../../camera/CameraSystem'
 import { holdOperationPresentation, type OperationFlightPose } from '../../systems/operation/flight'
 import { operationAudioInputs } from './audio'
+import { stageEndZ } from '../../systems/operation/layout'
 import { OperationCourseMarkers } from '../../systems/operation/markers'
 import type { World } from '../../world/World'
 import type { OperationDeck, OperationSceneFrame } from './deck'
@@ -65,7 +66,7 @@ export class OperationCockpit {
     this.active = true
     holdOperationPresentation(frame.seed)
     const pose = frame.pose
-    this.world.presentOperationCourse(pose?.x ?? 0, pose?.z ?? 0)
+    this.world.presentOperationCourse(pose?.x ?? 0, pose?.z ?? 0, pose?.x ?? 0, stageEndZ(0))
     if (!this.markers.root.parent) this.world.scene.add(this.markers.root)
     if (this.title && !this.title.classList.contains('is-hidden')) {
       this.title.classList.add('is-hidden')

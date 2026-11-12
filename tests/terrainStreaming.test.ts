@@ -151,6 +151,15 @@ describe('terrain streaming integration', () => {
     }
   })
 
+  it('requests fine terrain along a warm corridor before the focus reaches it', () => {
+    const endZ = CHUNK_SIZE * 6
+    terrain.warmCorridor(0, 0, 0, endZ)
+    terrain.update(0, 0, 0)
+    expect([...internal.desiredTiles.values()].some(tile =>
+      tile.size === 1 && tile.cx <= 0 && tile.cx + tile.size > 0 && tile.cz <= 6 && tile.cz + tile.size > 6,
+    )).toBe(true)
+  })
+
   it('fills caller-owned streaming telemetry without allocating a snapshot', () => {
     const stats = { loaded: -1, pending: -1, inFlight: -1, ready: -1, workers: -1 }
     expect(terrain.streamingStatsInto(stats)).toBe(stats)
