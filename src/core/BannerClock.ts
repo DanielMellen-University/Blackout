@@ -10,6 +10,8 @@ export function bannerRemainingMs(nowMs: number, untilMs: number): number | null
 
 /** Rebuild a wall-clock deadline after the live simulation resumes. */
 export function bannerUntilFromRemaining(nowMs: number, remainingMs: number): number {
-  if (!Number.isFinite(nowMs) || !Number.isFinite(remainingMs)) return nowMs
+  // A malformed clock reading must not propagate NaN into the banner deadline.
+  if (!Number.isFinite(nowMs)) return 0
+  if (!Number.isFinite(remainingMs)) return nowMs
   return nowMs + Math.min(MAX_BANNER_DURATION_MS, Math.max(0, remainingMs))
 }
