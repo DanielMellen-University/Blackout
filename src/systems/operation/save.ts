@@ -4,6 +4,7 @@ import { OPERATION_ID, OPERATION_STAGES, isOperationStageId, type OperationStage
 import type { StageResult } from './score'
 import type { OperationTranscript } from './replay'
 import { isFlightSample } from './samples'
+import { normalizeOperationSeed } from './seed'
 
 export const OPERATION_SAVE_VERSION = 1 as const
 export const OPERATION_STORAGE_KEY = 'blackout.operation.ridge-relay'
@@ -52,26 +53,55 @@ function isPhase(value: unknown): value is OperationPhase {
   return typeof value === 'string' && PHASES.some(phase => phase === value)
 }
 
+const STAGE_RESULT_NUMBERS = [
+  'elapsedSec', 'distanceM', 'peakSpeedMps', 'minAltitudeM', 'minClearanceM', 'endAltitudeM',
+  'timeScore', 'flyingScore', 'gateScore', 'pathDeviationM', 'altitudeErrorM', 'speedErrorMps',
+  'meanSpeedMps', 'fuelUsed', 'nitroUsed', 'disciplineScore', 'score',
+] as const
+// These seven discipline measurements were added after version-1 saves were
+// already in use. Accept their absence in legacy records, but validate them
+// whenever they are present.
+const STAGE_RESULT_DISCIPLINE_NUMBERS = [
+  'pathDeviationM', 'altitudeErrorM', 'speedErrorMps', 'meanSpeedMps',
+  'fuelUsed', 'nitroUsed', 'disciplineScore',
+] as const satisfies readonly (typeof STAGE_RESULT_NUMBERS[number])[]
+const LEGACY_STAGE_RESULT_NUMBERS = STAGE_RESULT_NUMBERS.filter(
+  key => !(STAGE_RESULT_DISCIPLINE_NUMBERS as readonly string[]).includes(key),
+)
+const STAGE_RESULT_REASONS: readonly StageResult['reason'][] = [
+  'complete', 'timeout', 'ground', 'incomplete', 'off-corridor', 'clearance',
+]
+
 function isStageResult(value: unknown, id: OperationStageId): value is StageResult {
   if (!value || typeof value !== 'object') return false
   const result = value as StageResult
-  return result.id === id && typeof result.passed === 'boolean' && Number.isFinite(result.score)
+  return result.id === id
+    && typeof result.passed === 'boolean'
+    && STAGE_RESULT_REASONS.includes(result.reason)
+    && result.passed === (result.reason === 'complete')
+    && LEGACY_STAGE_RESULT_NUMBERS.every(key => Number.isFinite(result[key]))
+    && STAGE_RESULT_DISCIPLINE_NUMBERS.every(key => !(key in result) || Number.isFinite(result[key]))
 }
 
 export function isAttempt(value: unknown): value is OperationAttempt {
   if (!value || typeof value !== 'object') return false
   const attempt = value as OperationAttempt
-  if (attempt.id !== OPERATION_ID || !Number.isFinite(attempt.seed) || !isPhase(attempt.phase)) return false
+  if (attempt.id !== OPERATION_ID || !Number.isFinite(attempt.seed)
+    || attempt.seed !== normalizeOperationSeed(attempt.seed) || !isPhase(attempt.phase)) return false
   if (!(attempt.route === null || isRouteChoice(attempt.route))) return false
   if (!(attempt.energy === null || isEnergyChoice(attempt.energy))) return false
   if (!Number.isFinite(attempt.score) || attempt.stages == null || typeof attempt.stages !== 'object') return false
+  const stages = attempt.stages as Record<string, unknown>
+  if (Object.keys(stages).some(id => !isOperationStageId(id))) return false
+  if (!OPERATION_STAGES.every(id => !(id in stages) || isStageResult(stages[id], id))) return false
   return true
 }
 
 export function isBest(value: unknown): value is OperationBest {
   if (!value || typeof value !== 'object') return false
   const best = value as OperationBest
-  if (best.id !== OPERATION_ID || !Number.isFinite(best.seed) || !Number.isFinite(best.score)) return false
+  if (best.id !== OPERATION_ID || !Number.isFinite(best.seed)
+    || best.seed !== normalizeOperationSeed(best.seed) || !Number.isFinite(best.score)) return false
   if (!isRouteChoice(best.route) || !isEnergyChoice(best.energy) || !best.stages) return false
   return OPERATION_STAGES.every(id => isStageResult(best.stages[id], id))
 }

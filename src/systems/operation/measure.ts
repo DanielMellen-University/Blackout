@@ -54,11 +54,13 @@ export function measureOperationPaths(seed = 42): Record<string, PathSummary> {
 
 /** True when the four flown paths are not the same result. */
 export function pathOutcomesDiffer(paths: Record<string, PathSummary>): boolean {
+  const expected = OPERATION_PATHS.map(([route, energy]) => operationPathKey(route, energy))
+  if (!expected.every(key => paths[key] != null)) return false
   const valley = paths['valley-conserve']
   const ridge = paths['ridge-conserve']
   const commit = paths['valley-commit']
   if (!valley || !ridge || !commit) return false
-  const scores = new Set(Object.values(paths).map(path => path.score))
+  const scores = new Set(expected.map(key => paths[key]!.score))
   if (scores.size < 4) return false
   const valleyEgress = valley.stages.find(stage => stage.id === 'egress')
   const commitEgress = commit.stages.find(stage => stage.id === 'egress')

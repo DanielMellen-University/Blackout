@@ -51,8 +51,13 @@ export class ReviewFrames {
 
   summary() {
     const sorted = this.values.slice(0, this.count).sort()
-    return { samples: this.count, median: sorted[Math.floor(this.count * .5)] ?? null,
-      p95: sorted[Math.floor(this.count * .95)] ?? null, p99: sorted[Math.floor(this.count * .99)] ?? null,
+    const middle = Math.floor(this.count * .5)
+    const median = this.count === 0 ? null
+      : this.count % 2 === 0 ? ((sorted[middle - 1]! + sorted[middle]!) / 2)
+      : sorted[middle]!
+    const nearestRank = (fraction: number) => sorted[Math.max(0, Math.ceil(this.count * fraction) - 1)] ?? null
+    return { samples: this.count, median,
+      p95: nearestRank(.95), p99: nearestRank(.99),
       max: sorted[this.count - 1] ?? null,
       over50: sorted.filter(ms => ms > 50).length, over100: sorted.filter(ms => ms > 100).length }
   }

@@ -107,7 +107,39 @@ describe('operation session', () => {
     expect(session.result?.scoreLabel).toBe(score)
     expect(session.result?.bestLabel).toBe(best)
     const saved = JSON.parse(store.snapshot() ?? '{}') as { replay: Parameters<typeof replayOperation>[0] }
+    expect(session.trace).toEqual([
+      ...saved.replay.samples.ingress,
+      ...saved.replay.samples.transit,
+      ...saved.replay.samples.egress,
+    ])
     expect(replayOperation(saved.replay).attempt.score.toLocaleString('en-US')).toBe(score)
+  })
+
+  it('restarts replay playback at ingress after closing midway through it', () => {
+    const store = memoryOperationStore()
+    const session = new OperationSession(store, 42, 0)
+    finish(session, 'valley', 'commit')
+    const transcript = JSON.parse(store.snapshot()!).replay
+    const firstSample = transcript.samples.ingress[0]
+    expect(session.replay()).toBe(true)
+    expect(session.trace).toEqual([firstSample])
+    session.advanceReplay(4)
+    expect(session.trace).toHaveLength(5)
+    session.close()
+    expect(session.trace).toEqual([])
+    expect(session.replay()).toBe(true)
+    expect(session.trace).toEqual([firstSample])
+    expect(session.hud?.stageLabel).toContain('Stage 1 of 3')
+  })
+
+  it('ignores zero, negative and non-finite replay frame deltas', () => {
+    const session = new OperationSession(memoryOperationStore(), 42, 0)
+    finish(session, 'ridge', 'commit')
+    session.replay()
+    const initialTrace = structuredClone(session.trace)
+    for (const count of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) session.advanceReplay(count)
+    expect(session.status).toBe('replay')
+    expect(session.trace).toEqual(initialTrace)
   })
 
   it('holds the replay on a decision', () => {
@@ -138,6 +170,21 @@ describe('operation session', () => {
     session.start()
     expect(session.status).toBe('flying')
     expect(session.hud?.stageLabel).toContain('Stage 1 of 3')
+  })
+
+  it('clears an unfinished stage on close without saving it as a result', () => {
+    const store = memoryOperationStore()
+    const session = new OperationSession(store, 42, 0)
+    session.start()
+    session.advance(10)
+    expect(session.currentStage()).toBe('ingress')
+    expect(session.trace.length).toBeGreaterThan(0)
+    session.close()
+    expect(session.status).toBe('idle')
+    expect(session.currentStage()).toBeNull()
+    expect(session.trace).toEqual([])
+    expect(session.snapshot().pose).toBeNull()
+    expect(store.snapshot()).toBeNull()
   })
 
   it('does not throw when the store rejects the write', () => {

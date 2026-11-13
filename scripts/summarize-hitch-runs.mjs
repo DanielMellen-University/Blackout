@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
+import { matchesCurrentOrLegacy } from './lib/frame-percentiles.mjs'
 const directory = process.argv[2] || 'docs/reviews/performance-10.915'
 const rows = [], environments = new Set()
 for (const stage of ['before', 'after']) for (const route of ['city', 'world']) for (let run = 1; run <= 3; run++) {
@@ -11,7 +12,7 @@ for (const stage of ['before', 'after']) for (const route of ['city', 'world']) 
     instrumentation: data.instrumentation, quality: data.quality, camera: data.camera }))
   const frames = data.rawFrames.flight.slice().sort((a,b) => a-b)
   const f = data.flightFrames
-  if (frames.length !== f.samples || frames.at(-1) !== f.max || frames[Math.floor(frames.length * .99)] !== f.p99 ||
+  if (frames.length !== f.samples || frames.at(-1) !== f.max || !matchesCurrentOrLegacy(frames, .99, f.p99) ||
     frames.filter(x => x > 100).length !== data.longFrames.flight.length) throw new Error(`Bad samples: ${path}`)
   const attribution = JSON.parse(await readFile(`${directory}/${stage}/${route}-${run}.hitches.json`, 'utf8'))
   if (attribution.hitches.length !== data.longFrames.startup.length + data.longFrames.flight.length) throw new Error(`Missing hitch evidence: ${path}`)

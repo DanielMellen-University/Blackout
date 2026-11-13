@@ -59,6 +59,25 @@ describe('operation replay verification and summary', () => {
     })
   })
 
+  it.each(['transit', 'egress'] as const)('reports the %s failure and does not score later stages', failedStage => {
+    const transcript = replayFileTranscript(structuredClone(fixture))
+    transcript.samples[failedStage][0]!.airborne = false
+    const text = serializeOperationReplayFile(transcript, {
+      total: 0, stages: { ingress: 0, transit: 0, egress: 0 },
+    })
+    const verified = verifyOperationReplayFile(text)
+    expect(verified).toMatchObject({
+      ok: true,
+      matches: false,
+      summary: { phase: 'failed' },
+    })
+    if (!verified.ok) throw new Error(verified.reason)
+    const failedIndex = OPERATION_STAGES.indexOf(failedStage)
+    expect(verified.stages.slice(failedIndex + 1).every(stage => stage.actual === null && stage.difference === null)).toBe(true)
+    expect(verified.stages[failedIndex]!.actual).toBe(0)
+    expect(verified.stages.slice(0, failedIndex).every(stage => stage.actual !== null)).toBe(true)
+  })
+
   it('summarizes the same measured time, speed, clearance and score as the harness', () => {
     const flown = flyOperation(42, 'valley', 'commit')
     const transcript = replayFileTranscript(fixture)

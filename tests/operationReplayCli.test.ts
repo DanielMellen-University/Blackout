@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { closeSync, mkdtempSync, openSync, readFileSync, rmSync, truncateSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -52,6 +52,20 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
     expect(result.stderr).toBe('')
   })
 
+  it('reports offsetting stage errors even when the total claim matches', async () => {
+    const claimed = structuredClone(fixture.claimed)
+    claimed.stages.ingress += 20
+    claimed.stages.transit -= 20
+    const path = join(dir, 'offsetting-score-errors.json')
+    writeFileSync(path, serializeOperationReplayFile(replayFileTranscript(fixture), claimed))
+    const result = await run([path])
+    expect(result.status).toBe(1)
+    expect(result.stdout).toContain('ingress: claimed 17265, actual 17245, difference -20')
+    expect(result.stdout).toContain('transit: claimed 18717, actual 18737, difference 20')
+    expect(result.stdout).toContain('Total: claimed 61472, actual 61472, difference 0')
+    expect(result.stderr).toBe('')
+  })
+
   it.each([
     ['truncated', '{', 'invalid-json'],
     ['tampered', JSON.stringify({ ...fixture, seed: 73 }), 'integrity-mismatch'],
@@ -87,10 +101,31 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
     expect(result.stdout).toBe('')
   })
 
+  it.skipIf(process.platform === 'win32')('escapes quotes and control characters in replay paths', async () => {
+    const path = join(dir, 'invalid"\nreplay.json')
+    writeFileSync(path, '{')
+    const result = await run([path])
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain(JSON.stringify(path))
+    expect(result.stderr).toContain('invalid-json at $')
+    expect(result.stderr).not.toContain(path)
+    expect(result.stdout).toBe('')
+  })
+
   it('rejects directories explicitly rather than depending on OS read behavior', async () => {
     const result = await run([dir])
     expect(result.status).toBe(2)
     expect(result.stderr).toContain(`Cannot read replay ${JSON.stringify(dir)}: expected a regular file`)
+    expect(result.stdout).toBe('')
+  })
+
+  it.skipIf(process.platform === 'win32')('rejects a FIFO without waiting for a writer', async () => {
+    const path = join(dir, 'replay.pipe')
+    const created = spawnSync('mkfifo', [path])
+    expect(created.status).toBe(0)
+    const result = await run([path])
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain('expected a regular file')
     expect(result.stdout).toBe('')
   })
 

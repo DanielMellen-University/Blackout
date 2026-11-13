@@ -58,6 +58,50 @@ describe('operation save', () => {
     expect(parseProgress(JSON.stringify({ version: 2, active: null, best: null, history: [], replay: null }))).toBeNull()
   })
 
+  it('rejects an active attempt with a malformed nested stage result', () => {
+    const attempt = finish()
+    const saved = commitAttempt(emptyProgress(), attempt)
+    const progress = { ...saved, active: { ...attempt, stages: { ...attempt.stages, ingress: { ...attempt.stages.ingress!, passed: 'yes' } } } }
+    expect(parseProgress(JSON.stringify(progress))).toBeNull()
+  })
+
+  it('rejects a saved best with non-finite stage measurements', () => {
+    const saved = commitAttempt(emptyProgress(), finish())
+    const best = structuredClone(saved.best!)
+    best.stages.transit.altitudeErrorM = Number.NaN
+    expect(parseProgress(JSON.stringify({ ...saved, best }))).toBeNull()
+  })
+
+  it('keeps legacy version-1 best and history records without discipline measurements', () => {
+    const saved = commitAttempt(emptyProgress(), finish())
+    const legacy = structuredClone(saved)
+    for (const record of [legacy.best!, ...legacy.history]) {
+      for (const stage of Object.values(record.stages)) {
+        delete (stage as Partial<typeof stage>).pathDeviationM
+        delete (stage as Partial<typeof stage>).altitudeErrorM
+        delete (stage as Partial<typeof stage>).speedErrorMps
+        delete (stage as Partial<typeof stage>).meanSpeedMps
+        delete (stage as Partial<typeof stage>).fuelUsed
+        delete (stage as Partial<typeof stage>).nitroUsed
+        delete (stage as Partial<typeof stage>).disciplineScore
+      }
+    }
+    const parsed = parseProgress(JSON.stringify(legacy))
+    expect(parsed?.best).not.toBeNull()
+    expect(parsed?.history).toHaveLength(1)
+
+    const malformed = structuredClone(legacy)
+    malformed.history[0]!.stages.transit.pathDeviationM = Number.POSITIVE_INFINITY
+    expect(parseProgress(JSON.stringify(malformed))).toBeNull()
+  })
+
+  it('rejects noncanonical seeds in active and best records', () => {
+    const attempt = finish()
+    expect(parseProgress(JSON.stringify({ ...emptyProgress(), active: { ...attempt, seed: 0 } }))).toBeNull()
+    const saved = commitAttempt(emptyProgress(), attempt)
+    expect(parseProgress(JSON.stringify({ ...saved, best: { ...saved.best, seed: -42 } }))).toBeNull()
+  })
+
   it('rejects truncated and garbage documents', () => {
     expect(parseProgress('{')).toBeNull()
     expect(parseProgress('[]')).toBeNull()
@@ -89,6 +133,21 @@ describe('operation save', () => {
     expect(saved.best).toBeNull()
     expect(saved.history).toHaveLength(0)
     expect(saved.active?.phase).toBe('failed')
+  })
+
+  it('keeps the latest completed replay when a later attempt fails', () => {
+    const completed = finish('valley')
+    const transcript = createTranscript(42, 'valley', 'conserve', {
+      ingress: line('ingress', null, null),
+      transit: line('transit', 'valley', null),
+      egress: line('egress', 'valley', 'conserve'),
+    })
+    const saved = commitAttempt(emptyProgress(), completed, transcript)
+    const failed = recordStage(createAttempt(73), line('ingress', null, null).map(sample => ({ ...sample, airborne: false }))).attempt
+    const afterFailure = commitAttempt(saved, failed)
+    expect(afterFailure.replay).toEqual(transcript)
+    expect(afterFailure.best).toEqual(saved.best)
+    expect(afterFailure.history).toEqual(saved.history)
   })
 
   it('caps remembered finishes', () => {
