@@ -135,6 +135,9 @@ export function basinDistance(b: Basin, x: number, z: number): number {
   if (!validBasin(b) || !Number.isFinite(x) || !Number.isFinite(z)) return Number.POSITIVE_INFINITY
   if (b.regionalSea) return coastField(x, z) * 18000
   if (b.shoreRadii) {
+    // An empty cached shoreline carries no geometry; treat it as outside the
+    // basin instead of letting an undefined radius turn the distance into NaN.
+    if (b.shoreRadii.length === 0) return Number.POSITIVE_INFINITY
     const dx = x - b.x, dz = z - b.z
     const sector = ((Math.atan2(dz, dx) / (Math.PI * 2) + 1) % 1) * b.shoreRadii.length
     const index = Math.floor(sector), t = sector - index
@@ -143,8 +146,12 @@ export function basinDistance(b: Basin, x: number, z: number): number {
     // rendering draws. Angular easing described a different curve and left
     // some small coves with water triangles outside the collision shoreline.
     const angle = Math.PI * 2 / b.shoreRadii.length
-    const radius = a * c * Math.sin(angle) /
-      (c * Math.sin((1 - t) * angle) + a * Math.sin(t * angle))
+    const denominator = c * Math.sin((1 - t) * angle) + a * Math.sin(t * angle)
+    // Two zero radii make the chord formula 0/0. The chord then collapses to
+    // the straight line between the two endpoint radii, which is the same
+    // value the limit approaches from either side.
+    const radius = denominator === 0 ? a + (c - a) * t :
+      a * c * Math.sin(angle) / denominator
     let distance = Math.hypot(dx, dz) - radius
     for (const island of b.islands ?? []) {
       const ix = x - island.x, iz = z - island.z, angle = Math.PI * 2 / 32
