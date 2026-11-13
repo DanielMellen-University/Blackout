@@ -41,7 +41,15 @@ export function legacyFlightRecordLabel(storage: Pick<Storage, 'getItem'> | null
     return [...previousScores, ...(oldRoute !== previousScoreId ? [[oldRoute, 'PRE-B30']] : []), [base, 'PRE-B20'], [base.replace(/^(seed:-?\d+:[a-z-]+|random-world|free-flight)(?=:|$)/, '$1:r31'), 'B20 R31']].map(([id, label]) => {
       const score = Number(storage?.getItem(`blackout.best.${id}`) ?? 0)
       const rawHistory = storage?.getItem(`blackout.history.${id}`)
-      const history = rawHistory ? JSON.parse(rawHistory) as { completionCount?: number } : null
+      // One corrupt history entry must not hide the other records' labels.
+      let history: { completionCount?: number } | null = null
+      if (rawHistory) {
+        try {
+          history = JSON.parse(rawHistory) as { completionCount?: number }
+        } catch {
+          history = null
+        }
+      }
       const parts = [Number.isFinite(score) && score > 0 ? `BEST ${Math.floor(score)}` : '',
         Number.isFinite(history?.completionCount) && history!.completionCount! > 0 ? `${Math.floor(history!.completionCount!)} COMPLETE` : '',
         storage?.getItem(`blackout.ghost.${id}`) ? 'GHOST SAVED' : ''].filter(Boolean)
