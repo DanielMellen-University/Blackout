@@ -26,24 +26,30 @@ export function dailyChallengeCountdown(nowMs: number): string {
 export function featuredMissionNavigationIndex(
   key: string, index: number, featured: number, grid: number, columns: number,
 ): number | null {
-  const count = featured + grid
+  const safeFeatured = Number.isFinite(featured) ? Math.max(0, Math.floor(featured)) : 0
+  const safeGrid = Number.isFinite(grid) ? Math.max(0, Math.floor(grid)) : 0
+  const count = safeFeatured + safeGrid
   if (!count) return null
+  const safeColumns = Number.isFinite(columns) && columns >= 1 ? Math.floor(columns) : 1
+  const safeIndex = Number.isFinite(index)
+    ? Math.min(count - 1, Math.max(0, Math.floor(index)))
+    : 0
+  const inFeatured = safeIndex < safeFeatured
+  const column = inFeatured ? safeIndex : (safeIndex - safeFeatured) % safeColumns
+  const rowStart = inFeatured ? 0 : safeIndex - column
+  const rowSize = inFeatured ? safeFeatured : Math.min(safeColumns, count - rowStart)
   if (key === 'Home') return 0
   if (key === 'End') return count - 1
-  const inFeatured = index < featured
-  const column = inFeatured ? index : (index - featured) % columns
-  const rowStart = inFeatured ? 0 : index - column
-  const rowSize = inFeatured ? featured : Math.min(columns, count - rowStart)
-  if (key === 'ArrowLeft') return Math.max(rowStart, index - 1)
-  if (key === 'ArrowRight') return Math.min(rowStart + rowSize - 1, index + 1)
+  if (key === 'ArrowLeft') return Math.max(rowStart, safeIndex - 1)
+  if (key === 'ArrowRight') return Math.min(rowStart + rowSize - 1, safeIndex + 1)
   if (key === 'ArrowUp') {
-    if (inFeatured) return index
-    if (rowStart === featured) return Math.min(featured - 1, Math.floor((column + .5) / columns * featured))
-    return index - columns
+    if (inFeatured) return safeIndex
+    if (rowStart === safeFeatured) return Math.min(safeFeatured - 1, Math.floor((column + .5) / safeColumns * safeFeatured))
+    return safeIndex - safeColumns
   }
   if (key === 'ArrowDown') {
-    if (inFeatured) return grid ? featured + Math.min(grid - 1, Math.floor((column + .5) / featured * columns)) : index
-    return rowStart + columns < count ? Math.min(count - 1, index + columns) : index
+    if (inFeatured) return safeGrid ? safeFeatured + Math.min(safeGrid - 1, Math.floor((column + .5) / safeFeatured * safeColumns)) : safeIndex
+    return rowStart + safeColumns < count ? Math.min(count - 1, safeIndex + safeColumns) : safeIndex
   }
   return null
 }

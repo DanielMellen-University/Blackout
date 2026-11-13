@@ -38,4 +38,13 @@ describe('mission picker layout', () => {
     expect(move('End', 0, 3, 5, 2)).toBe(7)
     expect(move('ArrowDown', 2, 3, 0, 2)).toBe(2)
   })
+
+  it('stays on a real card when the grid shape or focus index is malformed', () => {
+    expect(move('ArrowRight', 2, 3, 5, 0)).toBe(2)
+    expect(move('ArrowDown', 0, 3, 5, 0)).toBe(3)
+    expect(move('ArrowUp', 3, 3, 5, 0)).toBe(1)
+    expect(move('ArrowRight', Number.NaN, 3, 5, 2)).toBe(1)
+    expect(move('ArrowRight', 2, 3, 5, Number.NaN)).toBe(2)
+    expect(move('ArrowRight', 9, 3, 5, 2)).toBe(7)
+  })
 })
