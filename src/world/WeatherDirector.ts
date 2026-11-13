@@ -167,7 +167,8 @@ function blendWindInto(
   to: { x: number; z: number },
   amount: number,
 ): void {
-  const t = MathUtils.smoothstep(MathUtils.clamp(amount, 0, 1), 0, 1)
+  const safeAmount = Number.isFinite(amount) ? amount : 0
+  const t = MathUtils.smoothstep(MathUtils.clamp(safeAmount, 0, 1), 0, 1)
   const fromSpeed = Math.hypot(from.x, from.z)
   const toSpeed = Math.hypot(to.x, to.z)
   if (fromSpeed < 1e-5 && toSpeed < 1e-5) {
@@ -189,7 +190,8 @@ export function blendWeatherProfile(
   to: WeatherProfile,
   amount: number,
 ): WeatherProfile {
-  const t = MathUtils.smoothstep(MathUtils.clamp(amount, 0, 1), 0, 1)
+  const safeAmount = Number.isFinite(amount) ? amount : 0
+  const t = MathUtils.smoothstep(MathUtils.clamp(safeAmount, 0, 1), 0, 1)
   const result = {} as WeatherProfile
   for (const key of PROFILE_KEYS) result[key] = MathUtils.lerp(from[key], to[key], t)
   return result
