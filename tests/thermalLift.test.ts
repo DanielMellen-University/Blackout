@@ -106,3 +106,21 @@ describe('deterministic thermal lift', () => {
     expect(nearestThermalPocket(44_767, 1_780, 1_780)?.cellZ).toBe(1)
   })
 })
+
+describe('thermal neighbourhood shape', () => {
+  it('samples diagonal neighbour cells, not just the cross', () => {
+    const seed = 1
+    const pocket = thermalPocketForCell(seed, 1, 1)!
+    // The pocket centre lies outside every other pocket in the sampled 3x3
+    // neighbourhood (cells 0 to 2), so any lift here must come from the
+    // diagonal cell, not from an orthogonal neighbour.
+    for (let cx = 0; cx <= 2; cx++) {
+      for (let cz = 0; cz <= 2; cz++) {
+        if (cx === 1 && cz === 1) continue
+        const other = thermalPocketForCell(seed, cx, cz)!
+        expect(Math.hypot(pocket.x - other.x, pocket.z - other.z)).toBeGreaterThanOrEqual(other.radius)
+      }
+    }
+    expect(thermalLiftIntensity(seed, pocket.x, 420, pocket.z, 1, 0, 0, true)).toBeGreaterThan(0.5)
+  })
+})

@@ -68,9 +68,10 @@ export function nearestThermalPocket(
 /**
  * Return a stable, bounded updraft envelope for the supplied world sample.
  *
- * The field is intentionally analytic: five neighbouring cells are checked,
- * there are no generated objects, and the same seed always produces the same
- * pockets. Daylight helps thermals, while precipitation damps them gently.
+ * The field is intentionally analytic: the nine cells of the fixed 3x3
+ * neighbourhood are checked, there are no generated objects, and the same
+ * seed always produces the same pockets. Daylight helps thermals, while
+ * precipitation damps them gently.
  */
 export function thermalLiftIntensity(
   seed: number,
