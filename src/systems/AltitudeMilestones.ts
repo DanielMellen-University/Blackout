@@ -46,5 +46,7 @@ export class AltitudeMilestoneTracker {
 }
 
 export function altitudeMilestoneThresholds(): readonly number[] {
-  return ALTITUDE_THRESHOLDS_M
+  // Return a copy: the shared tiers are module state, and a caller mutating
+  // the returned array would otherwise corrupt every tracker using them.
+  return [...ALTITUDE_THRESHOLDS_M]
 }
