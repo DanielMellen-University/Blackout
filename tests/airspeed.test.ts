@@ -17,6 +17,13 @@ it('converts metres per second to true knots without a fake scale', () => {
   expect(displayedKnots(-1)).toBe(0)
 })
 
+it('reads non-finite airspeed as zero instead of leaking NaN into the HUD', () => {
+  expect(displayedKnots(Number.NaN)).toBe(0)
+  expect(displayedKnots(Number.POSITIVE_INFINITY)).toBe(0)
+  expect(displayedKnots(Number.NEGATIVE_INFINITY)).toBe(0)
+  expect(displayedKnots(0)).toBe(0)
+})
+
 it('settles military cruise well below 1543 m/s and lets afterburner go faster', () => {
   setContactHeightSampler(() => 0)
   const plane = new Aircraft()
