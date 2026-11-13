@@ -52,6 +52,7 @@ export function operationResultModel(
   if (passed && previousBest == null) bestLabel = `Best ${formatOperationScore(attempt.score)}`
   else if (passed && previousBest && attempt.score > previousBest.score) bestLabel = `New best ${formatOperationScore(attempt.score)}`
   else if (best) bestLabel = `Best ${formatOperationScore(best.score)}`
+  else if (previousBest) bestLabel = `Best ${formatOperationScore(previousBest.score)}`
   return {
     title: passed ? 'Ridge relay complete' : 'Ridge relay stopped',
     scoreLabel: formatOperationScore(attempt.score),
