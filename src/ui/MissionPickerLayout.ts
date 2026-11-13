@@ -12,12 +12,11 @@ export function browsingMissionId(id: CourseId): CourseId {
   return HIDDEN_MISSION_IDS.includes(id) ? 'training-orbit' : id
 }
 
-/** Presentation only: actual Daily challenge generation still follows its existing UTC day. */
+/** Count down to the UTC midnight the daily challenge actually resets at. */
 export function dailyChallengeCountdown(nowMs: number): string {
   if (!Number.isFinite(nowMs)) return '--:--:--'
   const day = 86_400_000
-  const estOffset = 5 * 60 * 60 * 1000
-  const nextMidnight = (Math.floor((nowMs - estOffset) / day) + 1) * day + estOffset
+  const nextMidnight = (Math.floor(nowMs / day) + 1) * day
   const remaining = Math.ceil((nextMidnight - nowMs) / 1000)
   return [Math.floor(remaining / 3600), Math.floor(remaining / 60) % 60, remaining % 60]
     .map(value => String(value).padStart(2, '0')).join(':')
