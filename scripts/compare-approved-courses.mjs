@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import assert from 'node:assert/strict'
 const part=process.env.REVIEW_PART
 if(!part)throw Error('REVIEW_PART is required')
+if(!process.env.POLISH_THEMES)throw Error('POLISH_THEMES is required')
 const themes=process.env.POLISH_THEMES.split(','),seeds=[73,808,2026]
 function shape(f){
  const origin=[f.spawn.x,f.spawn.y,f.spawn.z],yaw=f.spawn.yaw,points=f.gates.map(g=>g.position)
