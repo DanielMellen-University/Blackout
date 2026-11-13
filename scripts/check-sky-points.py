@@ -29,6 +29,9 @@ def metrics(path):
             "meanArea": sum(areas) / max(1, len(areas)), "maxArea": max(areas, default=0)}
 
 
+if len(sys.argv) != 4:
+    print("usage: check-sky-points.py <before.png> <after.png> <output.json>", file=sys.stderr)
+    sys.exit(2)
 before, after = metrics(sys.argv[1]), metrics(sys.argv[2])
 result = {"threshold": 40, "before": before, "after": after}
 Path(sys.argv[3]).write_text(json.dumps(result, indent=2) + "\n")
