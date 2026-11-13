@@ -340,7 +340,7 @@ export function sampleGroundNormal(
   sampleDistance = 2,
   target = new Vector3(),
 ): Vector3 {
-  const d = Math.max(0.05, sampleDistance)
+  const d = Number.isFinite(sampleDistance) ? Math.max(0.05, sampleDistance) : 2
   const dx = sampleGroundHeight(x + d, z) - sampleGroundHeight(x - d, z)
   const dz = sampleGroundHeight(x, z + d) - sampleGroundHeight(x, z - d)
   return target.set(-dx, d * 2, -dz).normalize()
@@ -354,7 +354,7 @@ export function sampleGroundNormalCached(
   cache: GroundHeightCache,
   target = new Vector3(),
 ): Vector3 {
-  const d = Math.max(0.05, sampleDistance)
+  const d = Number.isFinite(sampleDistance) ? Math.max(0.05, sampleDistance) : 2
   const dx = sampleGroundHeightCached(x + d, z, cache) - sampleGroundHeightCached(x - d, z, cache)
   const dz = sampleGroundHeightCached(x, z + d, cache) - sampleGroundHeightCached(x, z - d, cache)
   return target.set(-dx, d * 2, -dz).normalize()
