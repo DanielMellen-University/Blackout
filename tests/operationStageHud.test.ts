@@ -29,6 +29,14 @@ describe('operation stage HUD', () => {
     expect(hud.progressLabel.endsWith('%')).toBe(true)
   })
 
+  it('keeps malformed live samples off the stage HUD', () => {
+    const attempt = createAttempt(42)
+    expect(operationLegProgress(attempt, { ...sample, z: Number.NaN })).toBe('—')
+    const hud = operationHudModel(attempt, { ...sample, speed: Number.NaN, x: Number.NaN })
+    expect(hud.guideLabel).toBe('—')
+    expect(hud.progressLabel).toBe(operationLegProgress(attempt, { ...sample, z: 800 }))
+  })
+
   it('says stopped when the sample is not airborne', () => {
     const hud = operationHudModel(createAttempt(42), { ...sample, airborne: false })
     expect(hud.airborneLabel).toBe('Stopped')
