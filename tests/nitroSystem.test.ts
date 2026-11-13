@@ -46,6 +46,17 @@ describe('b36 nitro with b21 safety', () => {
     expect(updateNitro(s, 0, true)).toBe(true)
     expect(s.fraction).toBe(1)
   })
+  it('repairs a malformed reserve on a gate refill instead of keeping NaN', () => {
+    const s = createNitroState()
+    s.fraction = Number.NaN
+    s.depleted = true
+    s.gateRefills = Number.NaN
+    refillNitroAtGate(s)
+    expect(Number.isFinite(s.fraction)).toBe(true)
+    expect(s.fraction).toBe(C.nitroGateRefill)
+    expect(s.depleted).toBe(false)
+    expect(s.gateRefills).toBe(1)
+  })
   it('delivers the stronger thrust through production physics and cuts all feedback at empty', () => {
     setContactHeightSampler(() => 0)
     const a = new Aircraft()
