@@ -4,9 +4,6 @@ export interface EngineHeatState {
   afterburnerLocked: boolean
 }
 
-export const ENGINE_HEAT_LOCKOUT_FRACTION = 0.98
-export const ENGINE_HEAT_REENABLE_FRACTION = 0.58
-
 export function createEngineHeatState(): EngineHeatState {
   return { fraction: 0, afterburnerLocked: false }
 }
