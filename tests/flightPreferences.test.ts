@@ -108,6 +108,18 @@ describe('keyboard flight preferences', () => {
     expect(keyboardYawPreferenceLabel('a-left')).toBe('A LEFT / D RIGHT')
   })
 
+  it('honors a valid non-default fallback instead of forcing the default', () => {
+    expect(normalizeKeyboardYawPreference('bad', 'a-right')).toBe('a-right')
+    expect(normalizeKeyboardYawPreference(undefined, 'a-right')).toBe('a-right')
+    expect(normalizeKeyboardYawPreference('bad', 'junk' as never)).toBe(DEFAULT_KEYBOARD_YAW)
+    expect(normalizeHudDisplay('bad', 'full')).toBe('full')
+    expect(normalizeHudDisplay(undefined, 'full')).toBe('full')
+    expect(normalizeHudDisplay('bad', 'junk' as never)).toBe(DEFAULT_HUD_DISPLAY)
+    const values = new Map<string, string>([[HUD_DISPLAY_STORAGE_KEY, 'bad']])
+    const storage = { getItem: (key: string) => values.get(key) ?? null }
+    expect(readHudDisplayPreference(storage, 'full')).toBe('full')
+  })
+
   it('repairs malformed storage and persists a valid preference', () => {
     const values = new Map<string, string>([[KEYBOARD_YAW_STORAGE_KEY, 'bad']])
     const storage = {
