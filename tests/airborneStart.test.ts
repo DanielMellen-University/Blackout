@@ -40,3 +40,16 @@ describe('landing announcement', () => {
     expect(announcesLanding(true, 'landed', true, 'landed')).toBe(false)
   })
 })
+
+describe('airborne start with an unreadable approach', () => {
+  it('fails closed on a NaN ground sample instead of spawning 300 m back', () => {
+    const gate = { x: 0, y: 100, z: 0, fwdX: 0, fwdZ: 1 }
+    expect(airborneStart(gate, () => Number.NaN)).toEqual({ x: 0, y: 100, z: 0, yaw: 0 })
+  })
+
+  it('keeps the last clear approach point when the sampler fails mid-approach', () => {
+    const gate = { x: 0, y: 100, z: 0, fwdX: 0, fwdZ: 1 }
+    const start = airborneStart(gate, (_x, z) => (z < -90 ? Number.NaN : 0))
+    expect(start.z).toBe(-90)
+  })
+})
