@@ -425,3 +425,26 @@ describe('collision query budget', () => {
     expect(heightSamples).toBe(afterCrash)
   })
 })
+
+describe('classifyContact slope fallback', () => {
+  it('uses the supplied ground normal when an impact record has no surface normal', () => {
+    const outcome = classifyContactOutcome({
+      airborne: true,
+      impact: impact({ surfaceNormal: undefined as unknown as Vector3 }),
+      onPad: true,
+      gearDown: true,
+      vy: -2,
+      groundSpeed: 40,
+      pitch: 0,
+      roll: 0,
+      upY: 1,
+      obstacle: false,
+      surface: 'land',
+      surfaceNormalY: 0.5,
+      touchdown: true,
+    })
+    // A 60 degree slope is far past the 14 degree landing envelope, so this
+    // must crash on slope even though the impact record carries no normal.
+    expect(outcome).toEqual({ result: 'crash', reason: 'slope' })
+  })
+})
