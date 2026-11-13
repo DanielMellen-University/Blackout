@@ -67,9 +67,10 @@ export function hudIdIsLedger(html: string, id: string): boolean {
     const start = tags[i]?.index ?? -1
     if (full.startsWith('</')) {
       for (let s = stack.length - 1; s >= 0; s -= 1) {
-        const openName = tags[stack[s] ?? 0]?.[1]
-        stack.pop()
-        if (openName === name) break
+        if (tags[stack[s] ?? 0]?.[1] === name) {
+          stack.length = s
+          break
+        }
       }
       continue
     }
