@@ -108,4 +108,20 @@ describe('world seed sharing', () => {
     })
     await expect(copyWorldSeed(12, { writeText })).resolves.toBe(false)
   })
+
+  it('drops stale route keys when the replay target is a random course', () => {
+    const href = 'http://localhost:5173/?seed=9&course=daily-ops&day=2026-01-01&week=2026-W01&month=2026-01'
+    const link = worldSeedReplayUrl(href, 5, 'random')
+    expect(link).toContain('seed=5')
+    expect(link).not.toContain('seed=9')
+    expect(link).not.toContain('course=')
+    expect(link).not.toContain('day=')
+    expect(link).not.toContain('week=')
+    expect(link).not.toContain('month=')
+    expect(worldSeedReplayUrl('not a URL', 5, 'random')).toBeNull()
+    expect(worldSeedReplayUrl('', 5)).toBeNull()
+    expect(worldSeedReplayUrl(href, 5, 'daily-ops', '2026-01-02')).toContain('day=2026-01-02')
+    expect(worldSeedReplayUrl(href, 5, 'daily-ops', '2026-01-02')).not.toContain('week=')
+    expect(worldSeedReplayUrl(href, 5, 'daily-ops', '2026-01-02')).not.toContain('month=')
+  })
 })
