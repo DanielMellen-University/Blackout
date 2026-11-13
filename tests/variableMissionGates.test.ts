@@ -1,9 +1,10 @@
 import { sortieContractDetailForSeed } from '../src/systems/SortieContract'
-import { afterEach, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { Scene, type Line } from 'three'
 import { generateMission } from '../src/systems/MissionGenerator'
 import { MISSION_THEMES, setTerrainProfile } from '../src/world/TerrainProfile'
 import { MissionSystem, buildMissionRoute, summarizeMissionRoute, validateMissionRoute } from '../src/systems/Mission'
+import { distributeMissionGates } from '../src/systems/MissionGates'
 import { setWorldSeed } from '../src/world/noise'
 import { setOpsPad, clearOpsPad } from '../src/world/terrainSample'
 import { createNitroState, refillNitroAtGate } from '../src/aircraft/NitroSystem'
@@ -174,3 +175,28 @@ it('keeps Training orbit routes unchanged while preferring 11 gates', async () =
   expect(createHash('sha256').update(JSON.stringify(routes)).digest('hex'))
     .toBe('1b27b457d91744b8e9535f90346ce1d90c0101ecef0bff2fbf720e33391c3725')
 }, 120_000)
+
+describe('distributeMissionGates degenerate counts', () => {
+  const anchors = [
+    { x: 0, y: 100, z: 0 },
+    { x: 1000, y: 120, z: 500 },
+    { x: 2000, y: 110, z: 0 },
+  ]
+  it('returns the first anchor instead of NaN coordinates for one gate', () => {
+    expect(distributeMissionGates(anchors, 1)).toEqual([{ x: 0, y: 100, z: 0 }])
+    expect(distributeMissionGates(anchors, 0)).toEqual([])
+    expect(distributeMissionGates(anchors, Number.NaN)).toEqual([])
+  })
+  it('keeps finite endpoints for two gates', () => {
+    const gates = distributeMissionGates(anchors, 2)
+    expect(gates).toHaveLength(2)
+    expect(gates[0]).toEqual({ x: 0, y: 100, z: 0 })
+    for (const gate of gates) {
+      expect(Number.isFinite(gate.x)).toBe(true)
+      expect(Number.isFinite(gate.y)).toBe(true)
+      expect(Number.isFinite(gate.z)).toBe(true)
+    }
+    expect(gates[1]!.x).toBeCloseTo(2000)
+    expect(gates[1]!.z).toBeCloseTo(0)
+  })
+})

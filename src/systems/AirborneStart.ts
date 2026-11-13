@@ -10,7 +10,11 @@ export function airborneStart(
   for (let d = 10; d <= 300; d += 10) {
     const x = gate.x - gate.fwdX * d
     const z = gate.z - gate.fwdZ * d
-    if (groundHeight(x, z) > gate.y - 20) break
+    const ground = groundHeight(x, z)
+    // An unreadable sample is not clear ground: stop at the last verified
+    // approach point instead of spawning up to 300 m back, possibly behind
+    // a ridge or inside terrain the sampler could not report.
+    if (!Number.isFinite(ground) || ground > gate.y - 20) break
     distance = d
   }
   return {

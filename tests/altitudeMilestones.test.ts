@@ -34,3 +34,15 @@ describe('AltitudeMilestoneTracker', () => {
     expect(tracker.update(500, true)).toEqual({ thresholdM: 500, crossedCount: 1 })
   })
 })
+
+describe('altitude milestone thresholds', () => {
+  it('returns a copy so callers cannot corrupt the shared tiers', () => {
+    const first = altitudeMilestoneThresholds()
+    expect(first).toEqual([500, 1_500, 3_000, 6_000])
+    ;(first as unknown as number[]).push(99999)
+    expect(altitudeMilestoneThresholds()).toEqual([500, 1_500, 3_000, 6_000])
+    const tracker = new AltitudeMilestoneTracker()
+    expect(tracker.update(6000, true)).toEqual({ thresholdM: 6_000, crossedCount: 4 })
+    expect(tracker.nextThresholdM).toBe(0)
+  })
+})

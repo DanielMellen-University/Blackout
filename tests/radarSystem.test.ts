@@ -143,6 +143,9 @@ describe('arcade radar sweep', () => {
     expect(radarBearingArrow(-Math.PI * .75)).toBe('↙')
     expect(radarDistanceLabel(420)).toBe('420M')
     expect(radarDistanceLabel(4200)).toBe('4.2K')
+    expect(radarDistanceLabel(9949)).toBe('9.9K')
+    expect(radarDistanceLabel(9999)).toBe('10K')
+    expect(radarDistanceLabel(15000)).toBe('15K')
   })
 
   it('keeps vertical traffic cues finite and deadbanded', () => {

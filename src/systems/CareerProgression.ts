@@ -57,9 +57,9 @@ export function pilotRankRank(rank: PilotRank): number {
 /** Keep the next rank target visible without exposing raw storage details. */
 export function pilotRankNextGoalLabel(rank: PilotRank): string {
   if (rank === 'cadet') return 'NEXT WINGMAN / 1 RUN'
-  if (rank === 'wingman') return 'NEXT FLIGHT LEAD / 2 COURSES / 5 RUNS / 130K SCORE'
-  if (rank === 'flight-lead') return 'NEXT ACE / 4 COURSES / 12 RUNS / 300K SCORE'
-  if (rank === 'ace') return 'NEXT LEGEND / 7 COURSES / 30 RUNS / 600K SCORE'
+  if (rank === 'wingman') return 'NEXT FLIGHT LEAD / 2 COURSES / 5 RUNS / 130K SCORE / 6 BADGES / 3 CONTRACTS'
+  if (rank === 'flight-lead') return 'NEXT ACE / 4 COURSES / 12 RUNS / 300K SCORE / 18 BADGES / 10 CONTRACTS'
+  if (rank === 'ace') return 'NEXT LEGEND / 7 COURSES / 30 RUNS / 600K SCORE / 36 BADGES / 24 CONTRACTS'
   return ''
 }
 

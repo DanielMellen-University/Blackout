@@ -203,17 +203,17 @@ export function classifyContactOutcomeInto(
   const surface = normalizeContactSurface(impact?.surface ?? input.surface)
   const nVel = finiteContactScalar(impact?.normalVelocity, vy, vy)
   const impactNormalY = impact?.surfaceNormal?.y
-  const slope = impact
-    ? Math.acos(MathUtils.clamp(
-      Number.isFinite(impactNormalY) ? impactNormalY! : 1,
-      -1,
-      1,
-    ))
-    : Math.acos(MathUtils.clamp(
-      Number.isFinite(input.surfaceNormalY) ? input.surfaceNormalY! : 1,
-      -1,
-      1,
-    ))
+  // A replay or debug payload may omit the impact normal. Fall back to the
+  // supplied ground normal instead of assuming flat ground, so a steep
+  // slope still crashes instead of reading as a safe touchdown.
+  const slopeNormalY = Number.isFinite(impactNormalY)
+    ? impactNormalY!
+    : input.surfaceNormalY
+  const slope = Math.acos(MathUtils.clamp(
+    Number.isFinite(slopeNormalY) ? slopeNormalY! : 1,
+    -1,
+    1,
+  ))
 
   if (surface === 'water' && airborne) return setContactOutcome(out, 'ditch', 'water')
   if (input.upY < 0.35) return setContactOutcome(out, 'crash', 'attitude')

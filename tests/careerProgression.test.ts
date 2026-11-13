@@ -67,7 +67,9 @@ describe('CareerProgression', () => {
     expect(pilotRankLabel('flight-lead')).toBe('FLIGHT LEAD')
     expect(pilotRankRank('cadet')).toBeLessThan(pilotRankRank('wingman'))
     expect(pilotRankRank('ace')).toBeLessThan(pilotRankRank('legend'))
-    expect(pilotRankNextGoalLabel('wingman')).toBe('NEXT FLIGHT LEAD / 2 COURSES / 5 RUNS / 130K SCORE')
+    expect(pilotRankNextGoalLabel('wingman')).toBe('NEXT FLIGHT LEAD / 2 COURSES / 5 RUNS / 130K SCORE / 6 BADGES / 3 CONTRACTS')
+    expect(pilotRankNextGoalLabel('flight-lead')).toBe('NEXT ACE / 4 COURSES / 12 RUNS / 300K SCORE / 18 BADGES / 10 CONTRACTS')
+    expect(pilotRankNextGoalLabel('ace')).toBe('NEXT LEGEND / 7 COURSES / 30 RUNS / 600K SCORE / 36 BADGES / 24 CONTRACTS')
     expect(pilotRankNextGoalLabel('legend')).toBe('')
     expect(pilotRankAriaLabel('ace', {
       ...base,
@@ -100,5 +102,37 @@ describe('CareerProgression', () => {
       bestPeakAltitudeM: Number.NaN,
       styleVarietyCount: Number.POSITIVE_INFINITY,
     })).toEqual([])
+  })
+})
+
+describe('pilot rank next-goal labels', () => {
+  it('lists every requirement, not just courses, runs, and score', () => {
+    // Meeting only the listed courses, runs, and score must not rank up:
+    // badges and contracts are required too, so the label has to name them.
+    expect(pilotRankForProgress({
+      ...base,
+      completedCourses: 2,
+      totalRuns: 5,
+      totalBestScore: 130_000,
+      totalBadges: 0,
+      totalContractWins: 0,
+    })).toBe('wingman')
+    expect(pilotRankForProgress({
+      ...base,
+      completedCourses: 4,
+      totalRuns: 12,
+      totalBestScore: 300_000,
+      totalBadges: 18,
+      totalContractWins: 3,
+    })).toBe('flight-lead')
+    expect(pilotRankForProgress({
+      ...base,
+      completedCourses: 7,
+      totalRuns: 30,
+      totalBestScore: 600_000,
+      totalBadges: 36,
+      totalContractWins: 24,
+      legendCourses: 0,
+    })).toBe('ace')
   })
 })
