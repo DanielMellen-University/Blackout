@@ -71,6 +71,18 @@ describe('rotating course record retention', () => {
     expect(pruneRotatingCourseRecords({ length: 1, key: () => 'blackout.history.seed:1:sweep:r32:s2:daily:2026-01-01' })).toBe(0)
   })
 
+  it('keeps a protected run even when its rotating period key is unparseable', () => {
+    const protectedId = 'seed:broken:ridge:r32:s2:daily:2026-02-30'
+    const unprotectedId = 'seed:broken:sweep:r32:s2:daily:2026-02-30'
+    const storage = storageFixture([
+      `blackout.badges.${protectedId}`,
+      `blackout.badges.${unprotectedId}`,
+    ])
+    expect(pruneRotatingCourseRecords(storage, new Set([protectedId]))).toBe(1)
+    expect(storage.values.has(`blackout.badges.${protectedId}`)).toBe(true)
+    expect(storage.values.has(`blackout.badges.${unprotectedId}`)).toBe(false)
+  })
+
   it('bounds explicit seeded-world families while preserving the newest records', () => {
     const data = new Map<string, string>()
     const storage: IndexedRecordStorage = {
