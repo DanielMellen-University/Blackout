@@ -11,7 +11,7 @@ function readReplay(path, maxBytes) {
     fd = openSync(path, constants.O_RDONLY | constants.O_NONBLOCK)
     const stat = fstatSync(fd)
     if (!stat.isFile()) throw new Error('expected a regular file')
-    if (stat.size > maxBytes) throw new Error('too-large at $')
+    if (stat.size > maxBytes) throw new Error(`exceeds the ${maxBytes}-byte replay limit`)
     const chunks = []
     let length = 0
     for (;;) {
@@ -20,7 +20,7 @@ function readReplay(path, maxBytes) {
       const count = readSync(fd, chunk, 0, chunk.length, null)
       if (count === 0) break
       length += count
-      if (length > maxBytes) throw new Error('too-large at $')
+      if (length > maxBytes) throw new Error(`exceeds the ${maxBytes}-byte replay limit`)
       chunks.push(chunk.subarray(0, count))
     }
     return Buffer.concat(chunks, length).toString('utf8')
