@@ -335,7 +335,10 @@ export function radarBearingArrow(bearing: number): string {
 export function radarDistanceLabel(distance: number): string {
   const safe = Number.isFinite(distance) ? Math.max(0, distance) : 0
   if (safe < 1000) return `${Math.round(safe)}M`
-  return `${(safe / 1000).toFixed(safe < 10_000 ? 1 : 0)}K`
+  const km = safe / 1000
+  // One decimal below 10 km, but 9,999 m rounds to 10.0K with toFixed(1);
+  // show the rounded whole kilometres instead once it would read 10.0K.
+  return km >= 9.95 ? `${Math.round(km)}K` : `${km.toFixed(1)}K`
 }
 
 /** Keep settlement arrival readable without requiring a landing or scene scan. */
