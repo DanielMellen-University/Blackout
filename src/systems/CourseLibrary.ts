@@ -1000,7 +1000,10 @@ export function resolveCourseDefinition(course: CourseDefinition, nowMs = Date.n
   if (course.terrainTheme) return course
   const original = resolveOriginalCourseDefinition(course, nowMs)
   if (!isLegacyGeneratedCourse(original)) return original
-  const adapted = generateLegacyMission(original, original.seed!)!
+  // A legacy profile with no seed has no identity to migrate: return the
+  // original instead of crashing on the null adapted mission.
+  const adapted = original.seed === null ? null : generateLegacyMission(original, original.seed)
+  if (!adapted) return original
   return { ...original, seed: original.daily || original.weekly || original.monthly ? original.seed : null,
     terrainTheme: adapted.spec.theme, missionModifier: adapted.modifier, contractSeed: adapted.contractSeed }
 }

@@ -420,3 +420,14 @@ it('keeps the five rethemed courses in their slots with their original condition
   }
   expect(courseContractSeed(resolveCourseDefinition(courseDefinitionForId('training-orbit')), 42)).toBe(1)
 })
+
+describe('resolveCourseDefinition with a null seed', () => {
+  it('returns the original course instead of crashing on a legacy profile', () => {
+    const course = { ...courseDefinitionForId('training-orbit'), seed: null }
+    const resolved = resolveCourseDefinition(course)
+    expect(resolved.id).toBe('training-orbit')
+    expect(resolved.seed).toBeNull()
+    expect(resolved.profile).toBe('orbit')
+    expect(resolved.terrainTheme).toBeUndefined()
+  })
+})
