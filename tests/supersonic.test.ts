@@ -39,3 +39,19 @@ describe('supersonic flight cue', () => {
     expect(tracker.active).toBe(false)
   })
 })
+
+describe('supersonic malformed speed while active', () => {
+  it('keeps the boom state through a non-finite speed sample', () => {
+    const tracker = new SupersonicTracker()
+    tracker.reset(0)
+    expect(tracker.update(SUPERSONIC_THRESHOLD_MPS)).toBe('boom')
+    expect(tracker.update(Number.NaN)).toBe('none')
+    expect(tracker.active).toBe(true)
+    expect(tracker.update(Number.POSITIVE_INFINITY)).toBe('none')
+    expect(tracker.active).toBe(true)
+    // Still supersonic, so no second boom when valid telemetry resumes.
+    expect(tracker.update(SUPERSONIC_THRESHOLD_MPS)).toBe('none')
+    expect(tracker.update(SUPERSONIC_REARM_MPS)).toBe('subsonic')
+    expect(tracker.active).toBe(false)
+  })
+})

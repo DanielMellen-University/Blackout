@@ -17,7 +17,11 @@ export class SupersonicTracker {
   }
 
   update(speed: number): SupersonicTransition {
-    const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
+    // A non-finite sample is a telemetry glitch, not a speed of zero: keep
+    // the current state instead of dropping out of supersonic and re-booming
+    // when valid telemetry resumes.
+    if (!Number.isFinite(speed)) return 'none'
+    const safeSpeed = Math.max(0, speed)
     if (!this.activeValue && safeSpeed >= SUPERSONIC_THRESHOLD_MPS) {
       this.activeValue = true
       return 'boom'
