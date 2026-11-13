@@ -260,8 +260,9 @@ export function terrainSurfaceFromClimate(
     return { height: SEA_LEVEL, kind: 'water', biome: climate.biome, waterBody: 'sea' }
   }
   if (climate.biome === 'water') {
+    const level = climate.waterLevel
     return {
-      height: climate.waterLevel ?? INLAND_WATER_LEVEL,
+      height: Number.isFinite(level) ? level! : INLAND_WATER_LEVEL,
       kind: 'water',
       biome: climate.biome,
       waterBody: waterBodyFromClimate(climate),
