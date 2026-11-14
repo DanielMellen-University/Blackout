@@ -24,13 +24,15 @@ const readmeRoadmapMatch = readme.match(/Roadmap chunk:\s+\*\*([^*]+)\*\*/)
 const readmeRecentMatch = readme.match(/Recent changes from\s+\*\*([^*]+)\*\*/)
 const errors = []
 let roadmap = ''
+let roadmapRead = false
 try {
   roadmap = readFileSync(new URL('../docs/ROADMAP.md', import.meta.url), 'utf8')
+  roadmapRead = true
 } catch (error) {
   errors.push(`docs/ROADMAP.md is missing or unreadable (${error.code ?? error.message})`)
 }
-const roadmapCurrent = roadmap ? roadmap.match(/Chunk\s+\*\*([^*]+)\*\* is current/) : null
-const roadmapPrevious = roadmap ? roadmap.match(/Previous ship:\s+\*\*([^*]+)\*\*/) : null
+const roadmapCurrent = roadmap.match(/Chunk\s+\*\*([^*]+)\*\* is current/)
+const roadmapPrevious = roadmap.match(/Previous ship:\s+\*\*([^*]+)\*\*/)
 const readmePrevious = readme.match(/Previous roadmap chunk:\s+\*\*([^*]+)\*\*/)
 
 if (!packageVersion) errors.push('package.json is missing a string version')
@@ -43,10 +45,10 @@ if (!sourceVersion) errors.push('src/core/Version.ts is missing APP_VERSION')
 if (!roadmapChunk) errors.push('src/core/Version.ts is missing ROADMAP_CHUNK')
 if (!releaseName) errors.push('src/core/Version.ts is missing RELEASE_NAME')
 if (!previousChunk) errors.push('src/core/Version.ts is missing PREVIOUS_ROADMAP_CHUNK')
-if (roadmap && (!roadmapCurrent || roadmapCurrent[1] !== roadmapChunk)) {
+if (roadmapRead && (!roadmapCurrent || roadmapCurrent[1] !== roadmapChunk)) {
   errors.push('docs/ROADMAP.md current chunk must match src/core/Version.ts')
 }
-if (roadmap && (!roadmapPrevious || roadmapPrevious[1] !== previousChunk)) {
+if (roadmapRead && (!roadmapPrevious || roadmapPrevious[1] !== previousChunk)) {
   errors.push('docs/ROADMAP.md previous ship must match PREVIOUS_ROADMAP_CHUNK')
 }
 if (!readmePrevious || readmePrevious[1] !== previousChunk) {

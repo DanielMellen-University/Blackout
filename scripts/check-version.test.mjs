@@ -1,4 +1,4 @@
-// Run with: node --test scripts/check-version.test.mjs (not part of npm test).
+// Run with: node --test scripts/check-version.test.mjs (also part of npm test).
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync, execFileSync } from 'node:child_process'
@@ -57,4 +57,13 @@ test('reports a missing roadmap as a version error, not a stack trace', async (t
   assert.equal(result.status, 1)
   assert.match(result.stderr, /docs\/ROADMAP\.md is missing or unreadable \(ENOENT\)/)
   assert.doesNotMatch(result.stderr, /at file:\/\//)
+})
+
+test('fails when the roadmap is empty', async (t) => {
+  const dir = await makeFixture(t)
+  await writeFile(join(dir, 'docs', 'ROADMAP.md'), '')
+  const result = runCheck(dir)
+  assert.equal(result.status, 1)
+  assert.doesNotMatch(result.stdout, /Version check passed/)
+  assert.match(result.stderr, /docs\/ROADMAP\.md current chunk must match src\/core\/Version\.ts/)
 })
