@@ -83,7 +83,7 @@ export function pruneRotatingCourseRecords(
     if (!period) continue
     const timestamp = periodTimestamp(period.kind, period.key)
     if (timestamp === null) {
-      if (removeNow(key)) removed += 1
+      if (!protectedRunIds.has(key.slice(prefix.length)) && removeNow(key)) removed += 1
       continue
     }
     let byPeriod = groups.get(period.kind)

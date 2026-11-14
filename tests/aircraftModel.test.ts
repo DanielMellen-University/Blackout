@@ -891,3 +891,17 @@ it('shows longer dry exhaust at cruise and full power, with larger nitro', () =>
     expect(plume.scale.z).toBeGreaterThan(dryLength * 2)
   } finally { aircraft.dispose() }
 })
+
+it('keeps the display pose finite when the interpolation alpha is malformed', () => {
+  const aircraft = new Aircraft()
+  try {
+    aircraft.position.set(10, 100, -20)
+    aircraft.capturePrevious()
+    aircraft.position.set(12, 102, -18)
+    aircraft.present(Number.NaN)
+    expect(aircraft.displayPosition.toArray().every(Number.isFinite)).toBe(true)
+    expect(aircraft.displayPosition.toArray()).toEqual([12, 102, -18])
+    aircraft.present(Number.POSITIVE_INFINITY)
+    expect(aircraft.displayPosition.toArray()).toEqual([12, 102, -18])
+  } finally { aircraft.dispose() }
+})

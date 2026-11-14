@@ -84,4 +84,17 @@ describe('b21 record compatibility', () => {
   it('fails closed when historical storage is malformed or denied', () => {
     expect(legacyFlightRecordLabel({ getItem: () => { throw Error('denied') } }, 'seed:1:orbit:r32')).toBe('')
   })
+
+  it('keeps the other legacy labels when one stored history entry is corrupt', () => {
+    const { values, storage } = fixture()
+    const currentId = scoreRecordId(flightRecordId('seed:1:orbit'))
+    const s1Id = currentId.replace(':s2', ':s1')
+    values.set(`blackout.best.${s1Id}`, '83000')
+    values.set(`blackout.history.${s1Id}`, '{not json')
+    values.set(`blackout.best.seed:1:orbit`, '700')
+    values.set(`blackout.history.seed:1:orbit`, JSON.stringify({ completionCount: 3 }))
+    expect(legacyFlightRecordLabel(storage, currentId)).toBe(
+      'S1 SCORE BEST 83000 | PRE-B20 BEST 700 / 3 COMPLETE',
+    )
+  })
 })

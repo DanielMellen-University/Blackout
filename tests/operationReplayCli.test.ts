@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { replayFileTranscript, serializeOperationReplayFile } from '../src/systems/operation/replayFile'
+import { OPERATION_REPLAY_MAX_BYTES, replayFileTranscript, serializeOperationReplayFile } from '../src/systems/operation/replayFile'
 
 const script = fileURLToPath(new URL('../scripts/verify-operation.mjs', import.meta.url))
 const fixturePath = fileURLToPath(new URL('../docs/reviews/operation-11.040/seed-42-valley-commit.replay.json', import.meta.url))
@@ -135,7 +135,7 @@ describe('operation replay CLI', { timeout: 30_000 }, () => {
     truncateSync(path, 16 * 1024 * 1024 + 1)
     const result = await run([path])
     expect(result.status).toBe(2)
-    expect(result.stderr).toContain(`Cannot read replay ${JSON.stringify(path)}: too-large at $`)
+    expect(result.stderr).toContain(`Cannot read replay ${JSON.stringify(path)}: exceeds the ${OPERATION_REPLAY_MAX_BYTES}-byte replay limit`)
     expect(result.stdout).toBe('')
   })
 

@@ -128,7 +128,7 @@ export function normalizeKeyboardYawPreference(
   fallback: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW,
 ): KeyboardYawPreference {
   if (value === 'a-right' || value === 'a-left') return value
-  return fallback === 'a-left' ? 'a-left' : DEFAULT_KEYBOARD_YAW
+  return fallback === 'a-right' ? 'a-right' : DEFAULT_KEYBOARD_YAW
 }
 
 export function readKeyboardYawPreference(
@@ -589,7 +589,7 @@ export function normalizeHudDisplay(
   fallback: HudDisplay = DEFAULT_HUD_DISPLAY,
 ): HudDisplay {
   if (value === 'full' || value === 'minimal') return value
-  return fallback === 'minimal' ? 'minimal' : DEFAULT_HUD_DISPLAY
+  return fallback === 'full' ? 'full' : DEFAULT_HUD_DISPLAY
 }
 
 export function readHudDisplayPreference(

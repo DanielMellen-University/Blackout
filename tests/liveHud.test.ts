@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { LEDGER_HUD_IDS, LIVE_HUD_IDS, liveHudViolations } from '../src/ui/liveHudBudget'
+import { hudIdIsLedger, LEDGER_HUD_IDS, LIVE_HUD_IDS, liveHudViolations } from '../src/ui/liveHudBudget'
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8')
@@ -41,6 +41,13 @@ describe('live HUD budget', () => {
     expect(liveHudViolations(hiddenGlide, css)).toContain('live instrument nav-glide is in the ledger')
     expect(liveHudViolations(html, `${css}\n.result-ledger { display: none !important; }`))
       .toContain('debrief records must remain accessible when expanded')
+  })
+
+  it('keeps a ledger row counted after a stray close tag', () => {
+    const stray = '<div class="hud-ledger"></span><span id="hud-mach"></span></div>'
+    expect(hudIdIsLedger(stray, 'hud-mach')).toBe(true)
+    expect(hudIdIsLedger('<div><span id="hud-mach"></span></div>', 'hud-mach')).toBe(false)
+    expect(hudIdIsLedger('<div class="hud-ledger"><span id="hud-mach"></span></div>', 'hud-mach')).toBe(true)
   })
 
   it('removes the whole flight-warning strip and its styling', () => {

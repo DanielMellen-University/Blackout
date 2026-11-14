@@ -4,6 +4,8 @@ import {
   formatOperationMedal,
   formatOperationScore,
   formatOperationSpeed,
+  formatOperationStick,
+  formatStageLine,
   operationChoiceLabel,
 } from '../src/ui/operation/format'
 import { operationLegProgress, operationHudModel } from '../src/ui/operation/hud'
@@ -73,6 +75,50 @@ describe('operation formatting', () => {
 
   it('shows no leg progress before the first sample', () => {
     expect(operationLegProgress(createAttempt(42), null)).toBe('—')
+  })
+
+  it('names a passed stage by its score and a failed stage by its reason', () => {
+    const base = {
+      id: 'ingress' as const,
+      reason: 'complete' as const,
+      elapsedSec: 12.3,
+      distanceM: 2400,
+      peakSpeedMps: 180,
+      minAltitudeM: 300,
+      minClearanceM: 90,
+      endAltitudeM: 320,
+      timeScore: 100,
+      flyingScore: 200,
+      gateScore: 300,
+      pathDeviationM: 4.2,
+      altitudeErrorM: 12.4,
+      speedErrorMps: 1,
+      meanSpeedMps: 175.6,
+      fuelUsed: 0.4,
+      nitroUsed: 0.25,
+      disciplineScore: 0,
+      score: 1234,
+    }
+    expect(formatStageLine('ingress', { ...base, passed: true })).toContain('Ingress 1,234')
+    expect(formatStageLine('transit', { ...base, id: 'transit', passed: false, reason: 'timeout' }))
+      .toContain('Transit timeout')
+    expect(formatStageLine('egress', { ...base, id: 'egress', passed: true })).toContain('fuel 0.4')
+    expect(formatStageLine('egress', { ...base, id: 'egress', passed: true })).toContain('nitro 25%')
+  })
+
+  it('keeps the stick readout finite and clamps power to 0-100 percent', () => {
+    const stick = formatOperationStick({
+      pitch: 0.5, roll: -0.25, yaw: 0, throttle: 0.75, boost: false, airbrake: false,
+    })
+    expect(stick).toContain('pitch 0.50')
+    expect(stick).toContain('roll -0.25')
+    expect(stick).toContain('power 75%')
+    const malformed = formatOperationStick({
+      pitch: Number.NaN, roll: Number.POSITIVE_INFINITY, yaw: 0, throttle: 2, boost: true, airbrake: false,
+    })
+    expect(malformed).not.toContain('NaN')
+    expect(malformed).not.toContain('Infinity')
+    expect(malformed).toContain('power 100%')
   })
 
   it('clamps leg progress to the start of the stage', () => {

@@ -364,7 +364,7 @@ export class Aircraft {
    */
   present(alpha: number): void {
     if (this.disposed) return
-    const t = alpha >= 1 ? 1 : alpha <= 0 ? 0 : alpha
+    const t = !Number.isFinite(alpha) || alpha >= 1 ? 1 : alpha <= 0 ? 0 : alpha
     if (t === 1) {
       this.displayPosition.copy(this.position)
       this.displayOrientation.copy(this.orientation)

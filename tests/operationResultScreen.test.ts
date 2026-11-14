@@ -99,6 +99,11 @@ describe('operation results', () => {
     expect(result.bestLabel).not.toContain('New best')
   })
 
+  it('keeps the previous best when the stored best is missing', () => {
+    const result = operationResultModel(finished(42_947), null, best(61_472), true)
+    expect(result.bestLabel).toBe('Best 61,472')
+  })
+
   it('does not call an equal score a new best', () => {
     const result = operationResultModel(finished(44_097), best(44_097), best(44_097), true)
     expect(result.bestLabel).toBe('Best 44,097')

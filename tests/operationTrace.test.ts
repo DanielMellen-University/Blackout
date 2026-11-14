@@ -33,6 +33,19 @@ describe('operation trace and pace', () => {
     expect(path.startsWith('M')).toBe(true)
   })
 
+  it('skips malformed samples instead of drawing NaN coordinates', () => {
+    const bad = { t: 1, x: 0, y: Number.NaN, z: Number.NaN, speed: 100, clearance: 80, airborne: true }
+    const path = operationTracePath([sample(0, 100), bad, sample(200, 150)])
+    expect(path).not.toContain('NaN')
+    expect(path.startsWith('M8.0 152.0')).toBe(true)
+    expect(path.endsWith('632.0 8.0')).toBe(true)
+  })
+
+  it('returns an empty path when every sample is malformed', () => {
+    const bad = { t: 1, x: 0, y: Number.NaN, z: 10, speed: 100, clearance: 80, airborne: true }
+    expect(operationTracePath([bad])).toBe('')
+  })
+
   it('steps a short burst each frame and a long burst when motion is reduced', () => {
     expect(operationStepsPerFrame(false)).toBeGreaterThan(0)
     expect(operationStepsPerFrame(false)).toBeLessThan(operationStepsPerFrame(true))

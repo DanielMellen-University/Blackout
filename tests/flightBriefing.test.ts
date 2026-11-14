@@ -170,4 +170,21 @@ describe('flight briefing', () => {
       .toBe('TWO WHITE / TWO RED · STEADY DESCENT')
     expect(flightBriefingHint({ ...takeoff, onGround: false, navTarget: 'village' })).toContain('LANDMARK SELECTED')
   })
+
+  it('flares at exactly 14 m and holds the glide slope at 15 m', () => {
+    const approach = { ...takeoff, onGround: false, missionPhase: 'returning', approachActive: true }
+    expect(flightBriefingHint({ ...approach, altitudeM: 14 }))
+      .toBe('FLARE GENTLY · KEEP WINGS LEVEL')
+    expect(flightBriefingHint({ ...approach, altitudeM: 15 }))
+      .toBe('TWO WHITE / TWO RED · STEADY DESCENT')
+  })
+
+  it('sanitizes malformed telemetry and skips the gear cue once the gear is down', () => {
+    expect(flightBriefingHint({ ...takeoff, speed: Number.NaN, altitudeM: Number.NaN, gatesPassed: Number.NaN }))
+      .toContain('ROTATE')
+    expect(flightBriefingHint({ ...takeoff, speed: Number.NaN }))
+      .toContain('POWER')
+    expect(flightBriefingHint({ ...takeoff, onGround: false, emergencyReturn: true, gearDown: true }))
+      .toBe('CTRL / 1 REDUCE POWER · FOLLOW BASE ARROW')
+  })
 })

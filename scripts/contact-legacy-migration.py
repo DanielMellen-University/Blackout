@@ -2,6 +2,9 @@
 import json,sys
 from pathlib import Path
 from PIL import Image,ImageDraw
+if len(sys.argv) != 2:
+    print("usage: contact-legacy-migration.py <part>", file=sys.stderr)
+    sys.exit(2)
 part=sys.argv[1]
 root=Path('docs/reviews/generator')/part
 items=[]

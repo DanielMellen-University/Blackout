@@ -29,4 +29,10 @@ describe('smoothstep and clamp01', () => {
   it('clamp01 keeps values inside the unit range', () => {
     expect([-1, 0, .25, 1, 3].map(clamp01)).toEqual([0, 0, .25, 1, 1])
   })
+
+  it('clamp01 maps non-finite input to 0 instead of leaking NaN into colors', () => {
+    expect(clamp01(Number.NaN)).toBe(0)
+    expect(clamp01(Number.POSITIVE_INFINITY)).toBe(0)
+    expect(clamp01(Number.NEGATIVE_INFINITY)).toBe(0)
+  })
 })

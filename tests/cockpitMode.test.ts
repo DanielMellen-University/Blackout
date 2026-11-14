@@ -55,4 +55,34 @@ describe('cockpit camera presentation', () => {
     cockpit.dispose()
     aircraft.dispose()
   })
+
+  it('ignores enter, exit, and updates after disposal instead of moving the lens', () => {
+    const cockpit = new CockpitMode()
+    const camera = new PerspectiveCamera()
+    const aircraft = new Aircraft()
+
+    cockpit.enter(camera)
+    cockpit.update(camera, aircraft)
+    cockpit.dispose()
+    expect(cockpit.active).toBe(false)
+
+    camera.fov = 60
+    camera.near = 0.5
+    camera.position.set(1, 2, 3)
+    camera.quaternion.identity()
+    camera.updateProjectionMatrix()
+
+    cockpit.enter(camera)
+    expect(camera.fov).toBe(60)
+    expect(camera.near).toBe(0.5)
+    cockpit.update(camera, aircraft)
+    expect(camera.position.x).toBe(1)
+    expect(camera.position.y).toBe(2)
+    expect(camera.position.z).toBe(3)
+    expect(camera.quaternion.w).toBe(1)
+    cockpit.exit(camera)
+    expect(camera.near).toBe(0.5)
+    expect(cockpit.active).toBe(false)
+    aircraft.dispose()
+  })
 })

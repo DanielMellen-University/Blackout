@@ -204,9 +204,9 @@ describe('course picker interaction', () => {
     const daily = options()[2]
     daily.focus()
     picker.updateDailyCountdown(Date.parse('2026-10-09T04:59:59Z'))
-    expect(timer.textContent).toBe('Resets in 00:00:01')
+    expect(timer.textContent).toBe('Resets in 19:00:01')
     picker.updateDailyCountdown(Date.parse('2026-10-09T05:00:00Z'))
-    expect(timer.textContent).toBe('Resets in 24:00:00')
+    expect(timer.textContent).toBe('Resets in 19:00:00')
     expect(element('.course-daily-timer')).toBe(timer)
     expect(options()[2]).toBe(daily)
     expect(documentState.activeElement).toBe(daily)

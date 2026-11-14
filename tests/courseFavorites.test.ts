@@ -28,4 +28,19 @@ describe('course favorites', () => {
     expect(readCourseFavoriteIds(null)).toEqual([])
     expect(COURSE_FAVORITES_LIMIT).toBe(32)
   })
+
+  it('moves a re-pinned course to the front and ignores invalid ids', () => {
+    expect(toggleCourseFavorite(['range-sweep', 'storm-run', 'daily-ops'], 'storm-run', true))
+      .toEqual(['storm-run', 'range-sweep', 'daily-ops'])
+    expect(toggleCourseFavorite(['range-sweep'], 'bad value!', true)).toEqual(['range-sweep'])
+    expect(toggleCourseFavorite(['range-sweep'], '', true)).toEqual(['range-sweep'])
+    expect(toggleCourseFavorite(['range-sweep'], 'storm-run', false)).toEqual(['range-sweep'])
+  })
+
+  it('clamps out-of-range limits instead of growing or emptying the list', () => {
+    expect(toggleCourseFavorite(['a', 'b'], 'c', true, 0)).toEqual(['c'])
+    expect(toggleCourseFavorite(['a', 'b'], 'c', true, -3)).toEqual(['c'])
+    expect(toggleCourseFavorite(['a', 'b', 'c'], 'd', true, 2)).toEqual(['d', 'a'])
+    expect(readCourseFavoriteIds({ getItem: () => { throw new Error('denied') } })).toEqual([])
+  })
 })

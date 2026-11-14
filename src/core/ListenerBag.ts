@@ -21,7 +21,13 @@ export class ListenerBag {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
-    for (let i = this.cleanups.length - 1; i >= 0; i--) this.cleanups[i]!()
+    for (let i = this.cleanups.length - 1; i >= 0; i--) {
+      try {
+        this.cleanups[i]!()
+      } catch {
+        /* One denied removal must not strand the remaining listeners. */
+      }
+    }
     this.cleanups.length = 0
   }
 

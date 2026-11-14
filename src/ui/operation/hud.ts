@@ -68,7 +68,7 @@ function signedMetres(value: number): string {
 
 /** Line, altitude and energy the pilot can see while the leg is in the air. */
 export function operationGuideLabel(attempt: OperationAttempt, live: FlightSample | null): string {
-  if (!live) return '—'
+  if (!live || !Number.isFinite(live.x) || !Number.isFinite(live.y) || !Number.isFinite(live.speed)) return '—'
   const plan = buildOperationPlan(attempt.seed, attempt.route, attempt.energy)
   const spec = stageSpec(plan, stageIdFor(attempt))
   const fuel = Number.isFinite(live.fuel) ? live.fuel!.toFixed(1) : '—'
@@ -78,7 +78,7 @@ export function operationGuideLabel(attempt: OperationAttempt, live: FlightSampl
 
 /** Percent of the leg already flown, from the latest sample. */
 export function operationLegProgress(attempt: OperationAttempt, live: FlightSample | null): string {
-  if (!live) return '—'
+  if (!live || !Number.isFinite(live.z)) return '—'
   const id = stageIdFor(attempt)
   const index = stageIndex(id)
   if (index < 0) return '—'

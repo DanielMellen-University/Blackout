@@ -16,12 +16,12 @@ describe('mission picker layout', () => {
     expect(browsingMissionId('random')).toBe('random')
   })
 
-  it('counts down to fixed UTC-5 midnight in winter and summer', () => {
+  it('counts down to the UTC midnight the daily challenge actually resets at', () => {
     for (const month of ['01', '07']) {
-      expect(dailyChallengeCountdown(Date.parse(`2026-${month}-09T04:59:59Z`))).toBe('00:00:01')
-      expect(dailyChallengeCountdown(Date.parse(`2026-${month}-09T05:00:00Z`))).toBe('24:00:00')
-      expect(dailyChallengeCountdown(Date.parse(`2026-${month}-09T05:00:01Z`))).toBe('23:59:59')
-      expect(dailyChallengeCountdown(Date.parse(`2026-${month}-09T00:00:00Z`))).toBe('05:00:00')
+      expect(dailyChallengeCountdown(Date.parse(`2026-${month}-08T23:59:59Z`))).toBe('00:00:01')
+      expect(dailyChallengeCountdown(Date.parse(`2026-${month}-09T00:00:00Z`))).toBe('24:00:00')
+      expect(dailyChallengeCountdown(Date.parse(`2026-${month}-09T00:00:01Z`))).toBe('23:59:59')
+      expect(dailyChallengeCountdown(Date.parse(`2026-${month}-08T19:00:00Z`))).toBe('05:00:00')
     }
     expect(dailyChallengeCountdown(Number.NaN)).toBe('--:--:--')
   })
@@ -37,5 +37,14 @@ describe('mission picker layout', () => {
     expect(move('Home', 7, 3, 5, 2)).toBe(0)
     expect(move('End', 0, 3, 5, 2)).toBe(7)
     expect(move('ArrowDown', 2, 3, 0, 2)).toBe(2)
+  })
+
+  it('stays on a real card when the grid shape or focus index is malformed', () => {
+    expect(move('ArrowRight', 2, 3, 5, 0)).toBe(2)
+    expect(move('ArrowDown', 0, 3, 5, 0)).toBe(3)
+    expect(move('ArrowUp', 3, 3, 5, 0)).toBe(1)
+    expect(move('ArrowRight', Number.NaN, 3, 5, 2)).toBe(1)
+    expect(move('ArrowRight', 2, 3, 5, Number.NaN)).toBe(2)
+    expect(move('ArrowRight', 9, 3, 5, 2)).toBe(7)
   })
 })

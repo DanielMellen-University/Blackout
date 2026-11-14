@@ -22,12 +22,19 @@ const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8'
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8')
 const readmeRoadmapMatch = readme.match(/Roadmap chunk:\s+\*\*([^*]+)\*\*/)
 const readmeRecentMatch = readme.match(/Recent changes from\s+\*\*([^*]+)\*\*/)
-const roadmap = readFileSync(new URL('../docs/ROADMAP.md', import.meta.url), 'utf8')
+const errors = []
+let roadmap = ''
+let roadmapRead = false
+try {
+  roadmap = readFileSync(new URL('../docs/ROADMAP.md', import.meta.url), 'utf8')
+  roadmapRead = true
+} catch (error) {
+  errors.push(`docs/ROADMAP.md is missing or unreadable (${error.code ?? error.message})`)
+}
 const roadmapCurrent = roadmap.match(/Chunk\s+\*\*([^*]+)\*\* is current/)
 const roadmapPrevious = roadmap.match(/Previous ship:\s+\*\*([^*]+)\*\*/)
 const readmePrevious = readme.match(/Previous roadmap chunk:\s+\*\*([^*]+)\*\*/)
 
-const errors = []
 if (!packageVersion) errors.push('package.json is missing a string version')
 if (packageVersion && !/^\d+\.\d+\.\d+$/.test(packageVersion)) {
   errors.push(`package.json version (${packageVersion}) is not strict semantic versioning`)
@@ -38,10 +45,10 @@ if (!sourceVersion) errors.push('src/core/Version.ts is missing APP_VERSION')
 if (!roadmapChunk) errors.push('src/core/Version.ts is missing ROADMAP_CHUNK')
 if (!releaseName) errors.push('src/core/Version.ts is missing RELEASE_NAME')
 if (!previousChunk) errors.push('src/core/Version.ts is missing PREVIOUS_ROADMAP_CHUNK')
-if (!roadmapCurrent || roadmapCurrent[1] !== roadmapChunk) {
+if (roadmapRead && (!roadmapCurrent || roadmapCurrent[1] !== roadmapChunk)) {
   errors.push('docs/ROADMAP.md current chunk must match src/core/Version.ts')
 }
-if (!roadmapPrevious || roadmapPrevious[1] !== previousChunk) {
+if (roadmapRead && (!roadmapPrevious || roadmapPrevious[1] !== previousChunk)) {
   errors.push('docs/ROADMAP.md previous ship must match PREVIOUS_ROADMAP_CHUNK')
 }
 if (!readmePrevious || readmePrevious[1] !== previousChunk) {

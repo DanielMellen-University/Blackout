@@ -11,7 +11,7 @@ export function operationTracePath(samples: readonly FlightSample[], width = 640
   const picked: FlightSample[] = []
   for (let index = 0; index < samples.length; index += step) {
     const sample = samples[index]
-    if (!sample) continue
+    if (!sample || !Number.isFinite(sample.y) || !Number.isFinite(sample.z)) continue
     picked.push(sample)
     minZ = Math.min(minZ, sample.z)
     maxZ = Math.max(maxZ, sample.z)
@@ -19,13 +19,14 @@ export function operationTracePath(samples: readonly FlightSample[], width = 640
     maxY = Math.max(maxY, sample.y)
   }
   const last = samples[samples.length - 1]
-  if (last && picked[picked.length - 1] !== last) {
+  if (last && Number.isFinite(last.y) && Number.isFinite(last.z) && picked[picked.length - 1] !== last) {
     picked.push(last)
     minZ = Math.min(minZ, last.z)
     maxZ = Math.max(maxZ, last.z)
     minY = Math.min(minY, last.y)
     maxY = Math.max(maxY, last.y)
   }
+  if (picked.length === 0) return ''
   const spanZ = Math.max(1, maxZ - minZ)
   const spanY = Math.max(1, maxY - minY)
   return picked.map((sample, index) => {

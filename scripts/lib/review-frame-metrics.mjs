@@ -6,8 +6,8 @@ export function summarizeFlightFrames(frames, omit = 10) {
  return {frames:values.length,fps:values.length*1000/sum,p50:values[Math.floor(values.length*.5)],p95:values[Math.floor(values.length*.95)],max:values.at(-1),over50:values.filter(v=>v>50).length,over100:values.filter(v=>v>100).length}
 }
 export function assertCaptureFreeTiming(run) {
- if(run.capture!==false || run.profile!==false || run.smoke || run.pictures.length || (run.captureWindows||[]).length)
+ if(run?.capture!==false || run?.profile!==false || run?.smoke || (run?.pictures||[]).length || (run?.captureWindows||[]).length)
   throw Error('Timing acceptance requires a complete capture-free, unprofiled flight')
- if(run.final.camera!=='chase')throw Error('Timing acceptance requires the fixed chase camera')
+ if(run?.final?.camera!=='chase')throw Error('Timing acceptance requires the fixed chase camera')
  return summarizeFlightFrames(run.frameTimes)
 }

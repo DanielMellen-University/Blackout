@@ -32,7 +32,7 @@ describe('Time', () => {
     expect(bannerRemainingMs(1_000, Number.POSITIVE_INFINITY)).toBeNull()
     expect(bannerUntilFromRemaining(5_000, 1_500)).toBe(6_500)
     expect(bannerUntilFromRemaining(5_000, MAX_BANNER_DURATION_MS * 4)).toBe(35_000)
-    expect(bannerUntilFromRemaining(Number.NaN, 100)).toBeNaN()
+    expect(bannerUntilFromRemaining(Number.NaN, 100)).toBe(0)
   })
 
   it('runs extra fixed steps instead of slowing down at 10 fps', () => {
