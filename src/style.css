@@ -138,6 +138,16 @@ body,
   }
 }
 
+.reduced-motion #speed-juice.is-active,
+.reduced-motion #heat-veil.is-active {
+  animation: none;
+}
+
+.reduced-motion #flight-path-marker {
+  transition: none;
+}
+
+
 /* Afterburner heat shimmer stays subtle and never obscures the flight view. */
 #heat-veil {
   position: absolute;
@@ -1710,6 +1720,11 @@ body,
   }
 }
 
+.reduced-motion .gate-progress::after {
+  transition: none;
+}
+
+
 .hud-radar {
   position: relative;
   overflow: hidden;
@@ -1843,6 +1858,12 @@ body,
   }
 }
 
+.reduced-motion .hud-radar.radar-active::after {
+  animation: none;
+  opacity: 0.18;
+}
+
+
 .hud-hint {
   max-width: 270px;
   margin-top: 10px;
@@ -1892,6 +1913,11 @@ body,
     animation: none;
   }
 }
+
+.reduced-motion #hud-gear.gear-cycle {
+  animation: none;
+}
+
 
 #heat-veil {
   display: none !important;
@@ -2037,6 +2063,16 @@ body,
     transition: none;
   }
 }
+
+.reduced-motion #nav-cue.near-gate {
+  animation: none;
+  box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.2);
+}
+
+.reduced-motion #nav-arrow {
+  transition: none;
+}
+
 
 #nav-arrow {
   font-size: 1.15rem;
@@ -2404,6 +2440,12 @@ body,
     animation: none;
   }
 }
+
+.reduced-motion .run-results-panel,
+.reduced-motion .result-best.new-best {
+  animation: none;
+}
+
 
 /* Top-right: altitude + attitude + fps */
 #hud-top-right {
