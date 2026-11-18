@@ -64,9 +64,14 @@ function classSelectors(css: string): Set<string> {
 }
 
 describe('reduced motion styles', () => {
-  for (const path of ['src/style.css', 'src/ui/settingsDeck.css']) {
-    it(`mirrors every system reduced-motion rule for the in-game setting in ${path}`, () => {
-      const css = stripComments(read(path))
+  const sources: Array<[string, () => string]> = [
+    ['src/style.css', () => read('src/style.css')],
+    ['src/ui/settingsDeck.css', () => read('src/ui/settingsDeck.css')],
+    ['the index.html startup styles', () => read('index.html').split('<style>')[1]!.split('</style>')[0]!],
+  ]
+  for (const [label, source] of sources) {
+    it(`mirrors every system reduced-motion rule for the in-game setting in ${label}`, () => {
+      const css = stripComments(source())
       const media = mediaSelectors(css)
       expect(media.length).toBeGreaterThan(0)
       const mirrored = classSelectors(css)

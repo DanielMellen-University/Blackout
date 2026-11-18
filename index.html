@@ -38,6 +38,9 @@
       @media (prefers-reduced-motion: reduce) { .startup-track::after { animation: none; width: 100%; } }
       @media (prefers-reduced-motion: reduce) { .startup-screen { transition-duration: .12s; }
         .startup-screen.startup-leaving .startup-panel { transform: none; } }
+      .reduced-motion .startup-track::after { animation: none; width: 100%; }
+      .reduced-motion .startup-screen { transition-duration: .12s; }
+      .reduced-motion .startup-screen.startup-leaving .startup-panel { transform: none; }
       @media (max-height: 420px) { .startup-panel { padding: 24px; } .startup-art { height: 60px; margin: 16px 0; } }
     </style>
     <link rel="stylesheet" href="/src/style.css" />
