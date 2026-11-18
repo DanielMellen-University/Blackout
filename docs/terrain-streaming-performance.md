@@ -67,6 +67,22 @@ the prescribed path proves a player-device FPS result.
 
 ## Implementation
 
+### Chunk 11.043 review-pilot cold look-ahead
+
+The b19 seed-1337 stall is in the injected pilot's exact 8 km surface query,
+which crosses into cold catchment (2, 1). The review now checks readiness before
+sampling, advances the existing hydrology iterator once per RAF and holds the
+last altitude target until preparation finishes. Production generation and
+streaming budgets are unchanged. Catchment, terrain/water payload and mission
+recipe hashes match before/after.
+
+On an Intel Core i5-1135G7 laptop, the median largest Node slice falls from
+46.10 to 2.40 ms; an isolated browser check moves from 41.15 to 5.65 ms, with
+higher summed preparation CPU and query wall time. These are latency results,
+not FPS gains or a hard slice deadline. SwiftShader flight attempts remain
+incomplete, so neither the historical 10.989 frame-spike numbers nor full
+seed-1337 endurance is re-verified. See [measurements and reproduction](reviews/performance-11.043/README.md).
+
 ### Chunk 11.036 shared Waterway recipe
 
 Waterway drainage is one lake and 22 river reaches derived from the mission

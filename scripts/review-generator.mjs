@@ -7,9 +7,11 @@ const seeds = (process.env.REVIEW_SEEDS || '42').split(',')
 const part = process.env.REVIEW_PART || 'a'
 const capture = process.env.REVIEW_CAPTURE === '1'
 const profile = process.env.REVIEW_PROFILE === '1'
+const wallLimitSeconds = Number(process.env.REVIEW_WALL_SECONDS || 600)
+if (!Number.isFinite(wallLimitSeconds) || wallLimitSeconds <= 0 || wallLimitSeconds > 600) throw Error('REVIEW_WALL_SECONDS must be in (0, 600]')
 const visualGate = Math.max(1, Math.min(100, Number(process.env.REVIEW_VISUAL_GATE) || 1))
 const smoke = part === 'a' || process.env.REVIEW_SMOKE === '1'
-const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/snap/bin/chromium', args: ['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface'] })
+const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || '/snap/bin/chromium', args: process.env.REVIEW_SWIFTSHADER==='1'?['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-precise-memory-info']:['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface'] })
 try {
  const browserCdp=await browser.newBrowserCDPSession()
  const system=await browserCdp.send('SystemInfo.getInfo')
@@ -106,7 +108,7 @@ try {
   }
   let final,shot=false,approach=false
   const started=Date.now()
-  while(Date.now()-started<600000){
+  while(Date.now()-started<wallLimitSeconds*1000){
    await page.waitForTimeout(1000)
    final=await page.evaluate(()=>window.__training.state())
    samples.push(Object.fromEntries(['seconds','stage','next','phase','position','velocity','speed','agl','status','onGround','loadFactor','controls','nitro','stream','coverage','lod','heapMB'].map(key=>[key,final[key]])))
@@ -139,7 +141,7 @@ try {
   }
   const refillPass=final.nitroRefills.length >= (smoke ? 1 : final.total) && final.nitroRefills.every(r=>Math.abs(r.after.fraction-Math.min(1,r.before.fraction+1.25/final.total))<1e-6)
   const pass=refillPass&&errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?(shot||(!capture&&final.next>=1)):final.status==='landed'&&final.phase==='complete'&&final.next===final.total&&final.resultsOpen)
-  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,capture,profile,frameTimes,captureWindows,captureFences,timingEligible,timingStart,browserInfo,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
+  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,capture,profile,wallLimitSeconds,wallSeconds:(Date.now()-started)/1000,frameTimes,captureWindows,captureFences,timingEligible,timingStart,browserInfo,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
   console.log('RESULT',JSON.stringify({theme,seed,part,smoke,timingEligible,pass,metrics}))
   await context.close()
   if(!pass)throw Error(`Failed ${theme} ${seed}`)

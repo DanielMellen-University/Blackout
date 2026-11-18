@@ -7,8 +7,11 @@ const directory=process.argv[2],stage=process.argv[3]||'audit',long=stage==='end
 await mkdir(`${directory}/${stage}`,{recursive:true})
 const sourceHashes=Object.fromEntries(await Promise.all(execFileSync('rg',['--files','src'],{encoding:'utf8'}).trim().split('\n').map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])))
 const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()
+const reviewSurveySha256=createHash('sha256').update(await readFile('scripts/lib/terrain-review-survey.ts')).digest('hex')
 const diagnosticSeconds=Number(process.env.CLOSEOUT_DIAGNOSTIC_SECONDS||0)
 if(process.env.CLOSEOUT_DIAGNOSTIC_SECONDS&&(!long||!Number.isFinite(diagnosticSeconds)||diagnosticSeconds<180||diagnosticSeconds>=600))throw Error('Diagnostic duration must be 180 to 599 seconds in endurance mode')
+const wallLimitSeconds=Number(process.env.CLOSEOUT_WALL_SECONDS||0)
+if(process.env.CLOSEOUT_WALL_SECONDS&&(!diagnosticSeconds||!Number.isFinite(wallLimitSeconds)||wallLimitSeconds<=0))throw Error('A positive wall limit requires a diagnostic flight')
 const profile=process.env.CLOSEOUT_PROFILE==='1'
 if(profile&&!diagnosticSeconds)throw Error('Profiles require a separate short diagnostic flight')
 const hook=await readFile('scripts/browser-terrain-closeout.js','utf8')+(profile?'\n'+await readFile('scripts/browser-terrain-closeout-diagnostic.js','utf8'):'')
@@ -16,7 +19,7 @@ await mkdir(`${directory}/hooks`,{recursive:true});await writeFile(`${directory}
 const routes=JSON.parse(await readFile(`${directory}/routes.json`,'utf8')).routes.filter(r=>!process.env.CLOSEOUT_SEEDS||process.env.CLOSEOUT_SEEDS.split(',').includes(String(r.seed)))
 for(const route of routes){
  if(long&&!process.env.CLOSEOUT_SEEDS&&![73,42,1337].includes(route.seed))continue
- const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface','--enable-precise-memory-info']})
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH,args:process.env.REVIEW_SWIFTSHADER==='1'?['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--enable-precise-memory-info']:['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface','--enable-precise-memory-info']})
  const errors=[],samples=[],pictures=[];let final,wallSeconds,metrics,runtime
  try{
   const page=await browser.newPage({viewport:{width:1280,height:720},deviceScaleFactor:1,permissions:['local-network-access'],...(process.env.CLOSEOUT_VIDEO?{recordVideo:{dir:`${directory}/${stage}`,size:{width:1280,height:720}}}:{})});page.setDefaultTimeout(180000)
@@ -27,9 +30,9 @@ for(const route of routes){
    const response=await r.fetch();let s=await response.text()
    for(const anchor of ['const tick = (nowMs) => {','aircraft.step(dt, nowMs);'])if(!s.includes(anchor))throw Error('Missing hook anchor '+anchor)
    s=s.replace(/const fixedReviewRatio = [^;]+;/,'const fixedReviewRatio = 1;').replace('const tick = (nowMs) => {',hook+'\nconst tick = (nowMs) => {\nwindow.__closeout.frame(nowMs);').replace('aircraft.step(dt, nowMs);','window.__closeout.before(dt);\naircraft.step(dt, nowMs);')
-   await r.fulfill({response,body:'import {sampleTerrainSurfaceHeightFast as closeSurface,sampleClimate as closeClimate} from "/src/world/terrainSample.ts";\n'+s})
+   await r.fulfill({response,body:'import {sampleTerrainSurfaceHeightFast as closeSurface,sampleClimate as closeClimate} from "/src/world/terrainSample.ts";\nimport {TerrainReviewSurvey as CloseoutSurvey} from "/scripts/lib/terrain-review-survey.ts";\n'+s})
   })
-  await page.goto(`${process.env.REVIEW_URL||'http://127.0.0.1:5173'}/?course=free-flight&seed=${route.seed}`)
+  await page.goto(`${process.env.REVIEW_URL||'http://127.0.0.1:5174'}/?course=free-flight&seed=${route.seed}`)
   await page.waitForFunction(()=>window.__closeout);await page.locator('#btn-play').click();await page.locator('#startup-screen').waitFor({state:'hidden'});await page.waitForTimeout(5000)
   let flight={...route,long}
   if(stage==='lod'){flight.clearance=650;flight.seconds=25}
@@ -45,7 +48,7 @@ for(const route of routes){
   let profiling=false,profileDone=false,trace=[]
   if(cdp){await cdp.send('Profiler.enable');cdp.on('Tracing.dataCollected',event=>trace.push(...event.value))}
   const started=Date.now();let nextShot=long?5:5,nextLog=0,previous=-1,stalled=0
-  while(Date.now()-started<(flight.seconds*2+180)*1000){
+  while(Date.now()-started<(wallLimitSeconds||flight.seconds*2+180)*1000){
    if(stage==='lod')await page.evaluate(()=>window.__closeout.camera(window.__closeout.state().seconds>=12.5?'cockpit':'chase'));
    await page.waitForTimeout(1000);final=await page.evaluate(()=>window.__closeout.state());samples.push(final)
    if(cdp&&!profileDone&&final.seconds>=165){
@@ -62,12 +65,14 @@ for(const route of routes){
     await page.evaluate(mode=>window.__closeout.camera(mode),stage==='lod'?(final.seconds>=12.5?'cockpit':'chase'):(long&&Math.floor(final.seconds/60)%2?'cockpit':'chase'));nextShot+=long?60:15
    }
    metrics=await page.evaluate(()=>window.__closeout.metrics());wallSeconds=(Date.now()-started)/1000
-   await writeFile(`${directory}/${stage}/${route.seed}.json`,JSON.stringify({sourceCommit,sourceHashes,runtime,...(diagnosticSeconds?{diagnosticOnly:true}:{}),hookSha256:createHash('sha256').update(hook).digest('hex'),route:flight,method:'One airborne reset before measurement, then control axes only. Production physics, collision, weather, streaming and cameras. Frame histogram excludes capture windows (1.5 seconds per screenshot); all terrain update costs retained.',errors,samples,pictures,final,wallSeconds,metrics},null,2)+'\n')
+   await writeFile(`${directory}/${stage}/${route.seed}.json`,JSON.stringify({sourceCommit,sourceHashes,reviewSurveySha256,runtime,wallLimitSeconds,...(diagnosticSeconds?{diagnosticOnly:true}:{}),hookSha256:createHash('sha256').update(hook).digest('hex'),route:flight,method:'One airborne reset before measurement, then control axes only. Production physics, collision, weather, streaming and cameras. Frame histogram excludes capture windows (1.5 seconds per screenshot); all terrain update costs retained. Cold pilot surveys defer until cooperative preparation finishes; the last target is held meanwhile.',errors,samples,pictures,final,wallSeconds,metrics},null,2)+'\n')
    if(final.status!=='ok'||final.onGround){await page.screenshot({path:`${directory}/${stage}/${route.seed}-failure.jpg`,type:'jpeg',quality:90});throw Error('Flight contact '+route.seed+' '+JSON.stringify(final.impact))}
    if(final.seconds>=flight.seconds)break
    stalled=final.seconds===previous?stalled+1:0;previous=final.seconds;if(stalled>20)throw Error('Flight stalled')
   }
   if(profile)await writeFile(`${directory}/${stage}/${route.seed}.diagnostic.json`,JSON.stringify(await page.evaluate(()=>window.__closeoutDiagnostic),null,2)+'\n')
+  // Optional still after all timed samples have been saved, including failures.
+  if(process.env.CLOSEOUT_CAPTURE_ENDPOINT==='1')await page.screenshot({path:`${directory}/${stage}/${route.seed}-endpoint.jpg`,type:'jpeg',quality:75})
   if(final.seconds<flight.seconds||errors.length)throw Error('Incomplete or errored flight '+route.seed+': '+errors.join('; '))
   if(process.env.CLOSEOUT_VIDEO){await page.close();await page.video().saveAs(`${directory}/${stage}/${route.seed}-flight.webm`);await page.video().delete()}
   console.log('SAVED',stage,route.seed,final.seconds,wallSeconds,pictures.length,'hitches',metrics.hitches.length,'terrain max',metrics.terrainMaxMs)
