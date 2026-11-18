@@ -41,4 +41,32 @@ describe('keyboard modifier chords', () => {
     expect(input.consumeWeatherCycle()).toBe(true)
     input.dispose()
   })
+
+  it('releases keys pressed during a Cmd chord when Cmd goes up', () => {
+    const win = fakeWindow()
+    const input = new InputManager(win.target)
+    input.setFlightLive(true)
+    win.fire('keydown', 'KeyS')
+    win.fire('keydown', 'MetaLeft', { metaKey: true })
+    win.fire('keydown', 'KeyW', { metaKey: true })
+    // macOS sends no keyup for W here, only for Cmd.
+    win.fire('keyup', 'MetaLeft')
+    expect(input.sampleWithDt(1 / 60).pitch).toBe(-1)
+    win.fire('keyup', 'KeyS')
+    expect(input.sampleWithDt(1 / 60).pitch).toBe(0)
+    input.dispose()
+  })
+
+  it('keeps a chord key held when its own keyup arrives before Cmd is released', () => {
+    const win = fakeWindow()
+    const input = new InputManager(win.target)
+    input.setFlightLive(true)
+    win.fire('keydown', 'MetaRight', { metaKey: true })
+    win.fire('keydown', 'KeyW', { metaKey: true })
+    win.fire('keyup', 'KeyW', { metaKey: true })
+    win.fire('keydown', 'KeyW')
+    win.fire('keyup', 'MetaRight')
+    expect(input.sampleWithDt(1 / 60).pitch).toBe(1)
+    input.dispose()
+  })
 })
