@@ -224,6 +224,7 @@ import {
   readKeyboardPitchPreference,
   writeKeyboardPitchPreference,
   keyboardBindingLabel,
+  assignKeyboardBinding,
   normalizeKeyboardBindings,
   readKeyboardBindings,
   writeKeyboardBindings,
@@ -258,7 +259,6 @@ import {
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
-  type KeyboardBindingCode,
   type KeyboardBindings,
   type KeyboardControlScheme,
 } from './core/FlightPreferences'
@@ -1103,7 +1103,7 @@ export async function boot(): Promise<void> {
   }
   applyKeyboardBindings(initialKeyboardBindings)
   const onKeyboardBindingChange = (action: keyof KeyboardBindings, value: string): void => {
-    const bindings = normalizeKeyboardBindings({ ...input.bindings, [action]: value as KeyboardBindingCode })
+    const bindings = assignKeyboardBinding(input.bindings, action, value)
     applyKeyboardBindings(bindings)
     if (playing && !menu.paused && !results.open) {
       showBanner(`${action.toUpperCase()} KEY ${keyboardBindingLabel(bindings[action])}`, 1500, 'info')

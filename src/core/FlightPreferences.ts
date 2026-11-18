@@ -280,6 +280,26 @@ export function normalizeKeyboardBindings(
   }
 }
 
+/**
+ * Give one action a new key. If another action already uses that key, the two
+ * swap, so the pilot's latest choice always wins instead of being rejected by
+ * duplicate repair.
+ */
+export function assignKeyboardBinding(
+  bindings: KeyboardBindings,
+  action: keyof KeyboardBindings,
+  code: unknown,
+): KeyboardBindings {
+  const current = normalizeKeyboardBindings(bindings)
+  if (!validKeyboardBinding(code) || !(action in current)) return current
+  const next: KeyboardBindings = { ...current }
+  for (const other of Object.keys(next) as Array<keyof KeyboardBindings>) {
+    if (other !== action && next[other] === code) next[other] = current[action]
+  }
+  next[action] = code
+  return normalizeKeyboardBindings(next)
+}
+
 export function keyboardBindingLabel(code: KeyboardBindingCode): string {
   switch (code) {
     case 'Space': return 'SPACE'
