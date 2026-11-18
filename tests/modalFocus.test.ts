@@ -7,6 +7,8 @@ class FocusNode {
   open = false
   ariaHidden = false
   summary: FocusNode | null = null
+  legend: FocusNode | null = null
+  readonly attributes = new Set<string>()
   constructor(readonly tagName = 'BUTTON', public parentElement: FocusNode | null = null) {}
   closest(): FocusNode | null {
     for (let node: FocusNode | null = this; node; node = node.parentElement) {
@@ -14,9 +16,15 @@ class FocusNode {
     }
     return null
   }
-  getAttribute(): string | null { return this.ariaHidden ? 'true' : null }
-  hasAttribute(): boolean { return this.open }
-  querySelector(): FocusNode | null { return this.summary }
+  getAttribute(name: string): string | null {
+    return name === 'aria-hidden' && this.ariaHidden ? 'true' : null
+  }
+  hasAttribute(name: string): boolean {
+    return name === 'open' ? this.open : this.attributes.has(name)
+  }
+  querySelector(selector: string): FocusNode | null {
+    return selector === ':scope > legend' ? this.legend : this.summary
+  }
 }
 
 function focusable(...nodes: FocusNode[]): HTMLElement[] {
@@ -60,5 +68,30 @@ describe('native disclosure modal focus', () => {
     panel.ariaHidden = false
     action.tabIndex = -1
     expect(focusable(action)).toEqual([])
+  })
+
+  it('skips controls inside inert subtrees', () => {
+    const panel = new FocusNode('DIV')
+    const action = new FocusNode('BUTTON', panel)
+    const link = new FocusNode('A', panel)
+    expect(focusable(action, link)).toEqual([action, link])
+    panel.attributes.add('inert')
+    expect(focusable(action, link)).toEqual([])
+  })
+
+  it('skips form controls in a disabled fieldset but keeps its first legend reachable', () => {
+    const fieldset = new FocusNode('FIELDSET')
+    const legend = fieldset.legend = new FocusNode('LEGEND', fieldset)
+    const legendAction = new FocusNode('BUTTON', legend)
+    const field = new FocusNode('INPUT', fieldset)
+    const link = new FocusNode('A', fieldset)
+    expect(focusable(legendAction, field, link)).toEqual([legendAction, field, link])
+    fieldset.attributes.add('disabled')
+    expect(focusable(legendAction, field, link)).toEqual([legendAction, link])
+  })
+
+  it('leaves hidden-type inputs out of the selector and includes text areas', () => {
+    expect(MODAL_FOCUSABLE_SELECTOR).toContain('input:not([hidden]):not([disabled]):not([type="hidden"])')
+    expect(MODAL_FOCUSABLE_SELECTOR).toContain('textarea:not([hidden]):not([disabled])')
   })
 })
