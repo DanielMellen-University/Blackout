@@ -144,8 +144,8 @@ import {
   type PilotRank,
   type PilotCareerProgress,
 } from './systems/CareerProgression'
+import { syncVolumeSlider } from './ui/VolumeSlider'
 import {
-  audioVolumePercent,
   normalizeAudioVolume,
   normalizeAudioChannelVolume,
   readAudioVolume,
@@ -1186,8 +1186,7 @@ export async function boot(): Promise<void> {
   const applyAudioVolume = (next: number): void => {
     const volume = normalizeAudioVolume(next)
     audio.setVolume(volume)
-    if (volumeRange) volumeRange.value = String(Math.round(volume * 100))
-    if (volumeValue) volumeValue.textContent = audioVolumePercent(volume)
+    syncVolumeSlider(volumeRange, volumeValue, volume)
     writeAudioVolume(qualityStorage, volume)
   }
   applyAudioVolume(initialAudioVolume)
@@ -1205,8 +1204,7 @@ export async function boot(): Promise<void> {
     const output = channel === 'engine'
       ? engineVolumeValue
       : channel === 'environment' ? environmentVolumeValue : effectsVolumeValue
-    if (range) range.value = String(Math.round(volume * 100))
-    if (output) output.textContent = audioVolumePercent(volume)
+    syncVolumeSlider(range, output, volume)
     writeAudioChannelVolume(qualityStorage, channel, volume)
   }
   applyAudioChannel('engine', initialEngineVolume)
