@@ -1,7 +1,7 @@
 // Run with: node --test scripts/check-version.test.mjs (also part of npm test).
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { spawnSync, execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -20,7 +20,8 @@ async function makeFixture(t, { version, withRoadmap } = {}) {
   await mkdir(join(dir, 'src', 'core'), { recursive: true })
   await cp(join(repoRoot, 'src', 'core', 'Version.ts'), join(dir, 'src', 'core', 'Version.ts'))
   if (withRoadmap !== false) {
-    const roadmap = execFileSync('git', ['show', 'HEAD:docs/ROADMAP.md'], { cwd: repoRoot, encoding: 'utf8' })
+    // Match every other fixture input: test the working tree before committing.
+    const roadmap = await readFile(join(repoRoot, 'docs', 'ROADMAP.md'), 'utf8')
     await mkdir(join(dir, 'docs'), { recursive: true })
     await writeFile(join(dir, 'docs', 'ROADMAP.md'), roadmap)
   }
