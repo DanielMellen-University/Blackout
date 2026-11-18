@@ -17,4 +17,13 @@ describe('CI workflow', () => {
     expect(called.length).toBeGreaterThan(0)
     expect(called.filter(name => !(name in scripts))).toEqual([])
   })
+
+  it('runs CI on the Node major pinned in .nvmrc', () => {
+    // Hydrology snapshot hashes only match on one Node major, so a drift
+    // between the two pins shows up as confusing local-only failures.
+    const pinned = read('.nvmrc').trim()
+    const ciVersion = /node-version:\s*['"]?(\d+)(?:\.x)?['"]?\s*$/m.exec(workflow)?.[1]
+    expect(pinned).toMatch(/^\d+$/)
+    expect(ciVersion).toBe(pinned)
+  })
 })
