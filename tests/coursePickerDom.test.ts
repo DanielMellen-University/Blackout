@@ -360,6 +360,26 @@ describe('course picker interaction', () => {
     expect(options()).toHaveLength(4)
   })
 
+  it('keeps the space between words while typing a multi-word filter', () => {
+    const filter = element('.course-picker-filter')
+    const onFilter = vi.fn(); picker.onFilter(onFilter)
+    const gridIds = () => element('.course-picker-grid').querySelectorAll('.course-option').map(node => node.dataset.courseId)
+    filter.value = 'mountain '; filter.dispatch('input', {})
+    expect(filter.value).toBe('mountain ')
+    expect(onFilter).toHaveBeenLastCalledWith('mountain')
+    filter.value = 'mountain climb'; filter.dispatch('input', {})
+    expect(filter.value).toBe('mountain climb')
+    expect(gridIds()).toEqual(['ridge'])
+    expect(onFilter).toHaveBeenLastCalledWith('mountain climb')
+  })
+
+  it('caps the filter field at the stored search length', () => {
+    const filter = element('.course-picker-filter') as TestElement & { maxLength?: number }
+    expect(filter.maxLength).toBe(80)
+    filter.value = `${'x'.repeat(100)}`; filter.dispatch('input', {})
+    expect(filter.value).toHaveLength(80)
+  })
+
   it('removes controls/listeners and restores record markup on repeatable disposal', () => {
     const filter = element('.course-picker-filter')
     const onFilter = vi.fn(); picker.onFilter(onFilter)
