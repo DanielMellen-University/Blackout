@@ -34,6 +34,8 @@ export const GAMEPAD_POLL_INTERVAL = 1 / 30
  */
 export class InputManager {
   private readonly keys = new Set<string>()
+  /** Keys pressed while Cmd was down; macOS never sends their keyup. */
+  private readonly metaChordKeys = new Set<string>()
   private readonly controls: ControlState = createDefaultControls()
   private readonly target: Window
   private debriefReady = false
@@ -165,6 +167,7 @@ export class InputManager {
     if (this.flightLive === next) {
       if (!next) {
         this.keys.clear()
+        this.metaChordKeys.clear()
         this.clearFlightState()
         this.clearQueued()
       }
@@ -172,6 +175,7 @@ export class InputManager {
     }
     this.flightLive = next
     this.keys.clear()
+    this.metaChordKeys.clear()
     this.clearFlightState()
     this.clearQueued()
   }
@@ -214,12 +218,14 @@ export class InputManager {
     this.target.removeEventListener('keyup', this.onKeyUp)
     this.target.removeEventListener('blur', this.onBlur)
     this.keys.clear()
+    this.metaChordKeys.clear()
     this.clearGamepadState()
   }
 
   sampleWithDt(dt: number): ControlState {
     if (this.disposed) {
       this.keys.clear()
+      this.metaChordKeys.clear()
       this.clearFlightState()
       this.clearQueued()
       this.controls.throttle = 0
@@ -311,6 +317,7 @@ export class InputManager {
   clearKeys(): void {
     if (this.disposed) return
     this.keys.clear()
+    this.metaChordKeys.clear()
     this.clearFlightState()
     this.clearQueued()
   }
@@ -502,9 +509,14 @@ export class InputManager {
     }
 
     this.keys.add(e.code)
+    if (e.metaKey && !isMetaCode(e.code)) this.metaChordKeys.add(e.code)
     if (this.flightLive && this.isFlightKey(e.code)) this.inputSourceValue = 'keyboard'
     if (e.repeat) return
     if (!this.flightLive) return
+    // Cmd and Alt chords belong to the browser and OS (Cmd+C, Alt+N and so on),
+    // so they must not also cycle the camera or weather. Ctrl stays allowed
+    // because it is held as throttle down.
+    if (e.metaKey || e.altKey) return
 
     if (e.code === 'KeyC') this.cameraToggleQueued = true
     if (e.code === 'KeyP') this.pauseToggleQueued = true
@@ -565,11 +577,19 @@ export class InputManager {
   private onKeyUp = (e: KeyboardEvent): void => {
     if (this.disposed) return
     this.keys.delete(e.code)
+    this.metaChordKeys.delete(e.code)
+    if (isMetaCode(e.code)) {
+      // macOS drops keyup for keys pressed during a Cmd chord, which would
+      // leave W or Space held after Cmd+W style shortcuts. Release them here.
+      for (const code of this.metaChordKeys) this.keys.delete(code)
+      this.metaChordKeys.clear()
+    }
   }
 
   private onBlur = (): void => {
     if (this.disposed) return
     this.keys.clear()
+    this.metaChordKeys.clear()
     this.clearGamepadState()
     this.clearQueued()
   }
@@ -628,6 +648,10 @@ export function normalizeGamepadAxis(value: number, deadzone = 0.14): number {
   if (magnitude <= safeDeadzone) return 0
   const scaled = (magnitude - safeDeadzone) / (1 - safeDeadzone)
   return Math.sign(clamped) * scaled
+}
+
+function isMetaCode(code: string): boolean {
+  return code === 'MetaLeft' || code === 'MetaRight' || code === 'OSLeft' || code === 'OSRight'
 }
 
 function mergeAxis(keyboard: number, gamepad: number): number {

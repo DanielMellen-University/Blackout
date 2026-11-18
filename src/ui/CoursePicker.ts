@@ -798,6 +798,7 @@ export class CoursePicker {
     this.filter.placeholder = 'Filter courses'
     this.filter.setAttribute('aria-label', 'Filter courses')
     this.filter.autocomplete = 'off'
+    this.filter.maxLength = COURSE_PICKER_FILTER_MAX_LENGTH
     this.filter.spellcheck = false
     this.categorySelect = document.createElement('select')
     this.categorySelect.className = 'course-picker-category'
@@ -1167,10 +1168,13 @@ export class CoursePicker {
 
   private onFilterInput = (): void => {
     if (this.disposed) return
-    const normalized = normalizeCoursePickerFilter(this.filter.value)
-    if (this.filter.value !== normalized) this.filter.value = normalized
+    // Only enforce the length while typing. Trimming here would eat the
+    // space between words before the next one is typed, so multi-word
+    // searches could never be entered. Matching ignores outer spaces anyway.
+    const bounded = this.filter.value.slice(0, COURSE_PICKER_FILTER_MAX_LENGTH)
+    if (this.filter.value !== bounded) this.filter.value = bounded
     this.renderList()
-    this.filterStateHandler?.(normalized)
+    this.filterStateHandler?.(normalizeCoursePickerFilter(bounded))
   }
 
   private onCategoryChange = (): void => {
