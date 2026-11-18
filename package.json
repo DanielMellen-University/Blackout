@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "npm run version:check && tsc && vite build",
     "version:check": "node scripts/check-version.mjs",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "node --test scripts/review-frame-metrics.test.mjs scripts/check-version.test.mjs && vitest run",
     "perf:terrain": "node scripts/profile-terrain.mjs",

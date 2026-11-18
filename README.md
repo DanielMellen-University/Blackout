@@ -15,7 +15,7 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints. Run `npm test` for the suite and `npm run build` for version checks, TypeScript, and the production build.
+Open the URL Vite prints. Run `npm test` for the suite, `npm run typecheck` for a TypeScript check without building, and `npm run build` for version checks, TypeScript, and the production build.
 
 Use Node 22, the version CI runs (`.nvmrc` pins it for nvm and fnm). A few hydrology snapshot tests hash generated geometry, and newer Node releases round some math differently, so those hashes can fail locally on Node 24 while CI passes.
 
