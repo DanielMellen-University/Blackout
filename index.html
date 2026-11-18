@@ -38,6 +38,9 @@
       @media (prefers-reduced-motion: reduce) { .startup-track::after { animation: none; width: 100%; } }
       @media (prefers-reduced-motion: reduce) { .startup-screen { transition-duration: .12s; }
         .startup-screen.startup-leaving .startup-panel { transform: none; } }
+      .reduced-motion .startup-track::after { animation: none; width: 100%; }
+      .reduced-motion .startup-screen { transition-duration: .12s; }
+      .reduced-motion .startup-screen.startup-leaving .startup-panel { transform: none; }
       @media (max-height: 420px) { .startup-panel { padding: 24px; } .startup-art { height: 60px; margin: 16px 0; } }
     </style>
     <link rel="stylesheet" href="/src/style.css" />
@@ -144,7 +147,7 @@
             <div class="seed-launch">
               <label class="seed-launch-label" for="title-seed-input">Or revisit a world</label>
               <div class="seed-launch-controls">
-                <input id="title-seed-input" type="text" inputmode="decimal" pattern="[+-]?(?:\d+(?:\.\d{1,6})?|\.\d{1,6})" autocomplete="off" placeholder="Enter world seed" aria-label="Custom world seed" />
+                <input id="title-seed-input" type="text" inputmode="decimal" pattern="[+-]?(?:\d+(?:\.\d{1,6})?|\.\d{1,6})" autocomplete="off" placeholder="Enter world seed" aria-label="Custom world seed" aria-describedby="title-seed-status" />
                 <button type="button" id="title-seed-load" class="btn-ghost">Load seed</button>
               </div>
               <p id="title-seed-status" class="seed-launch-status" role="status" aria-live="polite"></p>

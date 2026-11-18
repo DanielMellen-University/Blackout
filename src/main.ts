@@ -64,8 +64,10 @@ import {
   normalizeWorldSeed,
   parseWorldSeed,
   shouldRegenerateWorldOnLaunch,
+  WORLD_SEED_INVALID_STATUS,
   worldSeedLaunchStatus,
 } from './core/WorldSeed'
+import { setSeedInputInvalid } from './ui/SeedInput'
 import {
   lockGameKeyboard,
   lockKeysOnly,
@@ -144,8 +146,8 @@ import {
   type PilotRank,
   type PilotCareerProgress,
 } from './systems/CareerProgression'
+import { syncVolumeSlider } from './ui/VolumeSlider'
 import {
-  audioVolumePercent,
   normalizeAudioVolume,
   normalizeAudioChannelVolume,
   readAudioVolume,
@@ -1186,8 +1188,7 @@ export async function boot(): Promise<void> {
   const applyAudioVolume = (next: number): void => {
     const volume = normalizeAudioVolume(next)
     audio.setVolume(volume)
-    if (volumeRange) volumeRange.value = String(Math.round(volume * 100))
-    if (volumeValue) volumeValue.textContent = audioVolumePercent(volume)
+    syncVolumeSlider(volumeRange, volumeValue, volume)
     writeAudioVolume(qualityStorage, volume)
   }
   applyAudioVolume(initialAudioVolume)
@@ -1205,8 +1206,7 @@ export async function boot(): Promise<void> {
     const output = channel === 'engine'
       ? engineVolumeValue
       : channel === 'environment' ? environmentVolumeValue : effectsVolumeValue
-    if (range) range.value = String(Math.round(volume * 100))
-    if (output) output.textContent = audioVolumePercent(volume)
+    syncVolumeSlider(range, output, volume)
     writeAudioChannelVolume(qualityStorage, channel, volume)
   }
   applyAudioChannel('engine', initialEngineVolume)
@@ -1613,6 +1613,7 @@ export async function boot(): Promise<void> {
       }
       if (replaying && !worldFallback) {
         if (titleSeedInput) titleSeedInput.value = ''
+        setSeedInputInvalid(titleSeedInput, false)
         if (titleSeedStatus) titleSeedStatus.textContent = ''
       } else if (replaying && titleSeedStatus) {
         titleSeedStatus.textContent = worldSeedLaunchStatus(replaySeed!, true)
@@ -1724,6 +1725,7 @@ export async function boot(): Promise<void> {
     replaySeed = null
     replaySeedFallback = false
     if (titleSeedInput) titleSeedInput.value = ''
+    setSeedInputInvalid(titleSeedInput, false)
     if (titleSeedStatus) titleSeedStatus.textContent = ''
     writeSelectedCourseId(qualityStorage, selectedCourseId)
     rememberRecentCourse(selectedCourseId)
@@ -1737,9 +1739,11 @@ export async function boot(): Promise<void> {
   const applyCustomSeed = (): void => {
     const seed = parseWorldSeed(titleSeedInput?.value)
     if (seed === null) {
-      if (titleSeedStatus) titleSeedStatus.textContent = 'INVALID SEED · USE A SAFE INTEGER'
+      if (titleSeedStatus) titleSeedStatus.textContent = WORLD_SEED_INVALID_STATUS
+      setSeedInputInvalid(titleSeedInput, true)
       return
     }
+    setSeedInputInvalid(titleSeedInput, false)
     replaySeed = seed
     selectedCourseId = 'random'
     leaveOpsReplay()
@@ -1753,6 +1757,7 @@ export async function boot(): Promise<void> {
   uiListeners.add(titleSeedInput, 'keydown', (event: Event) => {
     if ((event as KeyboardEvent).key === 'Enter') applyCustomSeed()
   })
+  uiListeners.add(titleSeedInput, 'input', () => setSeedInputInvalid(titleSeedInput, false))
   const onProgressStorageChange = (event: Event): void => {
     const storageEvent = event as StorageEvent
     const key = storageEvent.key
@@ -1765,6 +1770,7 @@ export async function boot(): Promise<void> {
       replaySeed = null
       replaySeedFallback = false
       if (titleSeedInput) titleSeedInput.value = ''
+      setSeedInputInvalid(titleSeedInput, false)
       if (titleSeedStatus) titleSeedStatus.textContent = ''
       for (const picker of coursePickers) picker.setValue(selectedCourseId)
     }

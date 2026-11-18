@@ -12,6 +12,27 @@ function setAppAvailable(available: boolean): void {
   }
 }
 
+const STARTUP_FADE_MS = 500
+const STARTUP_REDUCED_FADE_MS = 120
+
+/**
+ * Fade length for leaving the startup screen. Honors the in-game reduced
+ * motion setting as well as the system preference, and falls back to the
+ * normal fade where matchMedia is missing or throws.
+ */
+export function startupFadeMs(): number {
+  const root = typeof document !== 'undefined' ? document.documentElement : null
+  if (root?.classList?.contains('reduced-motion')) return STARTUP_REDUCED_FADE_MS
+  try {
+    if (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return STARTUP_REDUCED_FADE_MS
+    }
+  } catch {
+    /* Treat an unsupported media query as no preference. */
+  }
+  return STARTUP_FADE_MS
+}
+
 function wait(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -34,7 +55,7 @@ export async function showStartupScreen(minimumMs = 1500): Promise<void> {
   await nextPaint()
   await nextPaint()
   screen.classList.add('startup-leaving')
-  await wait(matchMedia('(prefers-reduced-motion: reduce)').matches ? 120 : 500)
+  await wait(startupFadeMs())
   screen.hidden = true
   screen.classList.remove('startup-leaving')
   setAppAvailable(true)
@@ -48,7 +69,7 @@ export async function finishStartupScreen(minimumRemainingMs: number): Promise<v
   const screen = startupScreen()
   if (!screen) return
   screen.classList.add('startup-leaving')
-  await wait(matchMedia('(prefers-reduced-motion: reduce)').matches ? 120 : 500)
+  await wait(startupFadeMs())
   screen.hidden = true
   screen.classList.remove('startup-leaving')
   setAppAvailable(true)

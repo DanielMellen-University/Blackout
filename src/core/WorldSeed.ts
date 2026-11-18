@@ -25,6 +25,9 @@ export function formatWorldSeed(seed: number): string {
   return canonical.toFixed(WORLD_SEED_DECIMAL_PLACES).replace(/\.?0+$/, '')
 }
 
+/** Status shown when the custom seed field cannot be parsed. */
+export const WORLD_SEED_INVALID_STATUS = 'INVALID SEED · USE A NUMBER WITH UP TO 6 DECIMALS'
+
 /** Keep launch controls honest when a requested world needs another rebuild attempt. */
 export function worldSeedLaunchStatus(seed: number, rebuildFallback = false): string {
   const label = formatWorldSeed(seed)
