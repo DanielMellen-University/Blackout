@@ -505,6 +505,10 @@ export class InputManager {
     if (this.flightLive && this.isFlightKey(e.code)) this.inputSourceValue = 'keyboard'
     if (e.repeat) return
     if (!this.flightLive) return
+    // Cmd and Alt chords belong to the browser and OS (Cmd+C, Alt+N and so on),
+    // so they must not also cycle the camera or weather. Ctrl stays allowed
+    // because it is held as throttle down.
+    if (e.metaKey || e.altKey) return
 
     if (e.code === 'KeyC') this.cameraToggleQueued = true
     if (e.code === 'KeyP') this.pauseToggleQueued = true
