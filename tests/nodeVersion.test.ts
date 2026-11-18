@@ -26,4 +26,12 @@ describe('Node version notice', () => {
     const config = readFileSync(new URL('../vitest.config.ts', import.meta.url), 'utf8')
     expect(config).toContain("globalSetup: ['tests/setup/nodeVersion.ts']")
   })
+
+  it('declares the pinned major in package engines', () => {
+    const pinned = readFileSync(new URL('../.nvmrc', import.meta.url), 'utf8').trim()
+    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+    const lock = JSON.parse(readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'))
+    expect(pkg.engines?.node).toBe(`${pinned}.x`)
+    expect(lock.packages?.['']?.engines?.node).toBe(`${pinned}.x`)
+  })
 })
