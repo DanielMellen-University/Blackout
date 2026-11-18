@@ -32,14 +32,17 @@ Add `?dev=operation` to launch **Ridge relay** from the flight plan. It opens in
 Default keyboard controls:
 
 - W / S pitch, A / D yaw, Q / E roll
-- Shift / Ctrl raise or lower throttle
+- Shift / Ctrl (or 2 / 1) raise or lower throttle
 - Space afterburner with nitro (5 s reserve, 20 s refill, 125% total gate refill budget shared across the run); B speed brake and wheel brake
 - G landing gear; V light stability assist (trim resumes two seconds after releasing yaw/roll)
 - C cycles chase, orbit, and unobstructed first person; middle mouse looks around in external views
 - P or Escape pauses; R ends the flight and generates a new world (Perfect Line: instant same-line retry)
 - N cycles weather; T cycles radar targets; X toggles ghost replay
+- M mutes or unmutes audio; Y copies a replay link for the current world
 
-Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in the pause menu. Standard gamepads also support the core flight controls.
+Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in the pause menu. Space, B and G can be moved to another key there; picking a key another action already uses swaps the two.
+
+Standard gamepads (Xbox / PlayStation layout): left stick pitch and roll, right stick yaw; RT / R2 and LT / L2 raise and lower throttle; A / Cross afterburner; LB / L1 speed brake; X / Square gear; Y / Triangle camera; B / Circle flight assist; View / Share mute; Start / Options pause; D-pad up weather, down new world, left ghost, right radar target. On results, A / Cross retries and B / Circle chooses a mission.
 
 Open **Controls** or **Flight manual** from the launch screen or pause menu. Controls follows your configured axis directions and action keys. The manual covers takeoff, handling, instruments, missions, landing, and exploration. Back or Escape returns to launch; when opened during flight, it returns to paused settings. Use **Retry same course** in Pause to restart the current mission, or Enter from results/the crash cinematic.
 
