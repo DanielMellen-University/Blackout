@@ -24,6 +24,17 @@ describe('river surface cache', () => {
     expect(downstream).toBeGreaterThanOrEqual(28 - 1e-6)
   })
 
+  it('does not sag an outside bank toward a lower lake before the centre section reaches it', () => {
+    const r: RiverReach = { ax: 350, az: -150, bx: 350, bz: 150, dx: 0, dz: 300,
+      length: 300, lengthSq: 90000, wa: 100, wb: 100, ya: 150, yb: 150,
+      source: false, terminal: false, tangentAX: 0, tangentAZ: 1, tangentBX: 0, tangentBZ: 1 }
+    const lake = { x: 1000, z: 0, radius: 500, aspect: 1, angle: 0, phase: 0, level: 100,
+      sea: false, pond: false, shoreRadii: new Float32Array(128).fill(500) }
+    const p = riverSurface(r, [lake]).sections
+    expect(p.length).toBeGreaterThan(0)
+    for (let i = 1; i < p.length; i += 4) expect(p[i]).toBe(150)
+  })
+
   it('keeps its bounds around the ribbon', () => {
     const surface = riverSurface(reach(), [])
     expect(surface.minX).toBeLessThanOrEqual(0)
