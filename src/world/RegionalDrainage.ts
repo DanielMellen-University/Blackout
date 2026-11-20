@@ -629,6 +629,20 @@ function flaredBasin(n: Node): WaterBasin | null {
   return (n.flaredBasin = flareLakeShore(original, joined, HALO * STEP - 400))
 }
 
+/** Neighbour routes must be complete before fitting a shared mouth. Prepare
+ * them through the existing channel yields instead of hiding a cold 9x9
+ * survey inside the first lake's otherwise synchronous contour fit. */
+function* prepareFlaredBasinSteps(n: Node): Generator<HydrologyBuildPhase, void, void> {
+  if (n.flaredBasin !== undefined) return
+  if (!basin(n)) { n.flaredBasin = null; return }
+  for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+    routedReaches(node(n.gx + dx, n.gz + dz))
+    yield 'channels'
+  }
+  flaredBasin(n)
+  yield 'channels'
+}
+
 function reaches(n: Node): RiverReach[] {
   const result = routedReaches(n)
   if (!n.surfacesRegistered && result.length) {
@@ -690,8 +704,11 @@ export function* regionalDrainageSteps(cx: number, cz: number): Generator<Hydrol
   for (let iz = -HALO; iz < CELLS + HALO; iz++) for (let ix = -HALO; ix < CELLS + HALO; ix++) {
     const n = local[index++]!
     const ownedNode = ix >= 0 && iz >= 0 && ix < CELLS && iz < CELLS
+    yield* prepareFlaredBasinSteps(n)
     const b = flaredBasin(n)
     if (b) { basins.push(b); if (ownedNode) landmarks.push(b) }
+    if (routedReaches(n).length) for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++)
+      yield* prepareFlaredBasinSteps(node(n.gx + dx, n.gz + dz))
     const r = reaches(n)
     assignLakeOutlet(n)
     // Prepare exact shared surfaces in cooperative batches instead of doing
