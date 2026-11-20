@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { basinDistance, riverReachesInBounds, waterBasinsInBounds, type RiverReach, type WaterBasin } from '../src/world/Hydrology'
-import { flareLakeShore } from '../src/world/LakeShore'
+import { flareLakeShore, flareLakeShoreSteps } from '../src/world/LakeShore'
 import { riverSurface, riverSurfaceHeightAt } from '../src/world/RiverSurface'
 import { setWorldSeed } from '../src/world/noise'
 
@@ -109,6 +109,22 @@ describe('shared lake mouth flare', () => {
       }
     }
     expect(checked).toBeGreaterThanOrEqual(4)
+  })
+
+  it('keeps suspended and interleaved fits private and byte-identical', () => {
+    const expected = flareLakeShore(lake, [mouth()])
+    const steps = flareLakeShoreSteps(lake, [mouth()])
+    for (let i = 0; i < 10; i++) expect(steps.next().done).toBe(false)
+    flareLakeShore(lake, [mouth(1)])
+    let result = steps.next(), yields = 10
+    while (!result.done) { yields++; result = steps.next() }
+    expect(yields).toBeGreaterThan(64)
+    expect(result.value.shoreRadii).toEqual(expected.shoreRadii)
+    expect([...lake.shoreRadii!].every(r => r === 500)).toBe(true)
+    const cancelled = flareLakeShoreSteps(lake, [mouth()])
+    cancelled.next()
+    cancelled.return(lake)
+    expect(flareLakeShore(lake, [mouth()]).shoreRadii).toEqual(expected.shoreRadii)
   })
 
   it('keeps a fitted mouth inside the unchanged regional query extent', () => {

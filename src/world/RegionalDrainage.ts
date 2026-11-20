@@ -2,7 +2,7 @@ import { getWorldSeed, hash2, smoothstep, valueNoise } from './noise'
 import { sampleLandformsInto, type LandformSample } from './Landforms'
 import { coastField } from './Coastline'
 import { registerRiverSurface, riverSurface } from './RiverSurface'
-import { flareLakeShore, refineLakeShore } from './LakeShore'
+import { flareLakeShoreSteps, refineLakeShore } from './LakeShore'
 import { basinDistance, type HydrologyBuildPhase, type RiverReach, type WaterBasin } from './Hydrology'
 import { drainageRouter, type DrainageNode } from './DrainageRouting'
 
@@ -607,9 +607,21 @@ function routedReaches(n: Node): RiverReach[] {
  * Routing reads the unflared contour, so query order cannot feed a growing
  * lake back into its own route or change an independently graded channel. */
 function flaredBasin(n: Node): WaterBasin | null {
-  if (n.flaredBasin !== undefined) return n.flaredBasin
+  if (n.flaredBasin === undefined) for (const _ of prepareFlaredBasinSteps(n)) { /* Synchronous probe. */ }
+  return n.flaredBasin!
+}
+
+/** Neighbour routes and contour rays share the existing channel yields.
+ * Only a complete fitted contour can become canonical for river clipping. */
+function* prepareFlaredBasinSteps(n: Node): Generator<HydrologyBuildPhase, void, void> {
+  if (n.flaredBasin !== undefined) return
   const original = basin(n)
-  if (!original) return (n.flaredBasin = null)
+  if (!original) { n.flaredBasin = null; return }
+  for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+    routedReaches(node(n.gx + dx, n.gz + dz))
+    yield 'channels'
+    if (n.flaredBasin !== undefined) return
+  }
   const joined: RiverReach[] = []
   for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
     const levelSpans = routedReaches(node(n.gx + dx, n.gz + dz)).filter(r =>
@@ -626,21 +638,10 @@ function flaredBasin(n: Node): WaterBasin | null {
     for (const r of levelSpans) if (Math.min(basinDistance(original, r.ax, r.az),
       basinDistance(original, r.bx, r.bz)) < Math.max(r.wa, r.wb) * 4) joined.push(r)
   }
-  return (n.flaredBasin = flareLakeShore(original, joined, HALO * STEP - 400))
-}
-
-/** Neighbour routes must be complete before fitting a shared mouth. Prepare
- * them through the existing channel yields instead of hiding a cold 9x9
- * survey inside the first lake's otherwise synchronous contour fit. */
-function* prepareFlaredBasinSteps(n: Node): Generator<HydrologyBuildPhase, void, void> {
-  if (n.flaredBasin !== undefined) return
-  if (!basin(n)) { n.flaredBasin = null; return }
-  for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
-    routedReaches(node(n.gx + dx, n.gz + dz))
-    yield 'channels'
-  }
-  flaredBasin(n)
-  yield 'channels'
+  const steps = flareLakeShoreSteps(original, joined, HALO * STEP - 400)
+  let result = steps.next()
+  while (!result.done) { yield 'channels'; result = steps.next() }
+  if (n.flaredBasin === undefined) n.flaredBasin = result.value
 }
 
 function reaches(n: Node): RiverReach[] {

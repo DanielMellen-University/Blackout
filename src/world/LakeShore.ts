@@ -25,6 +25,15 @@ export function refineLakeShore(radii: Float32Array): Float32Array {
  * and first derivative at both shoulders, unlike a hard lake/ribbon union.
  * Unjoined lakes keep their original object and all original radii. */
 export function flareLakeShore(basin: WaterBasin, joined: readonly RiverReach[], maximumRadius = Infinity): WaterBasin {
+  const steps = flareLakeShoreSteps(basin, joined, maximumRadius)
+  let result = steps.next()
+  while (!result.done) result = steps.next()
+  return result.value
+}
+
+/** Cooperative form, never publishes a partly fitted contour. */
+export function* flareLakeShoreSteps(basin: WaterBasin, joined: readonly RiverReach[], maximumRadius = Infinity):
+  Generator<void, WaterBasin, void> {
   if (!basin.shoreRadii || !joined.length) return basin
   const spans: { ax: number; az: number; dx: number; dz: number; lengthSq: number; wa: number; wb: number }[] = []
   let margin = 0
@@ -41,6 +50,7 @@ export function flareLakeShore(basin: WaterBasin, joined: readonly RiverReach[],
       spans.push({ ax, az, dx, dz, lengthSq: dx * dx + dz * dz, wa, wb })
       margin = Math.max(margin, wa * 4, wb * 4)
     }
+    yield
   }
   if (!spans.length) return basin
   let radii = basin.shoreRadii
@@ -54,6 +64,7 @@ export function flareLakeShore(basin: WaterBasin, joined: readonly RiverReach[],
         basin.x + Math.cos(angle), basin.z + Math.sin(angle)) + 1
     }
     radii = next
+    yield
   }
   const shore = radii.slice()
   for (let i = 0; i < shore.length; i++) {
@@ -72,6 +83,7 @@ export function flareLakeShore(basin: WaterBasin, joined: readonly RiverReach[],
       const h = Math.max(0, 1 - Math.abs(lake - channel) / k)
       return Math.min(lake, channel) - h * h * k * .25
     }
+    if (i % 8 === 0) yield
     if (field(radii[i]!) >= -1e-5) continue
     let lo = radii[i]!, hi = lo
     // Find the first outward crossing. A grazing channel can cross a ray
@@ -97,6 +109,7 @@ export function flareLakeShore(basin: WaterBasin, joined: readonly RiverReach[],
       displacement[(i + next.length - 1) % next.length]! * .25 + displacement[i]! * .5 +
       displacement[(i + 1) % next.length]! * .25
     displacement = next
+    yield
   }
   // Scale the added shoulder uniformly if the regional query halo would be
   // exceeded. A hard radial clamp would introduce a new corner at the limit.
