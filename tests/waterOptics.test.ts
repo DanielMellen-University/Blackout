@@ -102,7 +102,7 @@ describe('joined water optics', () => {
       partial.return(undefined as never)
       const complete = drain(basinSurfaceSteps(lake, []))
       expect(drain(basinSurfaceSteps(lake, []))).toBe(complete)
-      expect(complete.boundary.length).toBeLessThan(512)
+      expect(complete.boundary.length).toBeLessThanOrEqual(512)
       expect(complete.inner).toHaveLength(complete.boundary.length)
       expect(complete.inlets.length).toBeGreaterThan(0)
       return complete.boundary

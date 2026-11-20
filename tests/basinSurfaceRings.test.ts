@@ -15,7 +15,10 @@ describe('basin surface rings', () => {
     // The seed-73 wetland pond has many inlet crossings inserted into its ring.
     const pond = waterBasinsInBounds(-7000, -20000, -6000, -19000).find(b => b.id === 'lake:-3:-10')!
     const surface = finish(basinSurfaceSteps(pond, []))
-    expect(surface.boundary.length).toBeGreaterThan(pond.shoreRadii!.length)
+    // A dense cached contour already fills the 512-point budget. Exact
+    // inlet depths reuse its chord endpoints instead of adding shore panels.
+    expect(surface.boundary.length).toBe(pond.shoreRadii!.length)
+    expect(surface.boundary.length).toBeLessThanOrEqual(512)
     // Every original contour corner survives the merge.
     for (let i = 0; i < pond.shoreRadii!.length; i++) {
       const theta = i / pond.shoreRadii!.length * Math.PI * 2, r = pond.shoreRadii![i]!
