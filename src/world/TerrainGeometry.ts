@@ -495,7 +495,7 @@ export function* generateTerrainGeometrySteps(
     yield 'skirt'
     if (!reducedFar) {
       const waterSteps = buildWaterMeshSteps(heights, waterLevels, segs, span, originX, originZ,
-        { value: 0 }, undefined, basinMask, reaches, basinsInBounds(originX, originZ, span))
+        { value: 0 }, undefined, basinMask, reaches, basinsInBounds(originX, originZ, span), true)
       // Manual delegation maps phase labels while preserving cancellation of
       // the child iterator if this terrain tile is abandoned mid-water-build.
       try {
