@@ -66,7 +66,7 @@ describe('cooperative water geometry', () => {
   // Pin synchronous/cooperative output with upright normals and a separate
   // shallow basin band; sea-level raster still uses the sea material kind.
   it.each([
-    ['flared-mouth', 'b3ee56c5f6820a798337ad6b636450ff49cb7d62575a573159698ac1ff26a545'],
+    ['flared-mouth', '6b7adb1ffa1dcea65b012532e334ca74fe50d0a11294c728d914e5f429bae13b'],
     ['raster', '1fa7969b58d68f92e4a12e3bbcef89f4fd5c3d0b23f58c91037508a1ab11a2dc'],
     ['lake', '2adb8ab06b2113aa151c4f8937fbc0133c7d5550b9763a3c6a8f977617014ada'],
     ['pond', '53b8e27b92cd17dd7a8f72d9c0445f28f372e28234271ea940b7946ea036f87a'],

@@ -23,9 +23,8 @@ export function refineLakeShore(radii: Float32Array): Float32Array {
 /** Round the union of a lake and its level mouth ribbons into one cached
  * radial polygon. A compact polynomial smooth minimum has matching value
  * and first derivative at both shoulders, unlike a hard lake/ribbon union.
- * Rounded ribbon closures remain in the joined water footprint.
  * Unjoined lakes keep their original object and all original radii. */
-export function flareLakeShore(basin: WaterBasin, joined: readonly RiverReach[], limits?: Float32Array): WaterBasin {
+export function flareLakeShore(basin: WaterBasin, joined: readonly RiverReach[], maximumRadius = Infinity): WaterBasin {
   if (!basin.shoreRadii || !joined.length) return basin
   const spans: { ax: number; az: number; dx: number; dz: number; lengthSq: number; wa: number; wb: number }[] = []
   let margin = 0
@@ -92,21 +91,19 @@ export function flareLakeShore(basin: WaterBasin, joined: readonly RiverReach[],
   // Smooth only the added mouth displacement. This rounds radial grazing
   // cases without eroding a constrained cove or moving an unjoined bank.
   let displacement = shore.map((r, i) => Math.max(0, r - radii[i]!))
-  for (let pass = 0; pass < 8; pass++) {
+  for (let pass = 0; pass < 14; pass++) {
     const next = displacement.slice()
     for (let i = 0; i < next.length; i++) next[i] =
       displacement[(i + next.length - 1) % next.length]! * .25 + displacement[i]! * .5 +
       displacement[(i + 1) % next.length]! * .25
     displacement = next
   }
-  for (let i = 0; i < shore.length; i++) {
-    let ceiling = Infinity
-    if (limits) {
-      const sector = i / shore.length * limits.length, j = Math.floor(sector), t = sector - j
-      ceiling = Math.max(radii[i]!, limits[j]! + (limits[(j + 1) % limits.length]! - limits[j]!) * t)
-    }
-    shore[i] = Math.min(ceiling, radii[i]! + displacement[i]!)
-  }
+  // Scale the added shoulder uniformly if the regional query halo would be
+  // exceeded. A hard radial clamp would introduce a new corner at the limit.
+  let scale = 1
+  for (let i = 0; i < shore.length; i++) if (displacement[i]! > 0)
+    scale = Math.min(scale, Math.max(0, maximumRadius - radii[i]!) / displacement[i]!)
+  for (let i = 0; i < shore.length; i++) shore[i] = radii[i]! + displacement[i]! * scale
   return { ...basin, shoreRadii: shore,
     boundsRadius: Math.max(basin.boundsRadius ?? basin.radius * 1.75, ...shore) }
 }

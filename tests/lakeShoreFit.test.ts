@@ -100,7 +100,7 @@ describe('lake shoreline fit', () => {
       const basin = waterLandmarks(Math.floor(mission.terrain.originX / 32000),
         Math.floor(mission.terrain.originZ / 32000)).find(b => b.id === 'waterway:lake')!
       // Carving, collision and water now share one cached contour.
-      expect(basin.shoreRadii?.length).toBe(256)
+      expect(basin.shoreRadii?.length).toBe(512)
       for (const lod of [0, 1] as TerrainLod[]) {
         const span = 420, tiles = new Map<string, ReturnType<typeof generateTerrainGeometry>>()
         let exposed = 0, total = 0

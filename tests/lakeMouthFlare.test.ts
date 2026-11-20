@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { basinDistance, waterBasinsInBounds, type RiverReach, type WaterBasin } from '../src/world/Hydrology'
+import { basinDistance, riverReachesInBounds, waterBasinsInBounds, type RiverReach, type WaterBasin } from '../src/world/Hydrology'
 import { flareLakeShore } from '../src/world/LakeShore'
+import { riverSurface, riverSurfaceHeightAt } from '../src/world/RiverSurface'
 import { setWorldSeed } from '../src/world/noise'
 
 const lake: WaterBasin = { x: 0, z: 0, radius: 500, aspect: 1, angle: 0, phase: 0,
@@ -47,7 +48,7 @@ describe('shared lake mouth flare', () => {
       if ((da >= 0) === (db >= 0)) continue
       const f = da / (da - db), along = (ax + (bx - ax) * f - 500) * tx + (az + (bz - az) * f) * tz
       if (along < -160 || along > 300) continue
-      const turn = Math.acos(Math.min(1, Math.abs((bx - ax) * tx + (bz - az) * tz) / Math.hypot(bx - ax, bz - az))) * 180 / Math.PI
+      const turn = Math.acos(Math.min(1, -side * ((bx - ax) * tx + (bz - az) * tz) / Math.hypot(bx - ax, bz - az))) * 180 / Math.PI
       expect(turn, `bank ${side}, along ${along}, point ${ax},${az}`).toBeLessThan(45)
       crossings++
     }
@@ -65,6 +66,56 @@ describe('shared lake mouth flare', () => {
     const basins = waterBasinsInBounds(x! - 1800, z! - 1800, x! + 1800, z! + 1800).filter(b => b.shoreRadii)
     expect(basins.length).toBeGreaterThan(0)
     for (const basin of basins) expect(maxTurn(basin), basin.id).toBeLessThan(30)
+  })
+
+  it('bounds actual visible bank crossings at the seed-73 wetland mouths', () => {
+    setWorldSeed(73)
+    const lakes = waterBasinsInBounds(-8500, -22500, -2000, -15000).filter(b => b.shoreRadii)
+    const reaches = riverReachesInBounds(-8500, -22500, -2000, -15000)
+    const raw = reaches.map(r => riverSurface({ ...r, source: false, terminal: false, mouth: false }, []))
+    const cross = (ax: number, az: number, bx: number, bz: number) => ax * bz - az * bx
+    let checked = 0
+    for (const lake of lakes) {
+      const radii = lake.shoreRadii!, n = radii.length
+      for (let i = 0; i < n; i++) {
+        const a = i / n * Math.PI * 2, b = (i + 1) / n * Math.PI * 2
+        const ax = lake.x + Math.cos(a) * radii[i]!, az = lake.z + Math.sin(a) * radii[i]!
+        const sx = Math.cos(b) * radii[(i + 1) % n]! - Math.cos(a) * radii[i]!
+        const sz = Math.sin(b) * radii[(i + 1) % n]! - Math.sin(a) * radii[i]!
+        for (let j = 0; j < reaches.length; j++) {
+          const r = reaches[j]!
+          if (Math.abs(r.ya - lake.level) > .001 || Math.abs(r.yb - lake.level) > .001) continue
+          const p = raw[j]!.sections
+          for (let k = 0; k < p.length - 12; k += 12) for (const side of [1, -1]) {
+            const offset = side === 1 ? 0 : 8, rx = p[k + offset]!, rz = p[k + offset + 2]!
+            const dx = p[k + 12 + offset]! - rx, dz = p[k + 14 + offset]! - rz
+            const determinant = cross(sx, sz, dx, dz)
+            if (Math.abs(determinant) < 1e-8) continue
+            const t = cross(rx - ax, rz - az, dx, dz) / determinant
+            const u = cross(rx - ax, rz - az, sx, sz) / determinant
+            if (Math.min(t, u) < 0 || Math.max(t, u) > 1) continue
+            // Orient both boundaries with water on their left. Taking an
+            // absolute dot product would incorrectly accept an acute spit.
+            const bx = -side * dx, bz = -side * dz, sl = Math.hypot(sx, sz), bl = Math.hypot(bx, bz)
+            const nx = sz / sl + bz / bl, nz = -sx / sl - bx / bl, nl = Math.hypot(nx, nz)
+            const x = ax + sx * t + nx / nl * .5, z = az + sz * t + nz / nl * .5
+            // A crossing covered by another lake/ribbon has no visible bank.
+            if (lakes.some(b => basinDistance(b, x, z) < 0) || raw.some(s => riverSurfaceHeightAt(s, x, z) > 0)) continue
+            const turn = Math.acos(Math.max(-1, Math.min(1, (sx * bx + sz * bz) / sl / bl))) * 180 / Math.PI
+            expect(turn, `${lake.id}, ${r.id}`).toBeLessThan(45)
+            checked++
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThanOrEqual(4)
+  })
+
+  it('keeps a fitted mouth inside the unchanged regional query extent', () => {
+    const fitted = flareLakeShore(lake, [mouth()], 600)
+    expect(Math.max(...fitted.shoreRadii!)).toBeLessThanOrEqual(600)
+    expect(Math.max(...fitted.shoreRadii!)).toBeGreaterThan(590)
+    expect(fitted.shoreRadii![256]).toBe(500)
   })
 
   it('leaves unjoined lakes and their cached array unchanged', () => {

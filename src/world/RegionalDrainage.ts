@@ -18,7 +18,6 @@ interface Node extends DrainageNode {
   longRoute?: boolean; primary?: boolean; dominant?: readonly [number, number] | null
   mergeRadius?: number
   flaredBasin?: WaterBasin | null
-  shoreLimits?: Float32Array
   surfacesRegistered?: boolean
   sourceDistance?: number
   outletChannel?: boolean
@@ -336,7 +335,6 @@ function basin(n: Node): WaterBasin | null {
     // land. Keep only enclosed islands; never change the outer lake contour.
     if (inside) contour.islands = [island]
   }
-  n.shoreLimits = limits
   n.basin = contour
   return n.basin
 }
@@ -614,13 +612,21 @@ function flaredBasin(n: Node): WaterBasin | null {
   if (!original) return (n.flaredBasin = null)
   const joined: RiverReach[] = []
   for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
-    for (const r of routedReaches(node(n.gx + dx, n.gz + dz))) {
-      if (Math.abs(r.ya - original.level) > .00001 || Math.abs(r.yb - original.level) > .00001) continue
-      if (Math.min(Math.abs(basinDistance(original, r.ax, r.az)),
-        Math.abs(basinDistance(original, r.bx, r.bz))) < .3) joined.push(r)
-    }
+    const levelSpans = routedReaches(node(n.gx + dx, n.gz + dz)).filter(r =>
+      Math.abs(r.ya - original.level) < .00001 && Math.abs(r.yb - original.level) < .00001)
+    const touching = levelSpans.some(r => {
+      const sections = riverSurface({ ...r, source: false, terminal: false, mouth: false }, []).sections
+      for (let i = 0; i < sections.length; i += 4)
+        if (basinDistance(original, sections[i]!, sections[i + 2]!) < .3) return true
+      return false
+    })
+    if (!touching) continue
+    // Wide banks enter a lake before the centreline's final span. Fit the
+    // complete level approach, including a grazing outlet's adjoining spans.
+    for (const r of levelSpans) if (Math.min(basinDistance(original, r.ax, r.az),
+      basinDistance(original, r.bx, r.bz)) < Math.max(r.wa, r.wb) * 4) joined.push(r)
   }
-  return (n.flaredBasin = flareLakeShore(original, joined, n.shoreLimits))
+  return (n.flaredBasin = flareLakeShore(original, joined, HALO * STEP - 400))
 }
 
 function reaches(n: Node): RiverReach[] {

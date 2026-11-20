@@ -146,7 +146,10 @@ describe('canonical lake outlets', () => {
         for (const lake of waterLandmarks(x, z).filter(b => b.outletId)) {
           const radius = lake.boundsRadius! + 6000
           const rivers = riverReachesInBounds(lake.x - radius, lake.z - radius, lake.x + radius, lake.z + radius)
-          const emerging = rivers.filter(r => Math.abs(basinDistance(lake, r.ax, r.az)) < .2 && Math.abs(r.ya - lake.level) < .05)
+          // Routed anchors retain their original positions; the shared flare
+          // can submerge a start. Find the actual span that leaves the fitted shore.
+          const emerging = rivers.filter(r => basinDistance(lake, r.ax, r.az) < .2 &&
+            basinDistance(lake, r.bx, r.bz) > -.2 && r.ya <= lake.level + .05)
           expect(emerging.length, `${seed}:${lake.id}`).toBeGreaterThan(0)
           for (const r of emerging) {
             const water = coastField(r.bx, r.bz) <= .00001 || waterBasinsInBounds(r.bx, r.bz, r.bx, r.bz)

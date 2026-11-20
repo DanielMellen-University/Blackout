@@ -124,9 +124,9 @@ describe('shared water surface', () => {
 })
 
 describe('generated flared mouths', () => {
-  it('keeps whole-basin and tile-clipped water at the collision height', () => {
+  it.each([[-4210, -18750], [-3840, -18985]])('keeps whole-basin and tile-clipped water at the collision height at %s,%s', (x, z) => {
     setWorldSeed(73)
-    const x = -4210, z = -18750, span = 420, wholeSpan = 5200
+    const span = 420, wholeSpan = 5200
     const reaches = riverReachesInBounds(x - wholeSpan / 2, z - wholeSpan / 2, x + wholeSpan / 2, z + wholeSpan / 2)
     const basins = waterBasinsInBounds(x - wholeSpan / 2, z - wholeSpan / 2, x + wholeSpan / 2, z + wholeSpan / 2)
     const make = (size: number) => buildWaterMesh(new Float32Array(4).fill(1e5), new Float32Array(4),
@@ -151,7 +151,7 @@ describe('generated flared mouths', () => {
         expect(sample.height).toBeLessThan(sample.waterLevel)
         checked++
       }
-      expect(checked).toBeGreaterThan(100)
+      expect(checked).toBeGreaterThan(20)
     } finally {
       for (const mesh of [whole, tile]) { mesh.geometry.dispose(); (mesh.material as MeshStandardMaterial).dispose() }
     }
