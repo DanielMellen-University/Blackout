@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { basinBedOffset, basinDistance, sampleHydrology, waterBasinsInBounds, waterLandmarks, type WaterBasin } from '../src/world/Hydrology'
+import { basinBedOffset, basinDistance, sampleHydrology, riverReachesInBounds, waterBasinsInBounds, waterLandmarks, type WaterBasin } from '../src/world/Hydrology'
 import { basinOpticalDepth, basinSurfaceSteps } from '../src/world/BasinSurface'
+import { riverSurface, riverSurfaceDepthAt } from '../src/world/RiverSurface'
 import { setWorldSeed } from '../src/world/noise'
 
 function firstLake(seed: number): WaterBasin {
@@ -51,17 +52,22 @@ describe('lake optical depth', () => {
     const steps = basinSurfaceSteps(lake, [])
     let result = steps.next()
     while (!result.done) result = steps.next()
-    let checked = 0
+    // Flaring moved the old fixed mouth centres 386 to 666 m inland.
+    // Identify the actual mouth interiors independently from unclipped
+    // channel triangles, including graded reaches cut by the new shore.
+    const radius = lake.boundsRadius!
+    const reaches = riverReachesInBounds(lake.x - radius, lake.z - radius, lake.x + radius, lake.z + radius)
+    const profiles = reaches.map(r => ({ id: r.fromId, surface: riverSurface({ ...r }, []) }))
+    let checked = 0, gradedMouth = 0
     for (const p of result.value.boundary) {
       const x = lake.x + p.x, z = lake.z + p.z
-      // Centre half of two broad inlet mouths on the seed-73 wetland pond.
-      for (const [cx, cz, w] of [[-6584, -19733, 269], [-6412, -19595, 210]] as const) {
-        if (Math.hypot(x - cx, z - cz) > w * .5) continue
-        checked++
-        // Radial shore samples used to read 0.1 m here and paint pale wedges.
-        expect(p.depth, `${x.toFixed(0)},${z.toFixed(0)}`).toBeGreaterThan(.5)
-      }
+      const crossing = profiles.find(r => riverSurfaceDepthAt(r.surface, x, z) > 2)
+      if (!crossing) continue
+      checked++
+      if (crossing.id === '-4:-10') gradedMouth++
+      expect(p.depth, `${x.toFixed(0)},${z.toFixed(0)}`).toBeGreaterThan(.5)
     }
+    expect(gradedMouth).toBeGreaterThan(0)
     expect(checked).toBeGreaterThan(20)
   })
 })

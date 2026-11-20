@@ -50,11 +50,23 @@ export function* basinSurfaceSteps(basin: WaterBasin, supplied: readonly RiverRe
   }
   const inlets: RiverSurface[] = []
   for (const reach of reaches) {
-    if (Math.min(Math.abs(reach.ya - basin.level), Math.abs(reach.yb - basin.level)) > 1) continue
+    const endpointMatches = Math.min(Math.abs(reach.ya - basin.level), Math.abs(reach.yb - basin.level)) <= 1
     const surface = riverSurface(reach, [basin])
     const r = waterBasinBoundsRadius(basin)
     if (surface.maxX < basin.x - r || surface.minX > basin.x + r ||
       surface.maxZ < basin.z - r || surface.minZ > basin.z + r) continue
+    if (!endpointMatches) {
+      // A flared shore can cut a graded reach upstream of its old level
+      // endpoint. Its canonical clipped vertices, rather than stale reach
+      // metadata, establish the actual lake-level mouth and optical depth.
+      let touches = false
+      for (const p of [surface.triangles ?? surface.sections, surface.caps]) {
+        for (let i = 0; i < p.length; i += 4) if (Math.abs(p[i + 1]! - basin.level) < .15 &&
+          Math.abs(basinDistance(basin, p[i]!, p[i + 2]!)) < .12) { touches = true; break }
+        if (touches) break
+      }
+      if (!touches) continue
+    }
     inlets.push(surface)
     if (inlets.length % 4 === 0) { yield 'shore'; ensureSeed() }
   }
