@@ -1,6 +1,6 @@
 import type { TerrainProfile } from './TerrainProfile'
 import { basinDistance, type RiverReach, type WaterBasin } from './Hydrology'
-import { refineLakeShore } from './LakeShore'
+import { flareLakeShore, refineLakeShore } from './LakeShore'
 import { registerRiverSurface } from './RiverSurface'
 
 /** Recipe-local drainage using the ordinary carved basins and river ribbons. */
@@ -35,9 +35,14 @@ export function waterwayDrainage(profile: Readonly<TerrainProfile>): { basins: W
       wa: 250, wb: 250, ya: level, yb: level, source: i === 0, terminal: i === 21,
       tangentAX: ta.x, tangentAZ: ta.z, tangentBX: tb.x, tangentBZ: tb.z,
       id: `waterway:river:${i}` }
-    registerRiverSurface(reach, basins)
     reaches.push(reach)
   }
+  const lake = basins[0]!
+  const joined = reaches.filter(r => Math.min(Math.abs(basinDistance(lake, r.ax, r.az)),
+    Math.abs(basinDistance(lake, r.bx, r.bz))) < Math.max(r.wa, r.wb) * 2 &&
+    Math.min(basinDistance(lake, r.ax, r.az), basinDistance(lake, r.bx, r.bz)) < 0)
+  basins[0] = flareLakeShore(lake, joined)
+  for (const reach of reaches) registerRiverSurface(reach, basins)
   return { basins, reaches }
 }
 

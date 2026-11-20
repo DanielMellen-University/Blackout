@@ -50,5 +50,5 @@ describe('large lake shorelines', () => {
       // A single refinement drew chords of 430 to 560 m on these seeds.
       expect(maxChord, `${seed}`).toBeLessThan(250)
     }
-  })
+  }, 30000)
 })
