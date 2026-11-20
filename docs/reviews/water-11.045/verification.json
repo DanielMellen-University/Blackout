@@ -1,0 +1,47 @@
+{
+  "node": "v22.23.2",
+  "baseline": "b9e1ac86",
+  "runtimeCandidate": "53ed4a08",
+  "checks": [
+    {
+      "command": "npm test",
+      "status": "failed",
+      "nodeChecksPassed": 8,
+      "vitestPassed": 3460,
+      "vitestFailed": 2,
+      "reason": "5000 ms timeouts in legacyMissionGenerator and riverUnion",
+      "vitestSeconds": 159.49
+    },
+    {
+      "command": "npm test -- --maxWorkers=1",
+      "status": "stopped after a timeout",
+      "reason": "regionalWorld wetland-distribution test took 5147 ms against the unchanged 5000 ms limit; remaining serial work was stopped"
+    },
+    {
+      "command": "npm test -- --maxWorkers=2 --testTimeout=15000",
+      "status": "passed",
+      "nodeChecksPassed": 8,
+      "vitestPassed": 3462,
+      "vitestFilesPassed": 287,
+      "vitestSeconds": 247.09
+    },
+    {
+      "command": "npx tsc --noEmit",
+      "status": "passed"
+    },
+    {
+      "command": "npm run build",
+      "status": "passed",
+      "versionCheck": "v0.12.0 passed",
+      "warning": "Existing Three.js chunk exceeds 500 kB"
+    },
+    {
+      "command": "node --check scripts/review-water-foreground.mjs",
+      "status": "passed"
+    }
+  ],
+  "fixturesChanged": false,
+  "coldPairDigestsMatch": true,
+  "foregroundMatchingAuditPassed": true,
+  "scope": "Timeout override is CLI-only. No test assertions or fixtures were changed. All full-suite files ran in the passing attempt. Production source is unchanged from the measured candidate."
+}
