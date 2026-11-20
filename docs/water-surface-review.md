@@ -2,11 +2,52 @@
 
 Newest first. Each section records what changed, how it was checked, and what was still visibly wrong afterwards. See [ROADMAP](ROADMAP.md) for the chunk history.
 
-## Open water issues (as of 11.035)
+## Open water issues (as of 11.044)
 
-- **Angular river-to-lake bank.** A lake contour meets a river ribbon at a hard corner, leaving a pointed spit of bank. Needs a contour flare along each joined channel in `RegionalDrainage.ts`; this changes generation hashes and fixtures.
-- **Thin land strips at some pond outlets.** Traced on seed 73: the `lake:-2:-9` outlet (reaches `-2:-9:0:7` to `:9`) leaves the shore and then runs along it at pond level, its centreline 27 to 68 m outside the shore with a 47 to 70 m half-width. Where the river edge passes within a few metres of the shore, a grass strip a few metres wide is left between two water surfaces at the same level. A fix belongs in generation (route the outlet away from the shore, or widen level outlet spans toward their source lake in both carving and ribbon), not in rendering.
-- **Far coast stair-steps.** From about 9 km up, some distant shorelines show cell-sized steps where coarse terrain meets flat water.
+- **Far coast stair-steps.** From about 9 km up, some distant shorelines show cell-sized steps where coarse terrain meets flat water. This remains assigned to the separate coast/performance review.
+
+## 11.044: angular banks and pond outlet strips
+
+Lake generation now fits the cached `shoreRadii` to the complete level approach of each physically joined channel, including a wide bank that touches the lake before its centreline does. A compact smooth union uses the routed curved cross-sections, followed by smoothing of only the added displacement. Joined contours resample their existing chords to 512 points. Unjoined lakes retain their original object and array; original anchors outside a mouth remain unchanged. Regional growth scales uniformly to stay within the existing 8 km query halo, with a 400 m margin, and updates conservative basin bounds.
+
+Routing and grading read the immutable original contour. Only after the fitted contour is complete are canonical river surfaces registered and clipped. Waterway uses the same fit before registering its authored ribbons. Water surfaces, carved beds and collision therefore consume one final shoreline. Routes, river width profiles, water levels, cache caps, render distance and worker/upload budgets are unchanged.
+
+The seed-73 `lake:-2:-9` outlet follows its own shore across reaches `-2:-9:0:7` to `:9`. Fitting just the first shore-crossing span left the strip in place. Fitting the adjoining level bank expands the shared lake footprint through that gap, in both carving and water geometry. This requires no rendering patch or independent fill panel. The original seven failing rays had 2 to 8 m of dry grass. All 609 fixed samples covering those rays, both shoulders and the original lake-to-ribbon interval are now wet at the pond level.
+
+Verification on Node 22:
+
+- Synthetic radial and oblique mouths bound contour exterior turns to 30 degrees and directed ribbon/shore crossings to 45 degrees. The latter leaves at least a 135 degree land-bank interior angle, excluding an acute spit. Directed tangents are essential: an absolute dot product would accept an acute corner as its supplementary angle.
+- The actual seed-73 wetland checks every exposed level-bank crossing against the final contour, excluding crossings hidden by another water body, with the same 45 degree bound. This is a fixed review sample, not a proof over every seed.
+- Independent Float32 triangle probes compare whole-basin and tile-clipped water at the mouth and former strip, then compare the drawn height and submerged bed with collision. Existing five-seed surface/collision, downhill outlet, cache-order, cancellation and Waterway checks remain required.
+- Two of the six regional drainage hashes advance for the intended shore changes. The other four and all seven existing synthetic water mesh hashes are unchanged. A generated-mouth synchronous/cooperative mesh hash is added. Fixtures were captured and checked on Node v22.23.2.
+
+Same-machine CPU measurements, baseline `b9e1ac86` versus this change, on an Intel Core i5-1135G7 with eight available execution threads and Node v22.23.2. Browser review and this branch's tests were stopped for measurement. These are generation costs and typed-buffer sizes, not FPS, GPU cost, full-game startup or sustained heap measurements.
+
+| Measure | `b9e1ac86` | This change |
+| --- | --- | --- |
+| Cold region drain, seed 73 region (-1,-1), 12 loaders: median / p95 | 114.36 / 132.28 ms | 173.60 / 209.66 ms |
+| Same, largest single step | 6.61 ms | 6.69 ms |
+| Same, cached shore and ribbon bytes | 753,808 | 728,412 |
+| Water tile (-4200,-19320), LOD 0, size 1: cold / warm median / warm p95 | 290.0 / 40.63 / 84.52 ms | 272.7 / 42.01 / 71.99 ms |
+| Same, payload / water bytes | 249,780 / 43,200 | 262,164 / 55,584 |
+| Water tile (-6720,-20160), LOD 2, size 8: cold / warm median / warm p95 | 430.8 / 36.12 / 50.69 ms | 372.4 / 34.97 / 45.27 ms |
+| Same, payload / water bytes | 690,436 / 672,336 | 689,860 / 671,760 |
+| `perf:terrain` near LOD 0: first build / warm median / warm p95 | 183.7 / 8.08 / 15.05 ms | 312.3 / 9.31 / 19.31 ms |
+| Same, largest slice | 4.80 ms | 8.33 ms |
+
+Cold regional generation for this region costs about 52% more CPU. The first fitted version also raised the largest uninterrupted step from 6.61 to about 59 ms; neighbour routes, contour rays and smoothing passes now yield through the existing cooperative steps, which brings it back to 6.69 ms with identical geometry hashes. The `perf:terrain` near first build includes the cold regional solve and its largest slice rose from 4.80 to 8.33 ms. Mid and far LOD rows moved by under 0.6 ms. The fixed tile cold and warm rows are single runs per version and their differences are within run to run noise on this laptop, so no tile speedup is claimed. The near water tile carries 12,384 more water bytes from the added shoreline.
+
+The cold-region comparison uses twelve independent Vite middleware loaders per version, seed 73, region (-1,-1), with module loading outside the timed interval. Each timed interval drains `regionalDrainageSteps` and includes canonical surface preparation. Cached-byte counts sum published shore radii and canonical ribbon section/cap/clipped-triangle/index arrays, excluding objects, retained routing contours, allocator overhead and GPU resources. The new original/fitted contour pair does retain additional routing data, so those byte counts are not total memory.
+
+The terrain route is `npm run perf:terrain -- --seed=73 --samples=16 --sliced`, a fresh process per version. It follows the standard origin diagonal; its maximum payload is a land tile, so it does not describe lake-heavy geometry. Separate fixed water tiles use seed 73, no operations pad, sixteen builds per tile/version, with the first counted as cold and the other fifteen supplying warm median/p95. Exact origins, LODs, sizes and water-only bytes are in the table above. Baseline loaders substitute the four changed water-generation modules from `b9e1ac86`; other source is identical. `node scripts/profile-drainage.mjs --baseline=b9e1ac86` is a graph-length control, not a measurement of fitted shoreline cost.
+
+Headless Chrome used SwiftShader, Clear weather, 1440 x 900 and Vite on port 5194. The final wetland overview settled for 90 seconds and the close outlet view for another 45 seconds. Baseline stills settled for 45 seconds per view; missing distant coverage and live weather make sky/background comparisons unsuitable. The nearby water outlines are the comparison subject. Stills were opened and inspected:
+
+- [Wetland before](reviews/water-11.044/before-wetland.png) and [after](reviews/water-11.044/after-wetland.png).
+- [Pond outlet before](reviews/water-11.044/before-outlet.png) and [after](reviews/water-11.044/after-outlet.png). Identical target (-4120, 169.7674, -18850), camera offset (500, 600, -700), FOV 55.
+- [Seed-73 riverjoin before](reviews/water-11.044/before-riverjoin.png) and [after](reviews/water-11.044/after-riverjoin.png) are an unchanged river-only control at that destination.
+
+Still visibly wrong: the default seed-1337 riverjoin view has a separate river-to-river pointed bank and a thin join/shading line, with no lake contour at that point. The comparison [before](reviews/water-11.044/before1337-riverjoin.png) and [after](reviews/water-11.044/after1337-riverjoin.png) does not establish a fix for that river-only case. The close outlet still shows a pale angular underwater panel and faceted terrain on the opposite graded bank. Far coast stair-steps remain open for the other branch. Patchy distant coverage in unsettled SwiftShader stills is not a shoreline or FPS result. Full-speed motion, controlled foreground gameplay performance and sustained memory remain unverified here.
 
 ## Tests that guard the water model
 
