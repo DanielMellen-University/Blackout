@@ -118,5 +118,7 @@ export function* flareLakeShoreSteps(basin: WaterBasin, joined: readonly RiverRe
     scale = Math.min(scale, Math.max(0, maximumRadius - radii[i]!) / displacement[i]!)
   for (let i = 0; i < shore.length; i++) shore[i] = radii[i]! + displacement[i]! * scale
   return { ...basin, shoreRadii: shore,
-    boundsRadius: Math.max(basin.boundsRadius ?? basin.radius * 1.75, ...shore) }
+    // Match the authored Waterway contour's 2% conservative culling margin.
+    // Equality with the farthest Float32 shore point leaves no rounding room.
+    boundsRadius: Math.max(basin.boundsRadius ?? basin.radius * 1.75, Math.max(...shore) * 1.02) }
 }
