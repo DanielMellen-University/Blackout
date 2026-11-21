@@ -56,9 +56,10 @@ export function buildWaterMesh(
   basinMaskOrReaches?: Float32Array | readonly RiverReach[],
   reachesArg: readonly RiverReach[] = [],
   basins: readonly WaterBasin[] = [],
+  seaBed = false,
 ): Mesh | null {
   const steps = buildWaterMeshSteps(beds, levels, segs, size, originX, originZ,
-    clock, weather, basinMaskOrReaches, reachesArg, basins)
+    clock, weather, basinMaskOrReaches, reachesArg, basins, seaBed)
   let result = steps.next()
   while (!result.done) result = steps.next()
   return result.value
@@ -71,6 +72,7 @@ export function* buildWaterMeshSteps(
   basinMaskOrReaches?: Float32Array | readonly RiverReach[],
   reachesArg: readonly RiverReach[] = [],
   basins: readonly WaterBasin[] = [],
+  seaBed = false,
 ): WaterMeshSteps {
   // Keep the old reaches-only call shape usable for focused tools and tests,
   // while terrain tiles pass an explicit mask to distinguish rivers from
@@ -109,7 +111,8 @@ export function* buildWaterMeshSteps(
       target.basin = basinMask?.[index] ?? 1
     }
     function triangle(a: number, b: number, c: number): void {
-      if (basinMask && basinMask[a]! <= .5 && basinMask[b]! <= .5 && basinMask[c]! <= .5) return
+      if (basinMask && basinMask[a]! <= .5 && basinMask[b]! <= .5 && basinMask[c]! <= .5 &&
+        (!seaBed || (levels[a]! > 0 && levels[b]! > 0 && levels[c]! > 0))) return
       // Fixed-level basins get their own smooth analytic shoreline below. Do not
       // also rasterize these triangles, or the two surfaces recreate the old
       // sawtooth edge and expose a dark bed wedge between cells.
@@ -123,8 +126,12 @@ export function* buildWaterMeshSteps(
       for (let i = 0; i < 3; i++) {
         const p = input[i]!
         const q = input[(i + 1) % 3]!
-        const dp = p.basin > .5 ? p.level - p.bed : -1
-        const dq = q.basin > .5 ? q.level - q.bed : -1
+        // Sea clipping follows the drawn bed, including dry samples lowered by
+        // the coarse shore correction. A binary biome mask here cuts holes at
+        // those grid vertices and leaves cell-sized steps along distant coasts.
+        // Freshwater still uses its mask to exclude separately drawn rivers.
+        const dp = (seaBed && p.level <= 0) || p.basin > .5 ? p.level - p.bed : -1
+        const dq = (seaBed && q.level <= 0) || q.basin > .5 ? q.level - q.bed : -1
         if (dp > 0) polygon.push(p)
         if ((dp > 0) !== (dq > 0)) {
           const t = dp / (dp - dq)

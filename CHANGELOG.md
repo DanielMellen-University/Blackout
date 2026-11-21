@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **11.045** Clip sea triangles against the drawn terrain bed to remove far coast stair-steps, with hydrology hashes unchanged. Record cold water generation costs on seeds 1, 73 and 1337 (no safe reduction found) and a repeatable controlled foreground comparison on the Intel GPU: matching 33.3 ms median frame intervals and run to run variation larger than the version difference. No FPS change is claimed. See [water review 11.045](docs/reviews/water-11.045/README.md).
+
 - **11.044** Flare lake shore contours into joined river mouths and remove the seed-73 pond outlet strip in generation, with one shared shoreline for water, carving and collision. Two regional drainage hashes advance for the intended change. Cold seed-73 regional generation CPU rises from 112 to 174 ms median; the fit is split into cooperative steps so the largest step stays at 6.3 ms. No FPS change is claimed. See [water review](docs/water-surface-review.md).
 
 - **11.043** Defer cold review-pilot look-ahead surveys through the existing cooperative hydrology iterator, once per rendered frame. The seed-1337 catchment, three terrain/water payloads and 15 mission recipes retain matching hashes. On an Intel Core i5-1135G7 laptop, the median largest CPU slice falls from 46.10 to 2.40 ms in Node and from 41.15 to 5.65 ms in an isolated browser check; browser total CPU rises. SwiftShader flight attempts remain incomplete, so the 10.989 frame-spike result and full seed-1337 endurance are not re-verified. No FPS gain is claimed. Budgets, physics, scoring, controls, replay and saved data are unchanged. Items 12 and 13 stay parked. See [performance review](docs/reviews/performance-11.043/README.md).
