@@ -109,7 +109,22 @@ CPU hooks time `World.update`, terrain update/drain/install calls and every work
 
 The branch retains two flight hitches of 550.0 and 699.9 ms. Their cause is unverified; these hooks do not measure every browser/GPU/host stage. Similar median/p95 does not cancel the worse maximum. Lower worker totals and endpoint heap are not evidence of faster generation or a memory improvement: the branch completed fewer jobs and retained fewer tiles, and GC/host timing differs. Both routes finish with substantial pending terrain work. This review does not establish that streaming keeps up everywhere at maximum speed.
 
-Heap grows during both short runs. There is no forced GC or post-quiescence acceptance, so this is not a leak test. A 15-minute endurance/memory comparison, repeated/reversed-order foreground runs, attribution of the two long branch hitches, an exact flight-only CPU window, other seeds/routes/weather, low-altitude motion and exhaustive coasts remain unverified. No FPS gain is claimed. The controlled 120-second route comparison itself completed.
+Heap grows during both short runs. There is no forced GC or post-quiescence acceptance, so this is not a leak test. A 15-minute endurance/memory comparison, attribution of the long hitches, an exact flight-only CPU window, other seeds/routes/weather, low-altitude motion and exhaustive coasts remain unverified. No FPS gain is claimed. The controlled 120-second route comparison itself completed.
+
+### Repeated and reversed runs
+
+The same script was run for three more pairs on the same laptop and renderer, comparing the same refs, `b9e1ac86` and `645bb10e`. Each pair runs sequentially in one session. Flight frame intervals in ms:
+
+| Pair, order | Run | Median | p95 | p99 | Max | Frames over 100 ms |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1, branch first | branch | 33.3 | 33.4 | 50.0 | 66.7 | 0 |
+| 1, branch first | main | 33.3 | 49.9 | 50.0 | 83.2 | 0 |
+| 2, main first | main | 33.3 | 50.0 | 66.7 | 700.0 | 2 |
+| 2, main first | branch | 33.4 | 83.3 | 116.7 | 233.4 | 64 |
+| 3, main first | main | 49.9 | 99.9 | 116.6 | 149.9 | 50 |
+| 3, main first | branch | 33.4 | 66.7 | 83.3 | 149.9 | 5 |
+
+Main produced a 700 ms hitch in pair 2, so the long hitches from the first comparison are not specific to this branch. Run to run variation on this host is larger than any difference between the two versions, and either version can have the worse run. No regression or improvement is established; their cause remains unverified.
 
 Endpoint screenshots were inspected: [main](foreground-main-endpoint.png) and [branch](foreground-branch-endpoint.png). They show the matching Free flight pose and world at the route endpoint. The separate 9000 m stills above demonstrate the shoreline change.
 

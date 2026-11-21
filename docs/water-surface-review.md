@@ -2,9 +2,10 @@
 
 Newest first. Each section records what changed, how it was checked, and what was still visibly wrong afterwards. See [ROADMAP](ROADMAP.md) for the chunk history.
 
-## Open water issues (as of 11.044)
+## Open water issues (as of 11.045)
 
-- **Far coast stair-steps.** From about 9 km up, some distant shorelines show cell-sized steps where coarse terrain meets flat water. This remains assigned to the separate coast/performance review.
+- **Far coast stair-steps: fixed in 11.045.** Sea triangles clip against the drawn terrain bed. See [water review 11.045](reviews/water-11.045/README.md) for stills, the cold-generation breakdown and the controlled foreground comparison. Low-altitude coast transitions and other seeds are not certified.
+- **Not yet measured:** a 15-minute foreground endurance and memory comparison, and attribution of occasional long frames seen on both main and this change.
 
 ## 11.044: angular banks and pond outlet strips
 
