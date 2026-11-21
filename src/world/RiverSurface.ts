@@ -106,14 +106,18 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
     b.x - (b.boundsRadius ?? b.radius * 1.75) <= Math.max(reach.ax, reach.bx) + width &&
     b.z + (b.boundsRadius ?? b.radius * 1.75) >= Math.min(reach.az, reach.bz) - width &&
     b.z - (b.boundsRadius ?? b.radius * 1.75) <= Math.max(reach.az, reach.bz) + width)
-  const vertex = (x: number, y: number, z: number, depth: number): number[] => {
+  const vertex = (x: number, y: number, z: number, depth: number, centerX = x, centerZ = z): number[] => {
     // Wide corners enter a receiving lake before their centreline does. Blend
     // each vertex into that surface, instead of fixing only the clipped tip in
     // the renderer and leaving collision at the old river grade.
     let weight = 0, target = 0
     for (const b of lakes) {
       const d = basinDistance(b, x, z)
-      const blend = 1 - smoothstep(0, 100, Math.max(0, d))
+      // Outside the lake, a wide bank cannot start descending before its
+      // shared centre section does. Otherwise a neighbouring lower lake can
+      // sag one bank of a level junction and make its triangles rise again.
+      const blend = Math.min(1 - smoothstep(0, 100, Math.max(0, d)),
+        d > 0 ? 1 - smoothstep(0, 100, Math.max(0, basinDistance(b, centerX, centerZ))) : 1)
       if (blend > weight || (blend === weight && b.level > target)) { weight = blend; target = b.level }
     }
     return [x, y + (target - y) * weight, z, depth]
@@ -141,8 +145,8 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
     const y = reach.ya + (reach.yb - reach.ya) * t
     const depth = reach.mouth ? Math.max(.22, Math.min(4, w * .035)) : Math.max(.45, Math.min(4, w * .028))
     const edge = Math.max(.08, Math.min(.55, depth * .16))
-    values.push(...vertex(x + nx * w, y, z + nz * w, edge), ...vertex(x, y, z, depth),
-      ...vertex(x - nx * w, y, z - nz * w, edge))
+    values.push(...vertex(x + nx * w, y, z + nz * w, edge, x, z), ...vertex(x, y, z, depth),
+      ...vertex(x - nx * w, y, z - nz * w, edge, x, z))
   }
   const sourceLake = !reach.source ? lakes.find(lake => Math.abs(lake.level - reach.ya) < .00001 &&
     Math.abs(basinDistance(lake, reach.ax, reach.az)) < .2) : undefined

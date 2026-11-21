@@ -2,11 +2,17 @@ import { createHash } from 'node:crypto'
 import { BufferGeometry, Material, type Mesh } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildWaterMesh, buildWaterMeshSteps, type WaterBuildPhase, type WaterMeshSteps } from '../src/world/WaterSystem'
-import type { RiverReach, WaterBasin } from '../src/world/Hydrology'
+import { riverReachesInBounds, waterBasinsInBounds, type RiverReach, type WaterBasin } from '../src/world/Hydrology'
 import { setWorldSeed } from '../src/world/noise'
 
 type WaterArgs = Parameters<typeof buildWaterMesh>
 function argsFor(name: string): WaterArgs {
+  if (name === 'flared-mouth') {
+    setWorldSeed(73)
+    const x = -4420, z = -18960, span = 420
+    return [new Float32Array(4).fill(1e5), new Float32Array(4), 1, span, x, z, { value: 0 },
+      undefined, riverReachesInBounds(x, z, x + span, z + span), [], waterBasinsInBounds(x, z, x + span, z + span)]
+  }
   const basin: WaterBasin = { x: 0, z: 0, radius: 720, aspect: .72, angle: .35, phase: .8, level: 18, sea: false, pond: false }
   const dx = 960, dz = 600
   const reach: RiverReach = { ax: -160, az: -100, bx: 800, bz: 500, wa: 26, wb: 38, ya: 90, yb: 70,
@@ -60,6 +66,7 @@ describe('cooperative water geometry', () => {
   // Pin synchronous/cooperative output with upright normals and a separate
   // shallow basin band; sea-level raster still uses the sea material kind.
   it.each([
+    ['flared-mouth', 'cf5800073d42173967d68e5c3eb56bc0382ce7a10198c5856b033c6b9bf600b9'],
     ['raster', '1fa7969b58d68f92e4a12e3bbcef89f4fd5c3d0b23f58c91037508a1ab11a2dc'],
     ['lake', '2adb8ab06b2113aa151c4f8937fbc0133c7d5550b9763a3c6a8f977617014ada'],
     ['pond', '53b8e27b92cd17dd7a8f72d9c0445f28f372e28234271ea940b7946ea036f87a'],

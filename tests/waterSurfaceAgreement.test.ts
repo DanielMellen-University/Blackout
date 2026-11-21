@@ -122,3 +122,38 @@ describe('shared water surface', () => {
     expect(dry).toBe(0)
   }, 30_000)
 })
+
+describe('generated flared mouths', () => {
+  it.each([[-4210, -18750], [-3840, -18985]])('keeps whole-basin and tile-clipped water at the collision height at %s,%s', (x, z) => {
+    setWorldSeed(73)
+    const span = 420, wholeSpan = 5200
+    const reaches = riverReachesInBounds(x - wholeSpan / 2, z - wholeSpan / 2, x + wholeSpan / 2, z + wholeSpan / 2)
+    const basins = waterBasinsInBounds(x - wholeSpan / 2, z - wholeSpan / 2, x + wholeSpan / 2, z + wholeSpan / 2)
+    const make = (size: number) => buildWaterMesh(new Float32Array(4).fill(1e5), new Float32Array(4),
+      1, size, x - size / 2, z - size / 2, { value: 0 }, undefined, reaches, [], basins)!
+    const whole = make(wholeSpan), tile = make(span)
+    let checked = 0
+    try {
+      const p = tile.geometry.getAttribute('position') as BufferAttribute
+      const all = whole.geometry.getAttribute('position') as BufferAttribute
+      for (let i = 0; i < p.count; i += 3) {
+        const px = (p.getX(i) + p.getX(i + 1) + p.getX(i + 2)) / 3
+        const pz = (p.getZ(i) + p.getZ(i + 1) + p.getZ(i + 2)) / 3
+        // Ignore degenerate boundary slivers rather than probing an unstable
+        // barycentric denominator at a Float32 rounded edge.
+        const area = Math.abs((p.getX(i + 1) - p.getX(i)) * (p.getZ(i + 2) - p.getZ(i)) -
+          (p.getZ(i + 1) - p.getZ(i)) * (p.getX(i + 2) - p.getX(i)))
+        if (area < .1) continue
+        const height = drawnHeight(p, px, pz)
+        expect(height).toBeCloseTo(drawnHeight(all, px, pz), 3)
+        const sample = sampleGeography(x + px, z + pz)
+        expect(Math.abs(sample.waterLevel - (height - .04))).toBeLessThan(.15)
+        expect(sample.height).toBeLessThan(sample.waterLevel)
+        checked++
+      }
+      expect(checked).toBeGreaterThan(20)
+    } finally {
+      for (const mesh of [whole, tile]) { mesh.geometry.dispose(); (mesh.material as MeshStandardMaterial).dispose() }
+    }
+  }, 30000)
+})

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, riverReachesInBounds, sampleHydrology, sampleHydrologyInto, waterBasinBoundsRadius, waterLandmarks, type RiverReach } from '../src/world/Hydrology'
+import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, riverReachesInBounds, sampleHydrology, sampleHydrologyInto, waterBasinBoundsRadius, waterBasinsInBounds, waterLandmarks, type RiverReach } from '../src/world/Hydrology'
 import { sampleGeography } from '../src/world/Geography'
 import { setWorldSeed } from '../src/world/noise'
 import { terrainSurfaceFromClimate } from '../src/world/terrainSample'
@@ -93,7 +93,7 @@ describe('natural drainage', () => {
       // is covered across bends, caps, mouths and seeds in waterSurfaceAgreement.
       const x = (r.ax + r.bx) / 2, z = (r.az + r.bz) / 2
       const levels = riverReachesInBounds(x, z, x, z).map(q => riverSurfaceHeightAt(riverSurface(q, []), x, z))
-      for (const b of waterLandmarks(-2, -1)) if (basinDistance(b, x, z) <= 0) levels.push(b.level)
+      for (const b of waterBasinsInBounds(x, z, x, z)) if (basinDistance(b, x, z) <= 0) levels.push(b.level)
       expect(c.waterLevel).toBeCloseTo(Math.max(...levels), 6)
     }
   })

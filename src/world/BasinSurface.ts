@@ -10,6 +10,7 @@ interface BasinSurface { boundary: BasinVertex[]; inner: BasinVertex[]; inlets: 
 const surfaces = new WeakMap<WaterBasin, BasinSurface>()
 /** Shore ring points closer than this merge into one (metres). */
 const SHORE_MERGE_DISTANCE = .5
+const MAX_SHORE_POINTS = 512
 
 /** Optical depth follows the carved bed (terrain sits at least 0.1 m below
  * the surface). The old linear 6 cm/m guess ignored the shallow shelf and
@@ -50,11 +51,23 @@ export function* basinSurfaceSteps(basin: WaterBasin, supplied: readonly RiverRe
   }
   const inlets: RiverSurface[] = []
   for (const reach of reaches) {
-    if (Math.min(Math.abs(reach.ya - basin.level), Math.abs(reach.yb - basin.level)) > 1) continue
+    const endpointMatches = Math.min(Math.abs(reach.ya - basin.level), Math.abs(reach.yb - basin.level)) <= 1
     const surface = riverSurface(reach, [basin])
     const r = waterBasinBoundsRadius(basin)
     if (surface.maxX < basin.x - r || surface.minX > basin.x + r ||
       surface.maxZ < basin.z - r || surface.minZ > basin.z + r) continue
+    if (!endpointMatches) {
+      // A flared shore can cut a graded reach upstream of its old level
+      // endpoint. Its canonical clipped vertices, rather than stale reach
+      // metadata, establish the actual lake-level mouth and optical depth.
+      let touches = false
+      for (const p of [surface.triangles ?? surface.sections, surface.caps]) {
+        for (let i = 0; i < p.length; i += 4) if (Math.abs(p[i + 1]! - basin.level) < .15 &&
+          Math.abs(basinDistance(basin, p[i]!, p[i + 2]!)) < .12) { touches = true; break }
+        if (touches) break
+      }
+      if (!touches) continue
+    }
     inlets.push(surface)
     if (inlets.length % 4 === 0) { yield 'shore'; ensureSeed() }
   }
@@ -102,7 +115,8 @@ export function* basinSurfaceSteps(basin: WaterBasin, supplied: readonly RiverRe
     // fan triangle, so crowded points only made sub-metre slivers. Inserted
     // points lie on their chord, so dropping one never moves the outline. An
     // original contour corner always wins over an inserted neighbour.
-    const corners = new Set(boundary.slice(0, count))
+    const anchors = boundary.slice(0, count)
+    const corners = new Set(anchors)
     const angle = (p: BasinVertex) => (Math.atan2(p.z, p.x) + Math.PI * 2) % (Math.PI * 2)
     boundary.sort((a, b) => angle(a) - angle(b))
     let kept = 0
@@ -120,6 +134,25 @@ export function* basinSurfaceSteps(basin: WaterBasin, supplied: readonly RiverRe
       !(corners.has(first) && corners.has(tail))) {
       if (corners.has(tail)) { tail.depth = Math.max(tail.depth, first.depth); boundary.shift() }
       else { first.depth = Math.max(first.depth, tail.depth); boundary.pop() }
+    }
+    if (boundary.length > MAX_SHORE_POINTS) {
+      // The cached contour owns every geometric corner. At a full contour
+      // budget, transfer an inlet's depth to its chord endpoints rather than
+      // adding collinear panels or dropping a real shoreline corner.
+      const extras = boundary.filter(p => !corners.has(p))
+      extras.sort((a, b) => b.depth - a.depth || angle(a) - angle(b))
+      const retained = new Set(extras.slice(0, Math.max(0, MAX_SHORE_POINTS - anchors.length)))
+      for (let i = 0; i < extras.length; i++) {
+        const p = extras[i]!
+        if (retained.has(p)) continue
+        const sector = Math.floor(angle(p) / (Math.PI * 2) * anchors.length)
+        const a = anchors[sector]!, b = anchors[(sector + 1) % anchors.length]!
+        a.depth = Math.max(a.depth, p.depth); b.depth = Math.max(b.depth, p.depth)
+        if (i % 32 === 31) { yield 'shore'; ensureSeed() }
+      }
+      let kept = 0
+      for (const p of boundary) if (corners.has(p) || retained.has(p)) boundary[kept++] = p
+      boundary.length = kept
     }
   }
   const inner = boundary.map(p => {

@@ -19,7 +19,11 @@ it('prepares the actual b19 cold (2,1) catchment without changing analytic sampl
   const direct = distances.map(d => sampleTerrainSurfaceHeightFast(56063 + d, 34982))
   const digest = () => createHash('sha256').update(JSON.stringify({ basins: waterLandmarks(2, 1), reaches: riverReaches(2, 1) })).digest('hex')
   const expected = digest()
-  expect(expected).toBe('51c372ada6a541c26b31e70cd5fecd958d34381a3b8acbba85a403d567df2790')
+  // Node 22 audit against b9e1ac86: only lake:45:16 and lake:42:19
+  // shoreRadii change, from 128 to 512 points for the approved mouth flares.
+  expect(expected).toBe('2eefde4670d85ab8515c27439991eb4c2982c5e2a32dc97a7d31ec60220fc874')
+  const reachDigest = () => createHash('sha256').update(JSON.stringify(riverReaches(2, 1))).digest('hex')
+  expect(reachDigest()).toBe('8987ce876ef59cec4130e5d24851f1f119e5578f4967f135e688288a587c3562')
   reset()
   expect(hydrologyPreparedAt(64063, 34982)).toBe(false)
   const survey = new TerrainReviewSurvey()

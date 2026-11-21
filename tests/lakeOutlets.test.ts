@@ -45,6 +45,23 @@ describe('canonical lake outlets', () => {
     }
   })
 
+  it('keeps the higher seed-1337 junction flat beside a fitted lower lake', () => {
+    setWorldSeed(1337)
+    const reaches = riverReaches(-2, 0).filter(r => r.id === '-17:9:0:14' || r.id === '-17:9:0:15')
+    expect(reaches).toHaveLength(2)
+    for (const r of reaches) {
+      const p = riverSurface(r, []).sections
+      expect(p.length).toBeGreaterThan(0)
+      for (let i = 1; i < p.length; i += 4) expect(p[i]).toBeCloseTo(r.ya, 6)
+      let previous = Infinity
+      for (let i = 0; i <= 32; i++) {
+        const level = sampleGeography(r.ax + r.dx * i / 32, r.az + r.dz * i / 32).waterLevel
+        expect(level).toBeLessThanOrEqual(previous + .15)
+        previous = level
+      }
+    }
+  })
+
   it('carves a descending stream from the lake shore into a matching river junction', () => {
     setWorldSeed(73)
     const lake = sourceLake(), outlet = outletReaches()
@@ -146,7 +163,10 @@ describe('canonical lake outlets', () => {
         for (const lake of waterLandmarks(x, z).filter(b => b.outletId)) {
           const radius = lake.boundsRadius! + 6000
           const rivers = riverReachesInBounds(lake.x - radius, lake.z - radius, lake.x + radius, lake.z + radius)
-          const emerging = rivers.filter(r => Math.abs(basinDistance(lake, r.ax, r.az)) < .2 && Math.abs(r.ya - lake.level) < .05)
+          // Routed anchors retain their original positions; the shared flare
+          // can submerge a start. Find the actual span that leaves the fitted shore.
+          const emerging = rivers.filter(r => basinDistance(lake, r.ax, r.az) < .2 &&
+            basinDistance(lake, r.bx, r.bz) > -.2 && r.ya <= lake.level + .05)
           expect(emerging.length, `${seed}:${lake.id}`).toBeGreaterThan(0)
           for (const r of emerging) {
             const water = coastField(r.bx, r.bz) <= .00001 || waterBasinsInBounds(r.bx, r.bz, r.bx, r.bz)

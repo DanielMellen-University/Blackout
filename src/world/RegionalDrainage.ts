@@ -2,7 +2,7 @@ import { getWorldSeed, hash2, smoothstep, valueNoise } from './noise'
 import { sampleLandformsInto, type LandformSample } from './Landforms'
 import { coastField } from './Coastline'
 import { registerRiverSurface, riverSurface } from './RiverSurface'
-import { refineLakeShore } from './LakeShore'
+import { flareLakeShoreSteps, refineLakeShore } from './LakeShore'
 import { basinDistance, type HydrologyBuildPhase, type RiverReach, type WaterBasin } from './Hydrology'
 import { drainageRouter, type DrainageNode } from './DrainageRouting'
 
@@ -17,6 +17,8 @@ interface Node extends DrainageNode {
   channel?: boolean; wetOutlet?: boolean; lake?: LakeCandidate | null
   longRoute?: boolean; primary?: boolean; dominant?: readonly [number, number] | null
   mergeRadius?: number
+  flaredBasin?: WaterBasin | null
+  surfacesRegistered?: boolean
   sourceDistance?: number
   outletChannel?: boolean
   lakeRoute?: { coordinates: readonly (readonly [number, number])[]; level: number } | null
@@ -434,7 +436,7 @@ function hasLakeOutlet(n: Node): boolean {
   return (n.outletChannel = false)
 }
 
-function reaches(n: Node): RiverReach[] {
+function routedReaches(n: Node): RiverReach[] {
   if (n.reaches) return n.reaches
   const result: RiverReach[] = []
   n.reaches = result
@@ -594,12 +596,64 @@ function reaches(n: Node): RiverReach[] {
         tangentAX: startTangent.x, tangentAZ: startTangent.z,
         tangentBX: endTangent.x, tangentBZ: endTangent.z,
       }
-      // Canonical neighborhood, independent of which tile or point asks for
-      // the cached surface first. A later bounds query may contain fewer lakes.
-      registerRiverSurface(reach, nearby)
       result.push(reach)
       a = b
     }
+  }
+  return result
+}
+
+/** Fit mouths against immutable routed spans before registering any surface.
+ * Routing reads the unflared contour, so query order cannot feed a growing
+ * lake back into its own route or change an independently graded channel. */
+function flaredBasin(n: Node): WaterBasin | null {
+  if (n.flaredBasin === undefined) for (const _ of prepareFlaredBasinSteps(n)) { /* Synchronous probe. */ }
+  return n.flaredBasin!
+}
+
+/** Neighbour routes and contour rays share the existing channel yields.
+ * Only a complete fitted contour can become canonical for river clipping. */
+function* prepareFlaredBasinSteps(n: Node): Generator<HydrologyBuildPhase, void, void> {
+  if (n.flaredBasin !== undefined) return
+  const original = basin(n)
+  if (!original) { n.flaredBasin = null; return }
+  for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+    routedReaches(node(n.gx + dx, n.gz + dz))
+    yield 'channels'
+    if (n.flaredBasin !== undefined) return
+  }
+  const joined: RiverReach[] = []
+  for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+    const levelSpans = routedReaches(node(n.gx + dx, n.gz + dz)).filter(r =>
+      Math.abs(r.ya - original.level) < .00001 && Math.abs(r.yb - original.level) < .00001)
+    const touching = levelSpans.some(r => {
+      const sections = riverSurface({ ...r, source: false, terminal: false, mouth: false }, []).sections
+      for (let i = 0; i < sections.length; i += 4)
+        if (basinDistance(original, sections[i]!, sections[i + 2]!) < .3) return true
+      return false
+    })
+    if (!touching) continue
+    // Wide banks enter a lake before the centreline's final span. Fit the
+    // complete level approach, including a grazing outlet's adjoining spans.
+    for (const r of levelSpans) if (Math.min(basinDistance(original, r.ax, r.az),
+      basinDistance(original, r.bx, r.bz)) < Math.max(r.wa, r.wb) * 4) joined.push(r)
+  }
+  const steps = flareLakeShoreSteps(original, joined, HALO * STEP - 400)
+  let result = steps.next()
+  while (!result.done) { yield 'channels'; result = steps.next() }
+  if (n.flaredBasin === undefined) n.flaredBasin = result.value
+}
+
+function reaches(n: Node): RiverReach[] {
+  const result = routedReaches(n)
+  if (!n.surfacesRegistered && result.length) {
+    const nearby: WaterBasin[] = []
+    for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+      const lake = flaredBasin(node(n.gx + dx, n.gz + dz))
+      if (lake) nearby.push(lake)
+    }
+    for (const r of result) registerRiverSurface(r, nearby)
+    n.surfacesRegistered = true
   }
   return result
 }
@@ -609,7 +663,7 @@ function reaches(n: Node): RiverReach[] {
  * The six-kilometre extent fits the existing region halo; no new watershed,
  * unbounded search, or disconnected terminal stream is introduced. */
 function assignLakeOutlet(n: Node): void {
-  const source = basin(n), first = parent(n)
+  const source = flaredBasin(n), first = parent(n)
   if (!source || !first) return
   if (carriesRiver(n)) {
     source.outletId = `${first.gx}:${first.gz}`
@@ -651,8 +705,11 @@ export function* regionalDrainageSteps(cx: number, cz: number): Generator<Hydrol
   for (let iz = -HALO; iz < CELLS + HALO; iz++) for (let ix = -HALO; ix < CELLS + HALO; ix++) {
     const n = local[index++]!
     const ownedNode = ix >= 0 && iz >= 0 && ix < CELLS && iz < CELLS
-    const b = basin(n)
+    yield* prepareFlaredBasinSteps(n)
+    const b = flaredBasin(n)
     if (b) { basins.push(b); if (ownedNode) landmarks.push(b) }
+    if (routedReaches(n).length) for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++)
+      yield* prepareFlaredBasinSteps(node(n.gx + dx, n.gz + dz))
     const r = reaches(n)
     assignLakeOutlet(n)
     // Prepare exact shared surfaces in cooperative batches instead of doing

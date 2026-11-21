@@ -1,6 +1,8 @@
 # Roadmap
 
-Chunk **11.043** is current. Previous ship: **11.042**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.044** is current. Previous ship: **11.043**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Chunk 11.044. Fit each lake's cached shore contour to the level approach of every joined channel, so banks flare into river mouths without a pointed spit, and fill the seed-73 `lake:-2:-9` outlet strip in generation. Water surfaces, carved beds and collision use the one fitted shoreline; Waterway uses the same fit. Two of six regional drainage hashes advance for the intended change; the other hashes are unchanged on Node 22. Cold seed-73 regional generation rises from 112 to 174 ms median CPU; the contour fit runs in cooperative steps, so the largest step stays at 6.3 ms. No FPS change is claimed. Far coast stair-steps and the controlled foreground review remain open. See [water review](water-surface-review.md).
 
 Chunk 11.043. Defer cold review-pilot look-ahead surveys through the existing cooperative hydrology iterator, once per rendered frame. The seed-1337 catchment, three terrain/water payloads and 15 mission recipes retain matching hashes. On an Intel Core i5-1135G7 laptop, the median largest CPU slice falls from 46.10 to 2.40 ms in Node and from 41.15 to 5.65 ms in an isolated browser check; browser total CPU rises. SwiftShader flight attempts remain incomplete, so the 10.989 frame-spike result and full seed-1337 endurance are not re-verified. No FPS gain is claimed. Budgets, physics, scoring, controls, replay and saved data are unchanged. Items 12 and 13 stay parked. See [performance review](reviews/performance-11.043/README.md).
 

@@ -13,9 +13,9 @@ describe('Waterway lake and channel', () => {
     setTerrainProfile(profile)
     const { basins } = waterwayDrainage(profile)
     const lake = basins[0]!
-    expect(lake.shoreRadii).toHaveLength(256)
-    for (let i = 0; i < 256; i += 2) {
-      const angle = i / 256 * Math.PI * 2, r = lake.shoreRadii![i]!
+    expect(lake.shoreRadii).toHaveLength(512)
+    for (let i = 0; i < 512; i += 2) {
+      const angle = i / 512 * Math.PI * 2, r = lake.shoreRadii![i]!
       expect(Math.abs(basinDistance(lake, lake.x + Math.cos(angle) * r, lake.z + Math.sin(angle) * r))).toBeLessThan(.5)
     }
     expect(lake.boundsRadius).toBeGreaterThanOrEqual(Math.max(...lake.shoreRadii!))

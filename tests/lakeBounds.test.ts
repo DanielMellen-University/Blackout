@@ -17,6 +17,8 @@ describe('generated lake bounds', () => {
           expect(Number.isFinite(basin.boundsRadius)).toBe(true)
           let outer = 0
           for (const r of basin.shoreRadii) outer = Math.max(outer, r)
+          // Four 2 km halo cells, with 400 m reserved for jitter/edge probes.
+          expect(outer, `${seed} ${basin.id} query halo`).toBeLessThanOrEqual(7600)
           for (const island of basin.islands ?? [])
             outer = Math.max(outer, Math.hypot(island.x - basin.x, island.z - basin.z) + island.radius)
           expect(outer, `${seed} ${basin.id}`).toBeLessThanOrEqual(basin.boundsRadius!)

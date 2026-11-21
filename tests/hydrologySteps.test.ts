@@ -28,11 +28,11 @@ function digest(cx: number, cz: number): string {
 beforeEach(() => resetSeed(1337))
 
 describe('cooperative cold hydrology', () => {
-  // Reproduced on clean 10.891 (b0c6cbd), including the 10.890 wetland changes.
+  // Node 22 fixtures: level mouth contours advance for the 11.044 flares.
   it.each([
     [42, -1, -1, '5a0303d96158af7eafbb74a2c0f4c6ffbfe33bc720f4e7084d5fd6bc3f4f06bf'],
-    [42, 0, 0, 'e0323ffb8b05478947b280a63b218f56eef2f7ad84427939a9b56b8b67315b40'],
-    [42, 1, -1, '34916bf06795fb86fa18f1b446899b83d05eb9c0955e6adffc82061b0a32b95e'],
+    [42, 0, 0, '04babe1c9bc772d737b9b59e087136b7ad0ac493ab57bb85b287a0eb6bba3ebe'],
+    [42, 1, -1, '4742cce3eb2fb04aae343b309a82d812fe5a8905269496b8835214df6bf0f90e'],
     [1337, -1, -1, 'a20f95968f7c1e974045ee2cca966f2768da217a46895f348c927fa5635ba8b2'],
     [1337, 0, 0, 'f9d5f8c88c85e054d80bf248583beb02b3f46d4abcc199df8323c793c02a7eed'],
     [1337, 1, -1, 'f498ce3da5409f88de5862823419c11ae542607bd8d3f62ff0b4433ee44c5fbb'],
@@ -87,14 +87,14 @@ describe('cooperative cold hydrology', () => {
     setWorldSeed(42)
     expect(() => steps.next()).toThrow('World seed changed')
     drain(prepare(0, 0))
-    expect(digest(0, 0)).toBe('e0323ffb8b05478947b280a63b218f56eef2f7ad84427939a9b56b8b67315b40')
+    expect(digest(0, 0)).toBe('04babe1c9bc772d737b9b59e087136b7ad0ac493ab57bb85b287a0eb6bba3ebe')
   })
 
   it('does not reuse another seed\'s cache when a failed world search restores the original seed', () => {
     const steps = prepare(0, 0)
     advanceToGrade(steps)
     setWorldSeed(42)
-    expect(digest(0, 0)).toBe('e0323ffb8b05478947b280a63b218f56eef2f7ad84427939a9b56b8b67315b40')
+    expect(digest(0, 0)).toBe('04babe1c9bc772d737b9b59e087136b7ad0ac493ab57bb85b287a0eb6bba3ebe')
     setWorldSeed(1337)
     drain(steps)
     expect(digest(0, 0)).toBe('f9d5f8c88c85e054d80bf248583beb02b3f46d4abcc199df8323c793c02a7eed')
