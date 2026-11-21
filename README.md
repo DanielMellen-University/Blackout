@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.044**. Previous roadmap chunk: **11.043**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.045**. Previous roadmap chunk: **11.044**.
 
-Recent changes from **11.044**. Lake shores flare smoothly into joined river mouths instead of meeting them at a hard corner, and the seed-73 pond outlet no longer leaves a grass strip between two water surfaces. Water, carving and collision share the fitted shoreline. Cold regional generation for the measured seed-73 region costs about 55% more CPU, with the largest cooperative step unchanged at about 6.3 ms. See [water surface review](docs/water-surface-review.md). From **11.043**: The review pilot defers cold hydrology look-ahead work without changing generated output. Node median largest slices move from 46.10 to 2.40 ms; an isolated browser check moves from 41.15 to 5.65 ms, with higher total CPU. SwiftShader flight attempts remain incomplete, so no FPS gain or completed 10.989 re-verification is claimed. See [performance review](docs/reviews/performance-11.043/README.md).
+Recent changes from **11.045**. Distant sea coasts no longer show cell-sized steps where coarse terrain meets flat water: sea triangles clip against the drawn terrain bed, and hydrology output is unchanged. Cold-generation cost was measured on seeds 1, 73 and 1337 with no safe reduction found. A controlled 120-second foreground run at 680 m/s on the Intel GPU shows the same 33.3 ms median frame interval on main and this change; repeated runs vary more between runs than between versions, so no FPS change is claimed. See [water review 11.045](docs/reviews/water-11.045/README.md). From **11.044**: Lake shores flare smoothly into joined river mouths instead of meeting them at a hard corner, and the seed-73 pond outlet no longer leaves a grass strip between two water surfaces. Water, carving and collision share the fitted shoreline. Cold regional generation for the measured seed-73 region costs about 55% more CPU, with the largest cooperative step unchanged at about 6.3 ms. See [water surface review](docs/water-surface-review.md).
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -62,7 +62,7 @@ Daily challenge displays a countdown to UTC midnight, when the challenge resets.
 
 ## Project
 
-The connected basin router is enabled in the shared world generator. Run `node scripts/profile-drainage.mjs` for the reproducible CPU-only three-seed length comparison against 10.881. The full water overhaul is still in progress: far coast stair-steps and controlled foreground performance review remain open. Angular lake mouths and pond outlet strips are fixed in 11.044, which also records the cold-generation cost. See [water surface review](docs/water-surface-review.md).
+The connected basin router is enabled in the shared world generator. Run `node scripts/profile-drainage.mjs` for the reproducible CPU-only three-seed length comparison against 10.881. The listed water overhaul items are done: angular lake mouths and pond outlet strips in 11.044, far coast stair-steps, cold-generation measurements and a controlled foreground comparison in 11.045. A 15-minute foreground endurance and memory comparison remains unmeasured. See [water surface review](docs/water-surface-review.md).
 
 Vegetation (trees, rocks, and other natural props) is removed and development is paused. Do not restore or develop it unless explicitly requested; see [repository rules](AGENTS.md) and [roadmap exclusions](docs/ROADMAP.md#paused-systems).
 

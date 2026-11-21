@@ -1,6 +1,8 @@
 # Roadmap
 
-Chunk **11.044** is current. Previous ship: **11.043**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.045** is current. Previous ship: **11.044**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Chunk 11.045. Clip sea triangles against the drawn terrain bed so coarse far tiles no longer cut cell-sized steps into distant coasts; freshwater keeps its mask and every hydrology hash is unchanged on Node 22. Measure cold water generation in 12 alternating empty-cache pairs on seeds 1, 73 and 1337; no reduction that keeps output identical was found, so none ships. Add a repeatable foreground script and run main against this change on real Chrome with the Intel GPU over the same 81.6 km route at 680 m/s: medians match at 33.3 ms, and four paired runs vary more between runs than between versions, with long frames on both. No FPS change is claimed. A 15-minute endurance and memory comparison remains unmeasured. See [water review 11.045](reviews/water-11.045/README.md).
 
 Chunk 11.044. Fit each lake's cached shore contour to the level approach of every joined channel, so banks flare into river mouths without a pointed spit, and fill the seed-73 `lake:-2:-9` outlet strip in generation. Water surfaces, carved beds and collision use the one fitted shoreline; Waterway uses the same fit. Two of six regional drainage hashes advance for the intended change; the other hashes are unchanged on Node 22. Cold seed-73 regional generation rises from 112 to 174 ms median CPU; the contour fit runs in cooperative steps, so the largest step stays at 6.3 ms. No FPS change is claimed. Far coast stair-steps and the controlled foreground review remain open. See [water review](water-surface-review.md).
 
