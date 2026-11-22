@@ -1,5 +1,5 @@
 /** Public release identity. Keep this separate from internal roadmap chunk IDs. */
-export const APP_VERSION = '0.12.0' as const
+export const APP_VERSION = '0.13.0' as const
 export const ROADMAP_CHUNK = '11.045' as const
 /** Last shipped roadmap chunk, kept explicit so release notes cannot drift. */
 export const PREVIOUS_ROADMAP_CHUNK = '11.044' as const
