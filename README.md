@@ -2,7 +2,7 @@
 
 Browser arcade flight game. Pilot an F-35 through gate runs that start and finish in the air, or take off and land in Free flight. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **11.045**. Previous roadmap chunk: **11.044**.
+Current release: **v0.13.0** (`Systems expansion`). Roadmap chunk: **11.045**. Previous roadmap chunk: **11.044**.
 
 Recent changes from **11.045**. Distant sea coasts no longer show cell-sized steps where coarse terrain meets flat water: sea triangles clip against the drawn terrain bed, and hydrology output is unchanged. Cold-generation cost was measured on seeds 1, 73 and 1337 with no safe reduction found. A controlled 120-second foreground run at 680 m/s on the Intel GPU shows the same 33.3 ms median frame interval on main and this change; repeated runs vary more between runs than between versions, so no FPS change is claimed. See [water review 11.045](docs/reviews/water-11.045/README.md). From **11.044**: Lake shores flare smoothly into joined river mouths instead of meeting them at a hard corner, and the seed-73 pond outlet no longer leaves a grass strip between two water surfaces. Water, carving and collision share the fitted shoreline. Cold regional generation for the measured seed-73 region costs about 55% more CPU, with the largest cooperative step unchanged at about 6.3 ms. See [water surface review](docs/water-surface-review.md).
 

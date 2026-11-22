@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.13.0 - 2026-11-22
+
 - **11.045** Clip sea triangles against the drawn terrain bed to remove far coast stair-steps, with hydrology hashes unchanged. Record cold water generation costs on seeds 1, 73 and 1337 (no safe reduction found) and a repeatable controlled foreground comparison on the Intel GPU: matching 33.3 ms median frame intervals and run to run variation larger than the version difference. No FPS change is claimed. See [water review 11.045](docs/reviews/water-11.045/README.md).
 
 - **11.044** Flare lake shore contours into joined river mouths and remove the seed-73 pond outlet strip in generation, with one shared shoreline for water, carving and collision. Two regional drainage hashes advance for the intended change. Cold seed-73 regional generation CPU rises from 112 to 174 ms median; the fit is split into cooperative steps so the largest step stays at 6.3 ms. No FPS change is claimed. See [water review](docs/water-surface-review.md).

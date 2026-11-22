@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **11.045** is current. Previous ship: **11.044**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **11.045** is current. Previous ship: **11.044**. Public release is **v0.13.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 11.045. Clip sea triangles against the drawn terrain bed so coarse far tiles no longer cut cell-sized steps into distant coasts; freshwater keeps its mask and every hydrology hash is unchanged on Node 22. Measure cold water generation in 12 alternating empty-cache pairs on seeds 1, 73 and 1337; no reduction that keeps output identical was found, so none ships. Add a repeatable foreground script and run main against this change on real Chrome with the Intel GPU over the same 81.6 km route at 680 m/s: medians match at 33.3 ms, and four paired runs vary more between runs than between versions, with long frames on both. No FPS change is claimed. A 15-minute endurance and memory comparison remains unmeasured. See [water review 11.045](reviews/water-11.045/README.md).
 

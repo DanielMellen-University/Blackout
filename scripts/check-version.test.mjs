@@ -41,15 +41,15 @@ test('passes a consistent version tree', async (t) => {
   const dir = await makeFixture(t)
   const result = runCheck(dir)
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /Version check passed: v0\.12\.0/)
+  assert.match(result.stdout, /Version check passed: v0\.13\.0/)
 })
 
 test('fails with named mismatches when package.json drifts', async (t) => {
   const dir = await makeFixture(t, { version: '9.9.9' })
   const result = runCheck(dir)
   assert.equal(result.status, 1)
-  assert.match(result.stderr, /package\.json \(9\.9\.9\) does not match src\/core\/Version\.ts \(0\.12\.0\)/)
-  assert.match(result.stderr, /package\.json \(9\.9\.9\) does not match package-lock\.json \(0\.12\.0\)/)
+  assert.match(result.stderr, /package\.json \(9\.9\.9\) does not match src\/core\/Version\.ts \(0\.13\.0\)/)
+  assert.match(result.stderr, /package\.json \(9\.9\.9\) does not match package-lock\.json \(0\.13\.0\)/)
 })
 
 test('reports a missing roadmap as a version error, not a stack trace', async (t) => {
