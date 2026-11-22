@@ -12,7 +12,7 @@
 
 **Performance.** Cold hydrology work is split into smaller steps so a long look-ahead does not run as one slice. The seed 1337 long-flight fix is not verified on a full flight. No FPS change is claimed.
 
-**Removed features.** Scored runs no longer return to a runway or grade a landing. Landing Ace, Approach Ace and the Butter Landing contract are retired. The flight-warning strip, blackout and redout veils, and vegetation props are removed. Free flight can still take off and land.
+**Removed features.** Scored runs no longer return to a runway or grade a landing. Landing Ace, Approach Ace and the Butter Landing contract are retired. The flight-warning strip, blackout and redout veils, and trees, rocks and other natural props are removed. Free flight can still take off and land.
 
 ### Ship
 
