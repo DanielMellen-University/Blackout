@@ -4,6 +4,18 @@
 
 ## v0.13.0 - 2026-11-22
 
+### For players
+
+**Missions and scoring.** Gated runs are lines of 8 to 20 gates, 0.8 to 2.5 km apart, through valleys and over ridges. You start in the air on the first gate and finish in the air at the last gate. The score is time, plus bonuses for flying low, staying close to the terrain and carrying speed. The results screen shows that breakdown. Ridge relay is a three-stage operation: ingress, then a valley or ridge transit, then a conserve or commit egress. It stays off the flight plan unless the page is opened with `?dev=operation`.
+
+**Terrain and water.** The worlds are desert, mountain valley, coast, volcanic and inland waterway. Rivers and lakes share fitted shores: lake banks flare into river mouths, and distant sea coasts no longer stair-step where coarse terrain meets flat water.
+
+**Performance.** Cold hydrology work is split into smaller steps so a long look-ahead does not run as one slice. The seed 1337 long-flight fix is not verified on a full flight. No FPS change is claimed.
+
+**Removed features.** Scored runs no longer return to a runway or grade a landing. Landing Ace, Approach Ace and the Butter Landing contract are retired. The flight-warning strip, blackout and redout veils, and vegetation props are removed. Free flight can still take off and land.
+
+### Ship
+
 - **11.045** Clip sea triangles against the drawn terrain bed to remove far coast stair-steps, with hydrology hashes unchanged. Record cold water generation costs on seeds 1, 73 and 1337 (no safe reduction found) and a repeatable controlled foreground comparison on the Intel GPU: matching 33.3 ms median frame intervals and run to run variation larger than the version difference. No FPS change is claimed. See [water review 11.045](docs/reviews/water-11.045/README.md).
 
 - **11.044** Flare lake shore contours into joined river mouths and remove the seed-73 pond outlet strip in generation, with one shared shoreline for water, carving and collision. Two regional drainage hashes advance for the intended change. Cold seed-73 regional generation CPU rises from 112 to 174 ms median; the fit is split into cooperative steps so the largest step stays at 6.3 ms. No FPS change is claimed. See [water review](docs/water-surface-review.md).
