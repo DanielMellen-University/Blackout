@@ -4,6 +4,8 @@ Browser arcade flight game. Fly an F-35 along gate lines of 8 to 20 gates, 0.8 t
 
 Current release: **v0.13.0** (`Systems expansion`). Roadmap chunk: **11.045**. Previous roadmap chunk: **11.044**. Player notes for this release are in [CHANGELOG.md](CHANGELOG.md) under v0.13.0.
 
+![Launch screen](docs/releases/v0.13.0-launch.png)
+
 Recent changes from **11.045**. Distant sea coasts no longer stair-step where coarse terrain meets flat water, and lake shores flare into river mouths. Cold hydrology work is split into smaller steps. The seed 1337 long-flight performance fix is not verified on a full flight. No FPS change is claimed. See [CHANGELOG.md](CHANGELOG.md) and [water review 11.045](docs/reviews/water-11.045/README.md).
 
 ## Run
