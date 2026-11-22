@@ -191,7 +191,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **11.041** is current. Previous ship: **11.040**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+When chunk 11.041 shipped, the previous ship was 11.040 and the public release was v0.12.0 (`Systems expansion`).
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
@@ -427,7 +427,7 @@ Every new feature, mission type, system or ROADMAP item needs Daniel's approval 
 10. **Airborne starts: DONE, 11.017.** Gated runs start in the air aligned with gate 1. Free flight retains its runway start and landings.
 11. **Known performance debt: fix implemented, flight verification incomplete (11.043).** The review pilot now prepares cold hydrology cooperatively and retains exact analytic height queries; matching catchment, terrain/water and mission-recipe hashes guard output identity. Node and isolated browser measurements show shorter uninterrupted work, with higher total CPU in the browser. SwiftShader cannot complete the historical flight workloads on the test laptop within bounded runs, so the 10.989 numbers and a full seed-1337 endurance flight remain unverified. No budget changes or FPS win. See [performance review](reviews/performance-11.043/README.md). Items 12 and 13 remain parked.
 12. **Course readability.** Clearer next-gate line-up on tight sections using the existing gate model and HUD, no new UI elements unless approved.
-13. **Release v0.13.0.** After 6 and 9 land: version bump, README, CHANGELOG, screenshots and a tagged release.
+13. **Release v0.13.0: notes prepared, tag not cut.** Version, README and CHANGELOG name v0.13.0, dated 2026-11-22. No new screenshot was captured for this release. The git tag and GitHub release are left for the reviewer after merge. The seed 1337 long-flight performance fix is still not verified on a full flight, and this release claims no FPS number.
 
 **Daily slices.** Daniel approved the schedule Oct 24, starting Mon Oct 26; a daily Codex run (high reasoning effort) may take one small, already-approved roadmap slice per day, verify it with targeted tests plus headless screenshots it checks itself, and push one commit. It never picks a slice that is not approved, never changes camera views, never adds dev features to player UI and never adds landings.
 
