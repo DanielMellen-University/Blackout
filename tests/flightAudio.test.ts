@@ -450,4 +450,36 @@ describe('flight audio one-shot node lifecycle', () => {
       expect((gain!.disconnect as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1)
     } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
   })
+
+  it('routes noise bursts through a band filter and skips them without a noise buffer', () => {
+    const created: Array<Record<string, unknown>> = []
+    const make = () => { const node = fakeNode(); created.push(node); return node }
+    const effects = {}
+    const white = { kind: 'white' }, brown = { kind: 'brown' }
+    const audio = new FlightAudio()
+    const ctx = {
+      state: 'running', currentTime: 3,
+      createOscillator: make, createGain: make, createBiquadFilter: make, createBufferSource: make,
+    }
+    Object.assign(audio, { ctx, effectsGain: effects, volume: 1, muted: false, eventWhiteBuffer: white, eventBrownBuffer: brown })
+    try {
+      audio.playCue('ab-off')
+      // One brown burst (source, filter, gain) and one tone (oscillator, gain).
+      expect(created).toHaveLength(5)
+      const [source, filter, gain] = created as Array<Record<string, unknown> & { fire: (type: string) => void }>
+      expect(source!.buffer).toBe(brown)
+      expect(filter!.type).toBe('bandpass')
+      expect(source!.connect).toHaveBeenCalledWith(filter)
+      expect(filter!.connect).toHaveBeenCalledWith(gain)
+      expect(gain!.connect).toHaveBeenCalledWith(effects)
+      source!.fire('ended')
+      for (const node of [source, filter, gain]) expect(node!.disconnect).toHaveBeenCalledTimes(1)
+
+      created.length = 0
+      Object.assign(audio, { eventBrownBuffer: null })
+      audio.playCue('ab-off')
+      expect(created.filter(node => node.buffer !== null)).toHaveLength(0)
+      expect(created).toHaveLength(2)
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
 })
