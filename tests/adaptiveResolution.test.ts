@@ -48,3 +48,12 @@ it('holds controlled review density through slow frames, ceilings and display ch
   expect(resolution.setCeiling(.85)).toBe(1)
   expect(resolution.setDeviceRatio(3)).toBe(1)
 })
+
+it('ignores a malformed fixed review ratio and keeps adapting', () => {
+  for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, 0, -1]) {
+    const quality = new AdaptiveResolution(2, 1.5, bad)
+    expect(quality.ratio).toBe(1.5)
+    for (let i = 0; i < 61; i++) quality.update(34, true)
+    expect(quality.ratio).toBe(1.35)
+  }
+})

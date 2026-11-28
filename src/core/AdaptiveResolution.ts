@@ -9,7 +9,10 @@ export class AdaptiveResolution {
   private deviceRatio: number
   private ceiling: number
   constructor(deviceRatio: number, ceiling = 1.5, fixedRatio?: number) {
-    this.fixedRatio = fixedRatio
+    // A non-finite or non-positive review ratio would hand the renderer NaN or zero.
+    this.fixedRatio = fixedRatio !== undefined && Number.isFinite(fixedRatio) && fixedRatio > 0
+      ? fixedRatio
+      : undefined
     this.deviceRatio = Math.max(.75, Number.isFinite(deviceRatio) ? deviceRatio : 1)
     this.ceiling = Math.max(.75, Number.isFinite(ceiling) ? ceiling : 1.5)
     this.maximum = Math.min(this.deviceRatio, this.ceiling)
