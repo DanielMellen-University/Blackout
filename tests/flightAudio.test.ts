@@ -395,4 +395,22 @@ describe('flight audio event cues', () => {
       }
     } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
   })
+
+  it('stays silent while suspended, muted, at zero volume, or after disposal', () => {
+    const { audio, tone, noiseBurst } = cueRig()
+    const silent = (): boolean => tone.mock.calls.length === 0 && noiseBurst.mock.calls.length === 0
+    Object.assign(audio, { ctx: { state: 'suspended', currentTime: 0 } })
+    audio.playCue('gate')
+    expect(silent()).toBe(true)
+    Object.assign(audio, { ctx: { state: 'running', currentTime: 0 }, muted: true })
+    audio.playCue('gate')
+    expect(silent()).toBe(true)
+    Object.assign(audio, { muted: false, volume: 0 })
+    audio.playCue('gate')
+    expect(silent()).toBe(true)
+    Object.assign(audio, { volume: 1, ctx: null })
+    audio.dispose()
+    audio.playCue('gate')
+    expect(silent()).toBe(true)
+  })
 })
