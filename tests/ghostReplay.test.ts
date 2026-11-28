@@ -146,4 +146,47 @@ describe('GhostReplay end of trace and reset', () => {
     expect(replay.recordedSampleCount).toBe(0)
     replay.dispose()
   })
+
+  it('rejects stored traces whose clock runs backwards or holds non-numbers', () => {
+    const { values, storage } = storageFixture()
+    const key = `${GHOST_STORAGE_PREFIX}seed:9:balanced`
+    const replay = new GhostReplay(new Group(), storage)
+    const load = (samples: unknown[] | string): number => {
+      values.set(key, typeof samples === 'string'
+        ? samples
+        : JSON.stringify({ version: 1, worldGeneration: WORLD_GENERATION_REVISION, score: 5, samples }))
+      replay.reset('seed:9:balanced')
+      return replay.ghostSampleCount
+    }
+    expect(load([0, 0, 10, 0, 1, 5, 10, 5])).toBe(2)
+    expect(load([1, 0, 10, 0, 0.5, 5, 10, 5])).toBe(0)
+    expect(load([0, 0, 10, 0, 1, 'x', 10, 5])).toBe(0)
+    expect(load('{not json')).toBe(0)
+    replay.dispose()
+  })
+
+  it('rewinds the marker when the run clock restarts and ignores late out-of-order samples', () => {
+    const { storage } = storageFixture()
+    const replay = new GhostReplay(new Group(), storage)
+    replay.reset('seed:4:precision')
+    replay.record(0.01, new Vector3(0, 10, 0))
+    replay.record(0.005, new Vector3(99, 99, 99))
+    replay.record(0.01 + GHOST_SAMPLE_INTERVAL, new Vector3(10, 10, 0))
+    replay.record(0.01 + GHOST_SAMPLE_INTERVAL * 2, new Vector3(20, 10, 0))
+    expect(replay.recordedSampleCount).toBe(3)
+    expect(replay.commitIfBest(true, 100)).toBe(true)
+    const loaded = new GhostReplay(new Group(), storage)
+    loaded.reset('seed:4:precision')
+    loaded.setVisible(true)
+    const marker = loaded.root.children[1]!
+    loaded.update(0.01 + GHOST_SAMPLE_INTERVAL * 1.5, true)
+    expect(marker.position.x).toBeCloseTo(15)
+    loaded.update(0.01 + GHOST_SAMPLE_INTERVAL * 0.5, true)
+    expect(marker.visible).toBe(true)
+    expect(marker.position.x).toBeCloseTo(5)
+    loaded.dispose()
+    expect(loaded.paceDelta(10)).toBeNull()
+    loaded.setVisible(true)
+    replay.dispose()
+  })
 })

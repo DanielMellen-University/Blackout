@@ -69,7 +69,7 @@ describe('CareerProgression', () => {
     expect(pilotRankRank('ace')).toBeLessThan(pilotRankRank('legend'))
     expect(pilotRankNextGoalLabel('wingman')).toBe('NEXT FLIGHT LEAD / 2 COURSES / 5 RUNS / 130K SCORE / 6 BADGES / 3 CONTRACTS')
     expect(pilotRankNextGoalLabel('flight-lead')).toBe('NEXT ACE / 4 COURSES / 12 RUNS / 300K SCORE / 18 BADGES / 10 CONTRACTS')
-    expect(pilotRankNextGoalLabel('ace')).toBe('NEXT LEGEND / 7 COURSES / 30 RUNS / 600K SCORE / 36 BADGES / 24 CONTRACTS')
+    expect(pilotRankNextGoalLabel('ace')).toBe('NEXT LEGEND / 7 LEGEND COURSES / 30 RUNS / 600K SCORE / 36 BADGES / 24 CONTRACTS')
     expect(pilotRankNextGoalLabel('legend')).toBe('')
     expect(pilotRankAriaLabel('ace', {
       ...base,
@@ -134,5 +134,32 @@ describe('pilot rank next-goal labels', () => {
       totalContractWins: 24,
       legendCourses: 0,
     })).toBe('ace')
+  })
+
+  it('names the legend-course requirement in the legend goal', () => {
+    // Seven completed courses are not enough: legend rank needs seven legend courses.
+    expect(pilotRankNextGoalLabel('ace')).toContain('7 LEGEND COURSES')
+    const atGoal = {
+      ...base,
+      completedCourses: 7,
+      totalRuns: 30,
+      totalBestScore: 600_000,
+      totalBadges: 36,
+      totalContractWins: 24,
+    }
+    expect(pilotRankForProgress({ ...atGoal, legendCourses: 6 })).toBe('ace')
+    expect(pilotRankForProgress({ ...atGoal, legendCourses: 7 })).toBe('legend')
+  })
+
+  it('orders every rank and names every commendation', () => {
+    const ranks = ['cadet', 'wingman', 'flight-lead', 'ace', 'legend'] as const
+    expect(ranks.map(rank => pilotRankRank(rank))).toEqual([0, 1, 2, 3, 4])
+    expect(ranks.map(rank => pilotRankLabel(rank))).toEqual(['CADET', 'WINGMAN', 'FLIGHT LEAD', 'ACE', 'LEGEND'])
+    expect(pilotRankNextGoalLabel('cadet')).toBe('NEXT WINGMAN / 1 RUN')
+    const ids = ['first-sortie', 'course-collector', 'speed-demon', 'high-flyer', 'long-haul', 'style-variety'] as const
+    expect(ids).toHaveLength(PILOT_COMMENDATION_COUNT)
+    expect(ids.map(id => pilotCommendationLabel(id))).toEqual([
+      'FIRST MISSION', 'COURSE COLLECTOR', 'SPEED DEMON', 'HIGH FLYER', 'LONG HAUL', 'STYLE VARIETY',
+    ])
   })
 })

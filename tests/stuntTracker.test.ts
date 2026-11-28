@@ -37,4 +37,13 @@ describe('StuntTracker', () => {
     expect(tracker.progress).toBeGreaterThanOrEqual(0)
     expect(tracker.progress).toBeLessThanOrEqual(1)
   })
+
+  it('shows no partial roll once the stunt budget is spent', () => {
+    const tracker = new StuntTracker()
+    for (let i = 0; i < 40 && tracker.totalRolls < MAX_STUNT_ROLLS; i++) tracker.update(0.5, true, 10)
+    expect(tracker.totalRolls).toBe(MAX_STUNT_ROLLS)
+    expect(tracker.progress).toBe(0)
+    expect(tracker.update(0.5, true, 10)).toBeNull()
+    expect(tracker.progress).toBe(0)
+  })
 })

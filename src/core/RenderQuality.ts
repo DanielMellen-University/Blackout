@@ -76,7 +76,7 @@ export function readRenderQuality(
   try {
     return normalizeRenderQuality(storage?.getItem(RENDER_QUALITY_STORAGE_KEY), fallback)
   } catch {
-    return fallback
+    return normalizeRenderQuality(undefined, fallback)
   }
 }
 

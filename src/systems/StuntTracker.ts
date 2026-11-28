@@ -57,6 +57,8 @@ export class StuntTracker {
 
     this.rollTravel -= completed * FULL_ROLL_RADIANS
     this.totalRolls += completed
+    // A spent budget cannot earn another roll, so do not show a partial one.
+    if (this.totalRolls >= MAX_STUNT_ROLLS) this.rollTravel = 0
     return {
       kind: 'barrel-roll',
       rolls: completed,

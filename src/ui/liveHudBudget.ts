@@ -55,9 +55,16 @@ export const LEDGER_HUD_IDS = [
 const TAG_RE = /<\/?([a-zA-Z0-9-]+)([^<>]*)>/g
 const VOID_TAG = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/i
 
+/** Index of a whole `id` attribute, so `data-id="x"` never stands in for `id="x"`. */
+function idAttributeIndex(html: string, id: string): number {
+  const escaped = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`(?<![\\w-])id="${escaped}"`).exec(html)
+  return match ? match.index : -1
+}
+
 /** True when `hud-ledger` marks this id as optional telemetry. */
 export function hudIdIsLedger(html: string, id: string): boolean {
-  const at = html.indexOf(`id="${id}"`)
+  const at = idAttributeIndex(html, id)
   if (at < 0) return false
   const tags = [...html.matchAll(TAG_RE)]
   const stack: number[] = []
@@ -102,11 +109,11 @@ export function liveHudViolations(html: string, css: string): string[] {
     violations.push('debrief records must remain accessible when expanded')
   }
   for (const id of LIVE_HUD_IDS) {
-    if (!html.includes(`id="${id}"`)) violations.push(`missing live instrument ${id}`)
+    if (idAttributeIndex(html, id) < 0) violations.push(`missing live instrument ${id}`)
     else if (hudIdIsLedger(html, id)) violations.push(`live instrument ${id} is in the ledger`)
   }
   for (const id of LEDGER_HUD_IDS) {
-    if (!html.includes(`id="${id}"`)) violations.push(`missing ledger node ${id}`)
+    if (idAttributeIndex(html, id) < 0) violations.push(`missing ledger node ${id}`)
     else if (!hudIdIsLedger(html, id)) violations.push(`ledger node ${id} is visible`)
   }
   return violations

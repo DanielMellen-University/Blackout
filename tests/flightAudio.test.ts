@@ -341,3 +341,145 @@ describe('flight audio automation', () => {
     expect(audio.isDisposed).toBe(true)
   })
 })
+
+describe('flight audio event cues', () => {
+  function cueRig(): { audio: FlightAudio; tone: ReturnType<typeof vi.fn>; noiseBurst: ReturnType<typeof vi.fn> } {
+    const audio = new FlightAudio(), noiseBurst = vi.fn(), tone = vi.fn()
+    Object.assign(audio, { ctx: { state: 'running', currentTime: 2 }, effectsGain: {}, volume: 1, muted: false, noiseBurst, tone })
+    return { audio, tone, noiseBurst }
+  }
+  const pitches = (tone: ReturnType<typeof vi.fn>): number[] => tone.mock.calls.map(call => call[0] as number)
+
+  it('raises reward cues in pitch and lowers loss cues', () => {
+    const { audio, tone } = cueRig()
+    try {
+      for (const cue of ['gate', 'streak', 'complete', 'stunt', 'milestone', 'radar-lock'] as const) {
+        tone.mockClear()
+        audio.playCue(cue)
+        const notes = pitches(tone)
+        expect(notes.length, cue).toBeGreaterThanOrEqual(2)
+        for (let i = 1; i < notes.length; i++) expect(notes[i]!, cue).toBeGreaterThan(notes[i - 1]!)
+      }
+      for (const cue of ['radar-lost', 'warning'] as const) {
+        tone.mockClear()
+        audio.playCue(cue)
+        const notes = pitches(tone)
+        expect(notes[1]!, cue).toBeLessThan(notes[0]!)
+      }
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+
+  it('schedules every cue from the current audio clock with finite, short envelopes', () => {
+    const { audio, tone, noiseBurst } = cueRig()
+    const cues = [
+      'gate', 'streak', 'complete', 'landed', 'landing-soft', 'landing-hard', 'stunt', 'milestone', 'ab', 'ab-off',
+      'airbrake-open', 'airbrake-close', 'traffic', 'radar-lock', 'radar-lost', 'sonic-boom', 'thunder',
+      'gear-up', 'gear-down', 'warning', 'ditch', 'crash',
+    ] as const
+    try {
+      for (const cue of cues) {
+        tone.mockClear(); noiseBurst.mockClear()
+        audio.playCue(cue as Parameters<FlightAudio['playCue']>[0])
+        // tone(frequency, start, duration) and noiseBurst(start, duration).
+        const envelopes = [
+          ...tone.mock.calls.map(call => [call[1], call[2]] as number[]),
+          ...noiseBurst.mock.calls.map(call => [call[0], call[1]] as number[]),
+        ]
+        expect(envelopes.length, cue).toBeGreaterThan(0)
+        for (const [start, duration] of envelopes) {
+          expect(start!, cue).toBeGreaterThanOrEqual(2)
+          expect(start!, cue).toBeLessThan(2.5)
+          expect(duration!, cue).toBeGreaterThan(0)
+          expect(duration!, cue).toBeLessThanOrEqual(EVENT_NOISE_BUFFER_SECONDS)
+        }
+      }
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+
+  it('stays silent while suspended, muted, at zero volume, or after disposal', () => {
+    const { audio, tone, noiseBurst } = cueRig()
+    const silent = (): boolean => tone.mock.calls.length === 0 && noiseBurst.mock.calls.length === 0
+    Object.assign(audio, { ctx: { state: 'suspended', currentTime: 0 } })
+    audio.playCue('gate')
+    expect(silent()).toBe(true)
+    Object.assign(audio, { ctx: { state: 'running', currentTime: 0 }, muted: true })
+    audio.playCue('gate')
+    expect(silent()).toBe(true)
+    Object.assign(audio, { muted: false, volume: 0 })
+    audio.playCue('gate')
+    expect(silent()).toBe(true)
+    Object.assign(audio, { volume: 1, ctx: null })
+    audio.dispose()
+    audio.playCue('gate')
+    expect(silent()).toBe(true)
+  })
+})
+
+describe('flight audio one-shot node lifecycle', () => {
+  function fakeNode(): Record<string, unknown> {
+    const param = () => ({ setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn(), value: 0 })
+    const listeners: Record<string, () => void> = {}
+    return {
+      frequency: param(), gain: param(), Q: param(), type: '', buffer: null,
+      connect: vi.fn(), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn(),
+      addEventListener: (type: string, listener: () => void) => { listeners[type] = listener },
+      fire: (type: string) => listeners[type]?.(),
+    }
+  }
+
+  it('wires each tone to the effects bus and releases its nodes when it ends', () => {
+    const created: Record<string, unknown>[] = []
+    const make = () => { const node = fakeNode(); created.push(node); return node }
+    const effects = {}
+    const audio = new FlightAudio()
+    Object.assign(audio, {
+      ctx: { state: 'running', currentTime: 1, createOscillator: make, createGain: make },
+      effectsGain: effects, volume: 1, muted: false,
+    })
+    try {
+      audio.playCue('gate')
+      expect(created).toHaveLength(4)
+      const [oscillator, gain] = created as Array<Record<string, ReturnType<typeof vi.fn> & never>>
+      expect((oscillator!.connect as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(gain)
+      expect((gain!.connect as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(effects)
+      expect((oscillator!.start as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(1)
+      const stopAt = (oscillator!.stop as ReturnType<typeof vi.fn>).mock.calls[0]![0] as number
+      expect(stopAt).toBeCloseTo(1 + 0.11 + 0.02)
+      ;(oscillator as { fire: (type: string) => void }).fire('ended')
+      expect((oscillator!.disconnect as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1)
+      expect((gain!.disconnect as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1)
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+
+  it('routes noise bursts through a band filter and skips them without a noise buffer', () => {
+    const created: Array<Record<string, unknown>> = []
+    const make = () => { const node = fakeNode(); created.push(node); return node }
+    const effects = {}
+    const white = { kind: 'white' }, brown = { kind: 'brown' }
+    const audio = new FlightAudio()
+    const ctx = {
+      state: 'running', currentTime: 3,
+      createOscillator: make, createGain: make, createBiquadFilter: make, createBufferSource: make,
+    }
+    Object.assign(audio, { ctx, effectsGain: effects, volume: 1, muted: false, eventWhiteBuffer: white, eventBrownBuffer: brown })
+    try {
+      audio.playCue('ab-off')
+      // One brown burst (source, filter, gain) and one tone (oscillator, gain).
+      expect(created).toHaveLength(5)
+      const [source, filter, gain] = created as Array<Record<string, unknown> & { fire: (type: string) => void }>
+      expect(source!.buffer).toBe(brown)
+      expect(filter!.type).toBe('bandpass')
+      expect(source!.connect).toHaveBeenCalledWith(filter)
+      expect(filter!.connect).toHaveBeenCalledWith(gain)
+      expect(gain!.connect).toHaveBeenCalledWith(effects)
+      source!.fire('ended')
+      for (const node of [source, filter, gain]) expect(node!.disconnect).toHaveBeenCalledTimes(1)
+
+      created.length = 0
+      Object.assign(audio, { eventBrownBuffer: null })
+      audio.playCue('ab-off')
+      expect(created.filter(node => node.buffer !== null)).toHaveLength(0)
+      expect(created).toHaveLength(2)
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+})

@@ -29,4 +29,22 @@ describe('scene resource disposal', () => {
 
     expect(textureDispose).toHaveBeenCalledTimes(1)
   })
+
+  it('disposes every slot of a multi-material mesh once and empties the root', () => {
+    const geometry = new BoxGeometry(1, 1, 1)
+    const shared = new MeshBasicMaterial()
+    const side = new MeshBasicMaterial()
+    const root = new Group()
+    const child = new Group()
+    child.add(new Mesh(geometry, [shared, side, shared]))
+    root.add(new Mesh(geometry, shared), child)
+    const sharedDispose = vi.spyOn(shared, 'dispose')
+    const sideDispose = vi.spyOn(side, 'dispose')
+    const geometryDispose = vi.spyOn(geometry, 'dispose')
+    disposeObjectTree(root)
+    expect(sharedDispose).toHaveBeenCalledTimes(1)
+    expect(sideDispose).toHaveBeenCalledTimes(1)
+    expect(geometryDispose).toHaveBeenCalledTimes(1)
+    expect(root.children).toHaveLength(0)
+  })
 })

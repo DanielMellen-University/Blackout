@@ -292,3 +292,53 @@ describe('menu focus flow', () => {
     expect(pauseReasonLabel('manual')).toBe('Simulation paused')
   })
 })
+
+describe('menu keyboard trap and pause toggle', () => {
+  it('wraps Tab and Shift+Tab inside the open pause menu', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const doc = { activeElement: null as FakeElement | null, fullscreenElement: null }
+    vi.stubGlobal('document', doc)
+    const fixture = menuFixture()
+    const extra = new FakeElement()
+    const panelRoot = fixture.root.querySelector('#menu-root')!
+    const close = fixture.root.querySelector('#menu-close')!
+    panelRoot.setList(MODAL_FOCUSABLE_SELECTOR, [fixture.resume, extra, close])
+    const menu = new GameMenu(fixture.root as unknown as HTMLElement)
+    menu.close()
+    const tab = (shiftKey: boolean): { preventDefault: ReturnType<typeof vi.fn> } => {
+      const event = { key: 'Tab', shiftKey, preventDefault: vi.fn() }
+      fixture.root.dispatch('keydown', event)
+      return event
+    }
+    try {
+      expect(tab(false).preventDefault).not.toHaveBeenCalled()
+      menu.openPause()
+      fixture.resume.focus.mockClear()
+      doc.activeElement = extra
+      expect(tab(false).preventDefault).toHaveBeenCalled()
+      expect(fixture.resume.focus).toHaveBeenCalledTimes(1)
+      expect(close.focus).not.toHaveBeenCalled()
+      doc.activeElement = fixture.resume
+      expect(tab(true).preventDefault).toHaveBeenCalled()
+      expect(extra.focus).toHaveBeenCalledTimes(1)
+      expect(tab(false).preventDefault).not.toHaveBeenCalled()
+    } finally { menu.dispose(); vi.unstubAllGlobals() }
+  })
+
+  it('toggles pause open and closed and ignores toggles after disposal', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    vi.stubGlobal('document', { activeElement: null, fullscreenElement: null })
+    const fixture = menuFixture()
+    const menu = new GameMenu(fixture.root as unknown as HTMLElement)
+    try {
+      menu.togglePause()
+      expect(menu.paused).toBe(true)
+      expect(fixture.state.hidden).toBe(false)
+      menu.togglePause()
+      expect(menu.open).toBe(false)
+      menu.dispose()
+      menu.togglePause()
+      expect(menu.open).toBe(false)
+    } finally { menu.dispose(); vi.unstubAllGlobals() }
+  })
+})

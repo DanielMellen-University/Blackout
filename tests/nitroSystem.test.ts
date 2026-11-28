@@ -118,3 +118,31 @@ it.each([1 / 60, 1 / 120])('keeps a full uncapped burn finite and sweeps terrain
     expect([...a.position.toArray(), ...a.velocity.toArray()].every(Number.isFinite)).toBe(true)
   } finally { a.dispose(); mission.dispose(); setContactHeightSampler(null) }
 })
+
+describe('nitro malformed state repair', () => {
+  it('repairs malformed reserve and gate counts before a gate top-up', () => {
+    const state = createNitroState()
+    state.fraction = Number.NaN
+    state.gateRefills = Number.NaN
+    refillNitroAtGate(state, Number.NaN)
+    // Five baseline awards: a malformed count falls back to the full 0.25 top-up.
+    expect(state.fraction).toBeCloseTo(0.25)
+    expect(state.gateRefills).toBe(1)
+    state.fraction = 0
+    state.depleted = true
+    refillNitroAtGate(state, 0)
+    // A zero count is treated as one gate, never a division by zero.
+    expect(state.fraction).toBe(1)
+    expect(state.depleted).toBe(false)
+    refillNitroAtGate(state, 1_000)
+    expect(state.fraction).toBe(1)
+  })
+
+  it('treats a malformed reserve as empty instead of burning it', () => {
+    const state = createNitroState()
+    state.fraction = Number.NaN
+    expect(updateNitro(state, 0.1, true)).toBe(false)
+    expect(state.depleted).toBe(true)
+    expect(state.fraction).toBeCloseTo(0.1 / 20)
+  })
+})

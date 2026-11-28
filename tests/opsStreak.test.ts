@@ -100,4 +100,29 @@ describe('Ops streaks', () => {
     const update = recordOpsCompletion(denied, { daily: null, weekly: null, monthly: null }, 'daily-ops', '2026-02-01')
     expect(update?.current).toBe(1)
   })
+
+  it('repairs non-object roots and clamps stored streak counts', () => {
+    expect(readOpsStreak(storageFixture('[1,2,3]'))).toEqual({ daily: null, weekly: null, monthly: null })
+    expect(readOpsStreak(storageFixture('7'))).toEqual({ daily: null, weekly: null, monthly: null })
+    const repaired = readOpsStreak(storageFixture(JSON.stringify({
+      daily: { lastPeriod: '2026-02-01', current: 4.8, best: 2 },
+      weekly: { lastPeriod: '2026-W05', current: 5_000, best: 'many' },
+      monthly: ['2026-02'],
+    })))
+    expect(repaired.daily).toEqual({ lastPeriod: '2026-02-01', current: 4, best: 4 })
+    expect(repaired.weekly).toEqual({ lastPeriod: '2026-W05', current: 1_000, best: 1_000 })
+    expect(repaired.monthly).toBeNull()
+  })
+
+  it('continues weekly and monthly streaks across a year boundary', () => {
+    const empty: OpsStreakSnapshot = { daily: null, weekly: null, monthly: null }
+    const december = recordOpsCompletion(null, empty, 'monthly-ops', '2025-12')!
+    const january = recordOpsCompletion(null, december.snapshot, 'monthly-ops', '2026-01')!
+    expect(january.current).toBe(2)
+    const lastWeek = recordOpsCompletion(null, empty, 'weekly-ops', '2025-W52')!
+    const firstWeek = recordOpsCompletion(null, lastWeek.snapshot, 'weekly-ops', '2026-W01')!
+    expect(firstWeek.current).toBe(2)
+    expect(opsStreakLabel(firstWeek.snapshot, 'weekly-ops', '2026-W01')).toBe('OPS STREAK X2')
+    expect(opsStreakLabel(firstWeek.snapshot, 'weekly-ops', '2025-W52')).toBe('')
+  })
 })

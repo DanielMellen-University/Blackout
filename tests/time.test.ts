@@ -181,4 +181,15 @@ describe('Time', () => {
     expect(shouldPauseForContextLoss(true, false, true)).toBe(false)
     expect(shouldPauseForContextLoss(false, false, false)).toBe(false)
   })
+
+  it('anchors the frame clock on a first skipped frame', () => {
+    const time = new Time()
+    time.skipFrame(500)
+    const frame = time.beginFrame(516)
+    expect(frame.frameDt).toBeCloseTo(0.016, 6)
+    const fresh = new Time()
+    fresh.skipFrame(Number.NaN)
+    // An invalid first skip leaves the clock unanchored, so the next frame starts it.
+    expect(fresh.beginFrame(900).frameDt).toBe(0)
+  })
 })

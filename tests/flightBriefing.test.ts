@@ -187,4 +187,19 @@ describe('flight briefing', () => {
     expect(flightBriefingHint({ ...takeoff, onGround: false, emergencyReturn: true, gearDown: true }))
       .toBe('CTRL / 1 REDUCE POWER · FOLLOW BASE ARROW')
   })
+
+  it('falls back to the default gear key label for a malformed binding', () => {
+    const controls = briefingControls({ inputSource: 'keyboard', keyboardBindings: { boost: 'Space', airbrake: 'KeyB', gear: 'Escape' } as never })
+    expect(controls.gear).toBe('G')
+  })
+
+  it('drops the climb cue for the first gate once the jet is high enough', () => {
+    const base = { onGround: false, speed: 300, missionPhase: 'active', gatesPassed: 0, gearDown: false, totalGates: 10 }
+    expect(flightBriefingHint({ ...base, altitudeM: 80, inputSource: 'keyboard' }))
+      .toBe('W CLIMB · A/D TURN · FOLLOW GATE 1 ARROW')
+    expect(flightBriefingHint({ ...base, altitudeM: 400, inputSource: 'keyboard' })).toBe('A/D TURN · FLY THROUGH GATE 1')
+    expect(flightBriefingHint({ ...base, altitudeM: 400, inputSource: 'keyboard', keyboardScheme: 'conventional' }))
+      .toBe('Q/E TURN · FLY THROUGH GATE 1')
+    expect(flightBriefingHint({ ...base, altitudeM: 400, inputSource: 'gamepad' })).toBe('RIGHT STICK TURN · FLY THROUGH GATE 1')
+  })
 })

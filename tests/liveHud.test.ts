@@ -76,4 +76,12 @@ describe('live HUD budget', () => {
       expect(element).not.toContain('result-ledger')
     }
   })
+
+  it('matches whole id attributes, not data attributes that end in id', () => {
+    const decoy = '<div data-id="hud-mach"></div><div class="hud-ledger"><span id="hud-mach"></span></div>'
+    expect(hudIdIsLedger(decoy, 'hud-mach')).toBe(true)
+    const liveDecoy = '<div class="hud-ledger"><i data-id="hud-mach"></i></div><span id="hud-mach"></span>'
+    expect(hudIdIsLedger(liveDecoy, 'hud-mach')).toBe(false)
+    expect(hudIdIsLedger('<span data-id="hud-mach"></span>', 'hud-mach')).toBe(false)
+  })
 })

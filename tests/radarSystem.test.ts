@@ -205,4 +205,27 @@ describe('arcade radar sweep', () => {
     expect(radar.selectedTarget()?.id).toBe('city-target')
     expect(radar.consumeLockLost()).toBe(false)
   })
+
+  it('points forward diagonals and wraps bearings past a full turn', () => {
+    expect(radarBearingArrow(Math.PI / 4)).toBe('↗')
+    expect(radarBearingArrow(-Math.PI / 4)).toBe('↖')
+    expect(radarBearingArrow(Math.PI * 2 + Math.PI / 4)).toBe('↗')
+    expect(radarBearingArrow(-Math.PI * 4 - Math.PI / 2)).toBe('←')
+  })
+
+  it('cycles settlement targets in order, wraps, and drops a target that leaves range', () => {
+    const radar = new RadarSystem()
+    radar.update(0, 0, 0, null, [
+      { x: 300, y: 0, z: 0, kind: 'city', id: 'city-1' },
+      { x: 600, y: 0, z: 0, kind: 'village', id: 'village-2' },
+    ])
+    expect(radar.cycleTarget()?.id).toBe('city-1')
+    expect(radar.cycleTarget()?.id).toBe('village-2')
+    expect(radar.selectedTarget()?.id).toBe('village-2')
+    expect(radar.cycleTarget()?.id).toBe('city-1')
+    radar.update(0, 0, 0, null, [])
+    expect(radar.selectedTarget()).toBeNull()
+    expect(radar.cycleTarget()).toBeNull()
+    expect(radar.selectedTarget()).toBeNull()
+  })
 })

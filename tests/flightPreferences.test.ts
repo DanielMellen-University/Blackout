@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import * as prefs from '../src/core/FlightPreferences'
 import {
   DEFAULT_KEYBOARD_YAW,
   DEFAULT_KEYBOARD_ROLL,
@@ -337,5 +338,86 @@ describe('keyboard flight preferences', () => {
     expect(cameraSpeedFramingMultiplier('subtle')).toBeLessThan(1)
     expect(cameraSpeedFramingMultiplier('wide')).toBeGreaterThan(1)
     expect(cameraSpeedFramingLabel('standard')).toBe('STANDARD')
+  })
+})
+
+describe('camera preference scales and labels', () => {
+  it('maps each look sensitivity and speed framing level to its scale and label', () => {
+    expect(['low', 'normal', 'high'].map(level => prefs.cameraSensitivityMultiplier(level as never)))
+      .toEqual([0.65, 1, 1.45])
+    expect(['low', 'normal', 'high'].map(level => prefs.cameraSensitivityLabel(level as never)))
+      .toEqual(['LOW', 'NORMAL', 'HIGH'])
+    expect(['subtle', 'standard', 'wide'].map(level => prefs.cameraSpeedFramingMultiplier(level as never)))
+      .toEqual([0.55, 1, 1.35])
+    expect(['subtle', 'standard', 'wide'].map(level => prefs.cameraSpeedFramingLabel(level as never)))
+      .toEqual(['SUBTLE', 'STANDARD', 'WIDE'])
+  })
+
+  it('treats unknown levels as the neutral default scale', () => {
+    expect(prefs.cameraSensitivityMultiplier('extreme' as never)).toBe(1)
+    expect(prefs.cameraSensitivityLabel(undefined as never)).toBe('NORMAL')
+    expect(prefs.cameraSpeedFramingMultiplier('fisheye' as never)).toBe(1)
+    expect(prefs.cameraSpeedFramingLabel(7 as never)).toBe('STANDARD')
+  })
+})
+
+describe('preference reads with denied storage', () => {
+  const denied = {
+    getItem: (): string | null => { throw new Error('denied') },
+    setItem: (): void => { throw new Error('quota') },
+  }
+
+  it('returns each valid fallback instead of throwing', () => {
+    expect(prefs.readKeyboardControlScheme(denied, 'conventional')).toBe('conventional')
+    expect(prefs.readKeyboardRollPreference(denied, 'q-left')).toBe('q-left')
+    expect(prefs.readKeyboardPitchPreference(denied, 'w-down')).toBe('w-down')
+    expect(prefs.readCameraModePreference(denied)).toBe(prefs.DEFAULT_CAMERA_MODE)
+    expect(prefs.readCameraSensitivityPreference(denied, 'high')).toBe('high')
+    expect(prefs.readCameraSpeedFramingPreference(denied, 'wide')).toBe('wide')
+    expect(prefs.readCameraAutoReturnPreference(denied, false)).toBe(false)
+    expect(prefs.readCameraEffectsPreference(denied, false)).toBe(false)
+    expect(prefs.readReducedMotionPreference(denied, true)).toBe(true)
+    expect(prefs.readHudDisplayPreference(denied)).toBe(prefs.DEFAULT_HUD_DISPLAY)
+    expect(prefs.readStabilityAssistPreference(denied, true)).toBe(true)
+    expect(prefs.readKeyboardBindings(denied)).toEqual(prefs.DEFAULT_KEYBOARD_BINDINGS)
+  })
+
+  it('swallows denied writes for every preference', () => {
+    expect(() => {
+      prefs.writeKeyboardControlScheme(denied, 'arcade')
+      prefs.writeKeyboardRollPreference(denied, 'q-right')
+      prefs.writeKeyboardPitchPreference(denied, 'w-up')
+      prefs.writeKeyboardBindings(denied, prefs.DEFAULT_KEYBOARD_BINDINGS)
+      prefs.writeCameraModePreference(denied, prefs.DEFAULT_CAMERA_MODE)
+      prefs.writeCameraSensitivityPreference(denied, 'low')
+      prefs.writeCameraSpeedFramingPreference(denied, 'subtle')
+      prefs.writeCameraAutoReturnPreference(denied, true)
+      prefs.writeCameraEffectsPreference(denied, true)
+      prefs.writeReducedMotionPreference(denied, true)
+      prefs.writeHudDisplayPreference(denied, prefs.DEFAULT_HUD_DISPLAY)
+      prefs.writeStabilityAssistPreference(denied, true)
+    }).not.toThrow()
+  })
+})
+
+describe('utility key binding repair', () => {
+  it('labels every bindable key', () => {
+    expect(prefs.KEYBOARD_BINDING_CODES.map(code => prefs.keyboardBindingLabel(code)))
+      .toEqual(['SPACE', 'B', 'G', 'F', 'H', 'J', 'K', 'L', 'U', 'I'])
+  })
+
+  it('walks to the next free key when both the saved key and the fallback are taken', () => {
+    const repaired = prefs.normalizeKeyboardBindings(
+      { boost: 'KeyB', airbrake: 'KeyB', gear: 'KeyB' },
+      { boost: 'KeyB', airbrake: 'KeyB', gear: 'KeyB' },
+    )
+    expect(repaired.boost).toBe('KeyB')
+    expect(new Set(Object.values(repaired)).size).toBe(3)
+    expect(Object.values(repaired).every(code => prefs.KEYBOARD_BINDING_CODES.includes(code))).toBe(true)
+  })
+
+  it('replaces an invalid fallback map with the defaults', () => {
+    expect(prefs.normalizeKeyboardBindings(undefined, { boost: 'Escape', airbrake: 'F5', gear: 'Tab' } as never))
+      .toEqual(prefs.DEFAULT_KEYBOARD_BINDINGS)
   })
 })

@@ -448,3 +448,66 @@ describe('classifyContact slope fallback', () => {
     expect(outcome).toEqual({ result: 'crash', reason: 'slope' })
   })
 })
+
+describe('contactFailureLabel', () => {
+  it('gives every failure reason its own short banner label', () => {
+    const reasons = [
+      'obstacle', 'water', 'attitude', 'pitch', 'bank', 'slope',
+      'vertical-speed', 'normal-speed', 'gear', 'overspeed',
+    ] as const
+    const labels = reasons.map(reason => contactFailureLabel(reason))
+    expect(labels).toEqual([
+      'OBSTACLE', 'WATER CONTACT', 'ATTITUDE', 'PITCH LIMIT', 'BANK LIMIT', 'SLOPE',
+      'SINK RATE', 'IMPACT LOAD', 'GEAR UP', 'OVERSPEED',
+    ])
+    expect(new Set(labels).size).toBe(reasons.length)
+    for (const label of labels) expect(label.length).toBeLessThanOrEqual(14)
+    expect(contactFailureLabel(null)).toBe('IMPACT')
+  })
+})
+
+describe('contact outcome speed and gear limits', () => {
+  const base = {
+    airborne: true,
+    impact: impact({}),
+    onPad: true,
+    gearDown: true,
+    vy: -2,
+    groundSpeed: 40,
+    pitch: 0,
+    roll: 0,
+    upY: 1,
+    obstacle: false,
+    surface: 'land' as const,
+  }
+
+  it('crashes on a hard surface-normal hit even when the sink rate is gentle', () => {
+    expect(classifyContactOutcome({ ...base, impact: impact({ normalVelocity: -20 }) }))
+      .toEqual({ result: 'crash', reason: 'normal-speed' })
+  })
+
+  it('tightens the sink limit and adds a speed limit with the gear up', () => {
+    const gearUp = { gearDown: false }
+    expect(classifyContactOutcome({ ...base, impact: impact({ ...gearUp, tangentialSpeed: 40 }) }).reason)
+      .toBe('gear')
+    expect(classifyContactOutcome({
+      ...base,
+      impact: impact({ ...gearUp, verticalVelocity: -9, normalVelocity: -9 }),
+    }).reason).toBe('vertical-speed')
+    expect(classifyContactOutcome({
+      ...base,
+      impact: impact({ verticalVelocity: -9, normalVelocity: -9 }),
+    }).result).not.toBe('crash')
+    expect(classifyContactOutcome({ ...base, impact: impact({ ...gearUp, tangentialSpeed: 20 }) }))
+      .toEqual({ result: 'roll', reason: null })
+  })
+
+  it('limits touchdown speed only for a contact that began airborne', () => {
+    expect(classifyContactOutcome({ ...base, impact: impact({ tangentialSpeed: 90 }) }).reason)
+      .toBe('overspeed')
+    expect(classifyContactOutcome({
+      ...base,
+      impact: impact({ tangentialSpeed: 90, startedAirborne: false }),
+    })).toEqual({ result: 'roll', reason: null })
+  })
+})
