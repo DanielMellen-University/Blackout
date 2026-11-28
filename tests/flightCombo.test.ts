@@ -68,4 +68,18 @@ describe('FlightComboTracker', () => {
     expect(combo.consumeExpiryWarning()).toBe(true)
     expect(combo.consumeExpiryWarning()).toBe(false)
   })
+
+  it('holds a live chain through malformed or zero frame steps', () => {
+    const combo = new FlightComboTracker()
+    combo.record('gate')
+    for (const dt of [Number.NaN, Number.POSITIVE_INFINITY, 0, -1]) {
+      expect(combo.update(dt)).toBe(false)
+    }
+    expect(combo.current).toBe(1)
+    expect(combo.remainingSeconds).toBe(COMBO_WINDOW_SEC)
+    // One long hitch advances at most half a second of the window.
+    combo.update(30)
+    expect(combo.current).toBe(1)
+    expect(combo.remainingSeconds).toBe(Math.ceil(COMBO_WINDOW_SEC - 0.5))
+  })
 })
