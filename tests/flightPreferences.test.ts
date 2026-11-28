@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import * as prefs from '../src/core/FlightPreferences'
 import {
   DEFAULT_KEYBOARD_YAW,
   DEFAULT_KEYBOARD_ROLL,
@@ -337,5 +338,25 @@ describe('keyboard flight preferences', () => {
     expect(cameraSpeedFramingMultiplier('subtle')).toBeLessThan(1)
     expect(cameraSpeedFramingMultiplier('wide')).toBeGreaterThan(1)
     expect(cameraSpeedFramingLabel('standard')).toBe('STANDARD')
+  })
+})
+
+describe('camera preference scales and labels', () => {
+  it('maps each look sensitivity and speed framing level to its scale and label', () => {
+    expect(['low', 'normal', 'high'].map(level => prefs.cameraSensitivityMultiplier(level as never)))
+      .toEqual([0.65, 1, 1.45])
+    expect(['low', 'normal', 'high'].map(level => prefs.cameraSensitivityLabel(level as never)))
+      .toEqual(['LOW', 'NORMAL', 'HIGH'])
+    expect(['subtle', 'standard', 'wide'].map(level => prefs.cameraSpeedFramingMultiplier(level as never)))
+      .toEqual([0.55, 1, 1.35])
+    expect(['subtle', 'standard', 'wide'].map(level => prefs.cameraSpeedFramingLabel(level as never)))
+      .toEqual(['SUBTLE', 'STANDARD', 'WIDE'])
+  })
+
+  it('treats unknown levels as the neutral default scale', () => {
+    expect(prefs.cameraSensitivityMultiplier('extreme' as never)).toBe(1)
+    expect(prefs.cameraSensitivityLabel(undefined as never)).toBe('NORMAL')
+    expect(prefs.cameraSpeedFramingMultiplier('fisheye' as never)).toBe(1)
+    expect(prefs.cameraSpeedFramingLabel(7 as never)).toBe('STANDARD')
   })
 })
