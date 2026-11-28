@@ -27,4 +27,10 @@ describe('course recents', () => {
     expect(readRecentCourseIds(null)).toEqual([])
     expect(COURSE_RECENTS_LIMIT).toBe(8)
   })
+
+  it('keeps a one-entry limit at one entry when a course is selected', () => {
+    expect(rememberCourseId(['storm-run', 'range-sweep'], 'daily-ops', 1)).toEqual(['daily-ops'])
+    expect(rememberCourseId(['storm-run', 'range-sweep'], 'daily-ops', 2)).toEqual(['daily-ops', 'storm-run'])
+    expect(rememberCourseId(['storm-run', 'range-sweep'], '', 1)).toEqual(['storm-run'])
+  })
 })

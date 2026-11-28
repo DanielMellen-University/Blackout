@@ -11,10 +11,10 @@ export function rememberCourseId(
   const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(32, Math.floor(limit))) : COURSE_RECENTS_LIMIT
   const next: string[] = safeId ? [safeId] : []
   for (const id of recentIds) {
+    if (next.length >= safeLimit) break
     const normalized = normalizeCourseId(id)
     if (!normalized || normalized === safeId || next.includes(normalized)) continue
     next.push(normalized)
-    if (next.length >= safeLimit) break
   }
   return next
 }
