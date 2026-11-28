@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Recent courses keep to a one-entry limit, the render quality setting recovers when browser storage is blocked, partial roll progress clears once the stunt budget is spent, and a malformed review resolution ratio is ignored. The next legend rank goal now names its 7 legend courses. The live HUD budget check matches whole id attributes. Test coverage is extended across menus, input, audio cues, contact limits, radar, nitro, ghosts, Ops replay periods and course mastery labels. Camera, flight plan cards, route lines and landing rules are unchanged.
+
 ## v0.13.0 - 2026-11-22
 
 ### For players
