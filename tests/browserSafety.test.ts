@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  enterGameFullscreenFromGesture,
   setFlightKeyCapture,
   shouldPauseForFullscreenExit,
   shouldReenterFullscreen,
   suppressBrowserUi,
+  toggleGameFullscreen,
+  tryReenterFullscreenFromClick,
 } from '../src/core/suppressBrowserUi'
 
 interface FakeTarget {
@@ -88,5 +91,91 @@ describe('browser fullscreen safety', () => {
     expect(canvas.tabIndex).toBe(7)
     expect(canvas.style.outline).toBe('2px solid red')
     vi.unstubAllGlobals()
+  })
+})
+
+function installFlightPage(): {
+  keydown: (event: Partial<KeyboardEvent>) => boolean
+  mouse: (type: string, button: number) => boolean
+  release: () => void
+} {
+  class FakeHtmlElement {
+    constructor(readonly tagName: string, readonly isContentEditable = false) {}
+  }
+  const fakeWindow = Object.assign(fakeTarget(), { oncontextmenu: null })
+  const fakeDocument = Object.assign(fakeTarget(), {
+    documentElement: fakeTarget(),
+    body: Object.assign(fakeTarget(), { oncontextmenu: null }),
+    fullscreenElement: null,
+    oncontextmenu: null,
+  })
+  const canvas = Object.assign(fakeTarget(), {
+    focus: vi.fn(), oncontextmenu: null, style: { outline: '' }, tabIndex: -1,
+  }) as unknown as HTMLCanvasElement
+  vi.stubGlobal('HTMLElement', FakeHtmlElement)
+  vi.stubGlobal('window', fakeWindow)
+  vi.stubGlobal('document', fakeDocument)
+  const release = suppressBrowserUi(canvas)
+  const dispatch = (type: string, event: object): boolean => {
+    let prevented = false
+    const full = { preventDefault: () => { prevented = true }, stopPropagation: () => {}, ...event }
+    for (const listener of fakeWindow.listeners.get(type) ?? []) (listener as (e: object) => void)(full)
+    return prevented
+  }
+  return {
+    keydown: event => dispatch('keydown', {
+      key: '', code: '', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, target: null, ...event,
+    }),
+    mouse: (type, button) => dispatch(type, { button }),
+    release: () => { release(); vi.unstubAllGlobals() },
+  }
+}
+
+describe('browser shortcut filter', () => {
+  it('blocks flight keys and tab shortcuts only while flight owns the keyboard', () => {
+    const page = installFlightPage()
+    try {
+      expect(page.keydown({ key: 'w', code: 'KeyW' })).toBe(false)
+      setFlightKeyCapture(true)
+      expect(page.keydown({ key: 'w', code: 'KeyW' })).toBe(true)
+      expect(page.keydown({ key: 'w', code: 'KeyW', ctrlKey: true })).toBe(true)
+      expect(page.keydown({ key: 't', code: 'KeyT', metaKey: true })).toBe(true)
+      expect(page.keydown({ key: 'PageDown', code: 'PageDown', ctrlKey: true })).toBe(true)
+      expect(page.keydown({ key: 'ArrowLeft', code: 'ArrowLeft', altKey: true })).toBe(true)
+      expect(page.keydown({ key: 'F5', code: 'F5' })).toBe(true)
+      expect(page.keydown({ key: 'F10', code: 'F10', shiftKey: true })).toBe(true)
+      expect(page.keydown({ key: 'ContextMenu', code: 'ContextMenu' })).toBe(true)
+      expect(page.keydown({ key: 'p', code: 'KeyP' })).toBe(false)
+      expect(page.keydown({ key: 'F12', code: 'F12' })).toBe(false)
+    } finally {
+      page.release()
+    }
+  })
+
+  it('lets text fields keep their own typing during flight', () => {
+    const page = installFlightPage()
+    try {
+      setFlightKeyCapture(true)
+      const Element = globalThis.HTMLElement as unknown as new (tag: string, editable?: boolean) => object
+      expect(page.keydown({ key: 'w', code: 'KeyW', target: new Element('INPUT') as EventTarget })).toBe(false)
+      expect(page.keydown({ key: 'a', code: 'KeyA', target: new Element('TEXTAREA') as EventTarget })).toBe(false)
+      expect(page.keydown({ key: 's', code: 'KeyS', target: new Element('DIV', true) as EventTarget })).toBe(false)
+      expect(page.keydown({ key: 'w', code: 'KeyW', target: new Element('CANVAS') as EventTarget })).toBe(true)
+    } finally {
+      page.release()
+    }
+  })
+
+  it('suppresses right-button menus and middle-click autoscroll but not left clicks', () => {
+    const page = installFlightPage()
+    try {
+      expect(page.mouse('mousedown', 2)).toBe(true)
+      expect(page.mouse('auxclick', 2)).toBe(true)
+      expect(page.mouse('mousedown', 1)).toBe(true)
+      expect(page.mouse('pointerdown', 2)).toBe(true)
+      expect(page.mouse('mousedown', 0)).toBe(false)
+    } finally {
+      page.release()
+    }
   })
 })
