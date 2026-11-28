@@ -690,4 +690,45 @@ describe('flight input one-shot controls', () => {
     expect(input.keyboardScheme).toBe('arcade')
     expect(input.stabilityAssistEnabled).toBe(false)
   })
+
+  it('ramps keyboard engine power at a bounded rate and clamps it', () => {
+    vi.stubGlobal('navigator', { getGamepads: () => [] })
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    try {
+      input.resetFlightControls(0.5)
+      fake.fire('keydown', 'ShiftLeft')
+      expect(input.sampleWithDt(0.05).throttle).toBeCloseTo(0.59)
+      // One long frame cannot jump the throttle further than a normal step.
+      expect(input.sampleWithDt(2).throttle).toBeCloseTo(0.68)
+      for (let i = 0; i < 20; i++) input.sampleWithDt(0.05)
+      expect(input.sampleWithDt(0.05).throttle).toBe(1)
+      fake.fire('keyup', 'ShiftLeft')
+      fake.fire('keydown', 'Digit1')
+      expect(input.sampleWithDt(0.05).throttle).toBeCloseTo(0.91)
+      fake.fire('keyup', 'Digit1')
+      fake.fire('keydown', 'ControlRight')
+      for (let i = 0; i < 30; i++) input.sampleWithDt(0.05)
+      expect(input.sampleWithDt(0.05).throttle).toBe(0)
+    } finally {
+      input.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('resets flight controls to a clamped throttle with the gear down', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    fake.fire('keydown', 'KeyW')
+    expect(input.sampleWithDt(0).pitch).not.toBe(0)
+    input.resetFlightControls(4)
+    const controls = input.sampleWithDt(0)
+    expect(controls.throttle).toBe(1)
+    expect(controls.gearDown).toBe(true)
+    input.release('KeyW')
+    expect(input.sampleWithDt(0).pitch).toBe(0)
+    input.resetFlightControls(-1)
+    expect(input.sampleWithDt(0).throttle).toBe(0)
+    input.dispose()
+  })
 })
