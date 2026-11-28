@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { clampOperationStick, neutralOperationStick } from '../src/systems/operation/stick'
 import { OperationStickInput } from '../src/ui/operation/stickInput'
 
@@ -97,5 +97,49 @@ describe('operation stick', () => {
       buttons: [],
     }])
     expect(stick.roll).toBe(1)
+  })
+
+  it('releases held keys when the window loses focus', () => {
+    const target = new FakeTarget()
+    const input = new OperationStickInput(target)
+    input.attach()
+    target.dispatch('keydown', 'KeyW')
+    target.dispatch('keydown', 'Space')
+    expect(input.sample(0, []).pitch).toBe(1)
+    target.dispatch('blur', '')
+    const stick = input.sample(0, [])
+    expect(stick.pitch).toBe(0)
+    expect(stick.boost).toBe(false)
+  })
+
+  it('lowers power from the number row and repairs a malformed throttle', () => {
+    const target = new FakeTarget()
+    const input = new OperationStickInput(target)
+    input.attach()
+    input.setThrottle(Number.NaN)
+    expect(input.sample(0, []).throttle).toBe(0)
+    input.setThrottle(0.5)
+    target.dispatch('keydown', 'Digit1')
+    expect(input.sample(0.05, []).throttle).toBeLessThan(0.5)
+    expect(target.dispatch('keydown', 'Digit1').defaultPrevented).toBe(false)
+    input.setCapture(true)
+    expect(target.dispatch('keydown', 'Digit2').defaultPrevented).toBe(true)
+    expect(target.dispatch('keydown', 'KeyP').defaultPrevented).toBe(false)
+  })
+
+  it('polls the browser for a pad and survives a throwing gamepad API', () => {
+    const input = new OperationStickInput(null)
+    vi.stubGlobal('navigator', {
+      getGamepads: () => [null, { connected: true, mapping: 'standard', axes: [-1, 0, 0, 0], buttons: [] }],
+    })
+    try {
+      expect(input.sample(0)).toMatchObject({ roll: -1 })
+      vi.stubGlobal('navigator', { getGamepads: () => { throw new Error('blocked') } })
+      expect(input.sample(0)).toMatchObject({ roll: 0, pitch: 0 })
+      vi.stubGlobal('navigator', {})
+      expect(input.sample(0).roll).toBe(0)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
