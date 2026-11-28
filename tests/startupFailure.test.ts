@@ -22,4 +22,23 @@ describe('startup failure guidance', () => {
     )
     expect(startupFailureMessage(null)).toContain('Blackout could not start')
   })
+
+  it('offers Retry in the message exactly when a retry is allowed', () => {
+    const failures: unknown[] = [
+      'terrain worker timed out',
+      'spawn search exhausted',
+      new Error('GPU terrain upload failed'),
+      new Error('World build aborted'),
+      new TypeError('renderer is undefined'),
+      'quota exceeded',
+      42,
+      undefined,
+    ]
+    for (const failure of failures) {
+      const offersRetry = startupFailureMessage(failure).includes('Press Retry')
+      expect(offersRetry, String(failure)).toBe(startupFailureCanRetry(failure))
+    }
+    expect(startupFailureCanRetry('terrain worker timed out')).toBe(true)
+    expect(startupFailureCanRetry(new Error('GPU terrain upload failed'))).toBe(false)
+  })
 })
