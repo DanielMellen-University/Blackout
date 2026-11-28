@@ -187,3 +187,51 @@ it('preserves pre-M4 rotating records while pruning the new score family', () =>
   expect(pruneRotatingCourseRecords(storage)).toBe(1)
   expect(storage.values.get(`blackout.best.${oldId}`)).toBe('record')
 })
+
+describe('record retention with denied storage', () => {
+  const id = (index: number): string => `seed:${index}:orbit:r32:custom:s2`
+
+  it('prunes nothing when the storage index throws', () => {
+    const storage: IndexedRecordStorage = {
+      length: 3,
+      key: () => { throw new Error('denied') },
+      removeItem: () => { throw new Error('denied') },
+    }
+    expect(pruneRotatingCourseRecords(storage)).toBe(0)
+  })
+
+  it('removes nothing when the seeded manifest cannot be written', () => {
+    const data = new Map<string, string>()
+    const storage: IndexedRecordStorage = {
+      getItem: () => { throw new Error('denied') },
+      setItem: () => { throw new Error('quota') },
+      removeItem: (key) => data.delete(key),
+    }
+    data.set(`blackout.history.${id(1)}`, 'history')
+    expect(touchSeededRandomCourseRecord(storage, id(1), 10)).toBe(0)
+    expect(data.has(`blackout.history.${id(1)}`)).toBe(true)
+  })
+
+  it('treats an unreadable or non-list manifest as empty and keeps counting removals that succeed', () => {
+    const data = new Map<string, string>([[SEEDED_RANDOM_RECORDS_STORAGE_KEY, '{"oops":true}']])
+    let deny = false
+    const storage: IndexedRecordStorage = {
+      getItem: (key) => data.get(key) ?? null,
+      setItem: (key, value) => data.set(key, value),
+      removeItem: (key) => {
+        if (deny && key.startsWith('blackout.ghost.')) throw new Error('revoked')
+        data.delete(key)
+      },
+    }
+    for (let index = 0; index < SEEDED_RANDOM_RECORD_RETENTION; index += 1) {
+      touchSeededRandomCourseRecord(storage, id(index), index + 1)
+    }
+    deny = true
+    data.set(`blackout.history.${id(0)}`, 'history')
+    data.set(`blackout.ghost.${id(0)}`, 'ghost')
+    // Six sibling prefixes, one of which refuses removal.
+    expect(touchSeededRandomCourseRecord(storage, id(99), 1_000)).toBe(5)
+    expect(data.has(`blackout.history.${id(0)}`)).toBe(false)
+    expect(data.has(`blackout.ghost.${id(0)}`)).toBe(true)
+  })
+})
