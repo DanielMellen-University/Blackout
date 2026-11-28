@@ -7,6 +7,7 @@ import {
   renderQualityProfile,
   shadowUpdateDue,
   writeRenderQuality,
+  type RenderQuality,
 } from '../src/core/RenderQuality'
 
 describe('render quality preferences', () => {
@@ -82,5 +83,12 @@ describe('render quality preferences', () => {
     expect(hudUpdateDue('low', 34, 0)).toBe(true)
     expect(hudUpdateDue('balanced', 16, 0)).toBe(true)
     expect(hudUpdateDue('high', Number.NaN, 0)).toBe(false)
+  })
+
+  it('repairs an invalid fallback when storage access throws', () => {
+    const blocked = { getItem: (): string | null => { throw new Error('denied') } }
+    expect(readRenderQuality(blocked, 'ultra' as RenderQuality)).toBe('balanced')
+    expect(readRenderQuality(blocked, 'low')).toBe('low')
+    expect(readRenderQuality({ getItem: () => null }, 'ultra' as RenderQuality)).toBe('balanced')
   })
 })
