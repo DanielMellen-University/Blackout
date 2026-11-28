@@ -399,3 +399,25 @@ describe('preference reads with denied storage', () => {
     }).not.toThrow()
   })
 })
+
+describe('utility key binding repair', () => {
+  it('labels every bindable key', () => {
+    expect(prefs.KEYBOARD_BINDING_CODES.map(code => prefs.keyboardBindingLabel(code)))
+      .toEqual(['SPACE', 'B', 'G', 'F', 'H', 'J', 'K', 'L', 'U', 'I'])
+  })
+
+  it('walks to the next free key when both the saved key and the fallback are taken', () => {
+    const repaired = prefs.normalizeKeyboardBindings(
+      { boost: 'KeyB', airbrake: 'KeyB', gear: 'KeyB' },
+      { boost: 'KeyB', airbrake: 'KeyB', gear: 'KeyB' },
+    )
+    expect(repaired.boost).toBe('KeyB')
+    expect(new Set(Object.values(repaired)).size).toBe(3)
+    expect(Object.values(repaired).every(code => prefs.KEYBOARD_BINDING_CODES.includes(code))).toBe(true)
+  })
+
+  it('replaces an invalid fallback map with the defaults', () => {
+    expect(prefs.normalizeKeyboardBindings(undefined, { boost: 'Escape', airbrake: 'F5', gear: 'Tab' } as never))
+      .toEqual(prefs.DEFAULT_KEYBOARD_BINDINGS)
+  })
+})
