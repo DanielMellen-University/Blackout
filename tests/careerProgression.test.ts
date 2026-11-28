@@ -150,4 +150,16 @@ describe('pilot rank next-goal labels', () => {
     expect(pilotRankForProgress({ ...atGoal, legendCourses: 6 })).toBe('ace')
     expect(pilotRankForProgress({ ...atGoal, legendCourses: 7 })).toBe('legend')
   })
+
+  it('orders every rank and names every commendation', () => {
+    const ranks = ['cadet', 'wingman', 'flight-lead', 'ace', 'legend'] as const
+    expect(ranks.map(rank => pilotRankRank(rank))).toEqual([0, 1, 2, 3, 4])
+    expect(ranks.map(rank => pilotRankLabel(rank))).toEqual(['CADET', 'WINGMAN', 'FLIGHT LEAD', 'ACE', 'LEGEND'])
+    expect(pilotRankNextGoalLabel('cadet')).toBe('NEXT WINGMAN / 1 RUN')
+    const ids = ['first-sortie', 'course-collector', 'speed-demon', 'high-flyer', 'long-haul', 'style-variety'] as const
+    expect(ids).toHaveLength(PILOT_COMMENDATION_COUNT)
+    expect(ids.map(id => pilotCommendationLabel(id))).toEqual([
+      'FIRST MISSION', 'COURSE COLLECTOR', 'SPEED DEMON', 'HIGH FLYER', 'LONG HAUL', 'STYLE VARIETY',
+    ])
+  })
 })
