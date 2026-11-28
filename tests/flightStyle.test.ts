@@ -57,4 +57,26 @@ describe('sortie style debrief classifier', () => {
     expect(normalizeSortieStyle('unknown')).toBeUndefined()
     expect(normalizeSortieStyle(null)).toBeUndefined()
   })
+
+  it('classifies free-flight exploration, pace and low-reserve landings', () => {
+    expect(sortieStyleForResult({ freeFlight: true, biomeCount: 5, landingQuality: 0.5 }))
+      .toEqual({ id: 'explorer', label: 'EXPLORER', detail: 'BIOMES X5' })
+    expect(sortieStyleForResult({ freeFlight: true, scoringFocus: 'pace', timeScore: 40_000 }))
+      .toEqual({ id: 'speed', label: 'SPEED', detail: 'PACE PUSH' })
+    expect(sortieStyleForResult({ freeFlight: true, landingQuality: 0.7, fuelRemainingPercent: 12.4 }))
+      .toEqual({ id: 'survivor', label: 'SURVIVOR', detail: '12% RESERVE LANDING' })
+    expect(sortieStyleForResult({ freeFlight: true, landingQuality: 0.5, fuelRemainingPercent: 5 }).id)
+      .toBe('balanced')
+  })
+
+  it('names the free-flight circuit from the landing quality band', () => {
+    const detail = (landingQuality: number): string =>
+      sortieStyleForResult({ freeFlight: true, landingQuality }).detail
+    expect(detail(0.95)).toBe('BUTTER CIRCUIT')
+    expect(detail(0.8)).toBe('SMOOTH CIRCUIT')
+    expect(detail(0.6)).toBe('FIRM CIRCUIT')
+    expect(detail(0.2)).toBe('HARD CIRCUIT')
+    expect(sortieStyleForResult({ freeFlight: true, landingQuality: 0.6, landingLabel: '  greaser ' }).detail)
+      .toBe('GREASER CIRCUIT')
+  })
 })
