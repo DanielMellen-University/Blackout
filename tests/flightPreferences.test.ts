@@ -360,3 +360,42 @@ describe('camera preference scales and labels', () => {
     expect(prefs.cameraSpeedFramingLabel(7 as never)).toBe('STANDARD')
   })
 })
+
+describe('preference reads with denied storage', () => {
+  const denied = {
+    getItem: (): string | null => { throw new Error('denied') },
+    setItem: (): void => { throw new Error('quota') },
+  }
+
+  it('returns each valid fallback instead of throwing', () => {
+    expect(prefs.readKeyboardControlScheme(denied, 'conventional')).toBe('conventional')
+    expect(prefs.readKeyboardRollPreference(denied, 'q-left')).toBe('q-left')
+    expect(prefs.readKeyboardPitchPreference(denied, 'w-down')).toBe('w-down')
+    expect(prefs.readCameraModePreference(denied)).toBe(prefs.DEFAULT_CAMERA_MODE)
+    expect(prefs.readCameraSensitivityPreference(denied, 'high')).toBe('high')
+    expect(prefs.readCameraSpeedFramingPreference(denied, 'wide')).toBe('wide')
+    expect(prefs.readCameraAutoReturnPreference(denied, false)).toBe(false)
+    expect(prefs.readCameraEffectsPreference(denied, false)).toBe(false)
+    expect(prefs.readReducedMotionPreference(denied, true)).toBe(true)
+    expect(prefs.readHudDisplayPreference(denied)).toBe(prefs.DEFAULT_HUD_DISPLAY)
+    expect(prefs.readStabilityAssistPreference(denied, true)).toBe(true)
+    expect(prefs.readKeyboardBindings(denied)).toEqual(prefs.DEFAULT_KEYBOARD_BINDINGS)
+  })
+
+  it('swallows denied writes for every preference', () => {
+    expect(() => {
+      prefs.writeKeyboardControlScheme(denied, 'arcade')
+      prefs.writeKeyboardRollPreference(denied, 'q-right')
+      prefs.writeKeyboardPitchPreference(denied, 'w-up')
+      prefs.writeKeyboardBindings(denied, prefs.DEFAULT_KEYBOARD_BINDINGS)
+      prefs.writeCameraModePreference(denied, prefs.DEFAULT_CAMERA_MODE)
+      prefs.writeCameraSensitivityPreference(denied, 'low')
+      prefs.writeCameraSpeedFramingPreference(denied, 'subtle')
+      prefs.writeCameraAutoReturnPreference(denied, true)
+      prefs.writeCameraEffectsPreference(denied, true)
+      prefs.writeReducedMotionPreference(denied, true)
+      prefs.writeHudDisplayPreference(denied, prefs.DEFAULT_HUD_DISPLAY)
+      prefs.writeStabilityAssistPreference(denied, true)
+    }).not.toThrow()
+  })
+})
