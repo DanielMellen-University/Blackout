@@ -341,3 +341,31 @@ describe('flight audio automation', () => {
     expect(audio.isDisposed).toBe(true)
   })
 })
+
+describe('flight audio event cues', () => {
+  function cueRig(): { audio: FlightAudio; tone: ReturnType<typeof vi.fn>; noiseBurst: ReturnType<typeof vi.fn> } {
+    const audio = new FlightAudio(), noiseBurst = vi.fn(), tone = vi.fn()
+    Object.assign(audio, { ctx: { state: 'running', currentTime: 2 }, effectsGain: {}, volume: 1, muted: false, noiseBurst, tone })
+    return { audio, tone, noiseBurst }
+  }
+  const pitches = (tone: ReturnType<typeof vi.fn>): number[] => tone.mock.calls.map(call => call[0] as number)
+
+  it('raises reward cues in pitch and lowers loss cues', () => {
+    const { audio, tone } = cueRig()
+    try {
+      for (const cue of ['gate', 'streak', 'complete', 'stunt', 'milestone', 'radar-lock'] as const) {
+        tone.mockClear()
+        audio.playCue(cue)
+        const notes = pitches(tone)
+        expect(notes.length, cue).toBeGreaterThanOrEqual(2)
+        for (let i = 1; i < notes.length; i++) expect(notes[i]!, cue).toBeGreaterThan(notes[i - 1]!)
+      }
+      for (const cue of ['radar-lost', 'warning'] as const) {
+        tone.mockClear()
+        audio.playCue(cue)
+        const notes = pitches(tone)
+        expect(notes[1]!, cue).toBeLessThan(notes[0]!)
+      }
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+})
