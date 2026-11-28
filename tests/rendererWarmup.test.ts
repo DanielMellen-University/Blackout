@@ -47,3 +47,32 @@ it('prepares both shadow-light counts and restores live lighting even on failure
   await expect(warmupShadowVariants(light, async () => { throw new Error('compile') })).rejects.toThrow('compile')
   expect(light.castShadow).toBe(true)
 })
+it('skips the GPU wait on WebGL1 or when the driver returns no fence', async () => {
+  const scene = new Scene(), fixtures = new Group()
+  const webgl1 = { isContextLost: () => false }
+  await warmupMaterials({ compileAsync: async () => fixtures, render: vi.fn(),
+    getContext: () => webgl1 as unknown as WebGL2RenderingContext }, fixtures, new PerspectiveCamera(), scene)
+  expect(fixtures.parent).toBeNull()
+  const gl = { isContextLost: () => false, fenceSync: vi.fn(() => null), flush: vi.fn(), deleteSync: vi.fn(),
+    SYNC_GPU_COMMANDS_COMPLETE: 3 }
+  await warmupMaterials({ compileAsync: async () => fixtures, render: vi.fn(),
+    getContext: () => gl as unknown as WebGL2RenderingContext }, fixtures, new PerspectiveCamera(), scene)
+  expect(gl.fenceSync).toHaveBeenCalledOnce()
+  expect(gl.flush).not.toHaveBeenCalled()
+  expect(gl.deleteSync).not.toHaveBeenCalled()
+  expect(fixtures.parent).toBeNull()
+})
+it('stops waiting and still deletes the fence when the context is lost mid-wait', async () => {
+  vi.useFakeTimers()
+  const scene = new Scene(), fixtures = new Group(), fence = {}
+  let lost = false
+  const gl = { isContextLost: () => lost, fenceSync: vi.fn(() => fence), flush: vi.fn(),
+    clientWaitSync: vi.fn(() => { lost = true; return 0 }), deleteSync: vi.fn(),
+    TIMEOUT_EXPIRED: 0, SYNC_GPU_COMMANDS_COMPLETE: 3 }
+  const pending = warmupMaterials({ compileAsync: async () => fixtures, render: vi.fn(),
+    getContext: () => gl as unknown as WebGL2RenderingContext }, fixtures, new PerspectiveCamera(), scene)
+  await vi.runAllTimersAsync(); await pending
+  expect(gl.clientWaitSync).toHaveBeenCalledOnce()
+  expect(gl.deleteSync).toHaveBeenCalledExactlyOnceWith(fence)
+  expect(fixtures.parent).toBeNull()
+})
