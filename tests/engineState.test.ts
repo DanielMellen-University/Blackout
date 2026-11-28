@@ -84,4 +84,17 @@ describe('resolveEngineState', () => {
     expect(out.afterburnerActive).toBe(true)
     expect(out.targetSpeed).toBeCloseTo(C.cruiseSpeedBoost)
   })
+
+  it('treats a malformed fuel reading as empty and an empty nitro reserve as no burner', () => {
+    const state = createEngineState()
+    resolveEngineState({ throttle: 1, boost: true }, state, Number.NaN)
+    expect(state.fuelAvailable).toBe(false)
+    expect(state.afterburnerActive).toBe(false)
+    resolveEngineState({ throttle: 1, boost: true }, state, 1, false, false)
+    expect(state.fuelAvailable).toBe(true)
+    expect(state.afterburnerRequested).toBe(true)
+    expect(state.afterburnerActive).toBe(false)
+    resolveEngineState({ throttle: 1, boost: true }, state, 1, false, true)
+    expect(state.afterburnerActive).toBe(true)
+  })
 })
