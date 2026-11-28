@@ -780,3 +780,33 @@ describe('run results focus flow', () => {
 function elementsFor(document: FakeDocument, id: string): FakeElement | null {
   return document.getElementById(id)
 }
+
+describe('run results seed actions', () => {
+  it('dispatches world seed copying and reports its outcome to screen readers', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+    const copySeed = elementsFor(fixture.document, 'btn-copy-seed')!
+    const handler = vi.fn()
+    results.setCopySeedHandler(handler)
+    copySeed.dispatch('click', {})
+    expect(handler).toHaveBeenCalledTimes(1)
+    results.setCopySeedFeedback(true)
+    expect(copySeed.textContent).toBe('World seed copied')
+    expect(copySeed.getAttribute('aria-label')).toBe('World seed copied')
+    results.setCopySeedFeedback(false)
+    expect(copySeed.textContent).toBe('Copy world seed')
+    expect(copySeed.getAttribute('aria-label')).toBe('Copy world seed blocked by browser permissions')
+    results.setCopySeedHandler(null)
+    copySeed.dispatch('click', {})
+    expect(handler).toHaveBeenCalledTimes(1)
+    results.setCopySeedHandler(handler)
+    results.dispose()
+    copySeed.dispatch('click', {})
+    results.setCopySeedFeedback(true)
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(copySeed.textContent).toBe('Copy world seed')
+    vi.unstubAllGlobals()
+  })
+})
