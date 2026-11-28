@@ -368,4 +368,31 @@ describe('flight audio event cues', () => {
       }
     } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
   })
+
+  it('schedules every cue from the current audio clock with finite, short envelopes', () => {
+    const { audio, tone, noiseBurst } = cueRig()
+    const cues = [
+      'gate', 'streak', 'complete', 'landed', 'landing-soft', 'landing-hard', 'stunt', 'milestone', 'ab', 'ab-off',
+      'airbrake-open', 'airbrake-close', 'traffic', 'radar-lock', 'radar-lost', 'sonic-boom', 'thunder',
+      'gear-up', 'gear-down', 'warning', 'ditch', 'crash',
+    ] as const
+    try {
+      for (const cue of cues) {
+        tone.mockClear(); noiseBurst.mockClear()
+        audio.playCue(cue as Parameters<FlightAudio['playCue']>[0])
+        // tone(frequency, start, duration) and noiseBurst(start, duration).
+        const envelopes = [
+          ...tone.mock.calls.map(call => [call[1], call[2]] as number[]),
+          ...noiseBurst.mock.calls.map(call => [call[0], call[1]] as number[]),
+        ]
+        expect(envelopes.length, cue).toBeGreaterThan(0)
+        for (const [start, duration] of envelopes) {
+          expect(start!, cue).toBeGreaterThanOrEqual(2)
+          expect(start!, cue).toBeLessThan(2.5)
+          expect(duration!, cue).toBeGreaterThan(0)
+          expect(duration!, cue).toBeLessThanOrEqual(EVENT_NOISE_BUFFER_SECONDS)
+        }
+      }
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
 })
