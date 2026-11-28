@@ -96,4 +96,21 @@ describe('arcade fuel system', () => {
     expect(fuelEnduranceSeconds(1, Number.NaN, false)).toBe(12500)
     expect(fuelEnduranceSeconds(1, 0, false)).toBe(12500)
   })
+
+  it('repairs a malformed tank while refuelling and ignores a malformed rate', () => {
+    const state = createFuelState()
+    state.capacity = Number.NaN
+    state.remaining = Number.NaN
+    refuelFuel(state, 0.25)
+    expect(state.capacity).toBe(100)
+    expect(state.remaining).toBe(100)
+    expect(state.fraction).toBe(1)
+    state.remaining = 10
+    refuelFuel(state, 0.25, Number.NaN)
+    expect(state.remaining).toBe(12)
+    refuelFuel(state, 0.25, -50)
+    expect(state.remaining).toBe(12)
+    refuelFuel(state, 10, 8)
+    expect(state.remaining).toBe(14)
+  })
 })
