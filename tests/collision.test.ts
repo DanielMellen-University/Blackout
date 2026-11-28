@@ -448,3 +448,20 @@ describe('classifyContact slope fallback', () => {
     expect(outcome).toEqual({ result: 'crash', reason: 'slope' })
   })
 })
+
+describe('contactFailureLabel', () => {
+  it('gives every failure reason its own short banner label', () => {
+    const reasons = [
+      'obstacle', 'water', 'attitude', 'pitch', 'bank', 'slope',
+      'vertical-speed', 'normal-speed', 'gear', 'overspeed',
+    ] as const
+    const labels = reasons.map(reason => contactFailureLabel(reason))
+    expect(labels).toEqual([
+      'OBSTACLE', 'WATER CONTACT', 'ATTITUDE', 'PITCH LIMIT', 'BANK LIMIT', 'SLOPE',
+      'SINK RATE', 'IMPACT LOAD', 'GEAR UP', 'OVERSPEED',
+    ])
+    expect(new Set(labels).size).toBe(reasons.length)
+    for (const label of labels) expect(label.length).toBeLessThanOrEqual(14)
+    expect(contactFailureLabel(null)).toBe('IMPACT')
+  })
+})
