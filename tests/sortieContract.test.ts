@@ -8,6 +8,15 @@ import {
   type SortieContractKind,
 } from '../src/systems/SortieContract'
 
+function trackerOfKind(kind: SortieContractKind): SortieContractTracker {
+  for (let seed = 0; seed < 4096; seed += 1) {
+    const tracker = new SortieContractTracker()
+    tracker.reset(seed, 5, true)
+    if (tracker.kind === kind) return tracker
+  }
+  throw new Error(`no seed assigns ${kind}`)
+}
+
 describe('sortie contracts', () => {
   it('previews deterministic seeded tasks without assigning Free flight a contract', () => {
     expect(sortieContractLabelForSeed(undefined)).toBe('')
@@ -1342,5 +1351,35 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBeGreaterThanOrEqual(0)
       expect(tracker.progress).toBeLessThanOrEqual(1)
     }
+  })
+
+  it('only scores a target arrival at the exact radar-locked settlement', () => {
+    const tracker = trackerOfKind('target')
+    tracker.recordRadarLock(false, 'city', 'city-1')
+    tracker.recordRadarLock(true, 'gate' as never, 'city-1')
+    tracker.recordRadarLock(true, 'city', '')
+    expect(tracker.progress).toBe(0)
+    tracker.recordRadarLock(true, 'city', 'city-1')
+    expect(tracker.progress).toBe(0.5)
+    tracker.recordDestination(1, 'village', 'city-1')
+    tracker.recordDestination(1, 'city', 'city-2')
+    tracker.recordDestination(1, 'city')
+    expect(tracker.complete).toBe(false)
+    tracker.recordDestination(1, 'city', 'city-1')
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+  })
+
+  it('counts a traffic dodge only with enough vertical separation, once per contact', () => {
+    const tracker = trackerOfKind('traffic-dodge')
+    tracker.recordTrafficPass('traffic-1', 119)
+    tracker.recordTrafficPass('traffic-1', Number.NaN)
+    tracker.recordTrafficPass('', 500)
+    expect(tracker.progress).toBe(0)
+    tracker.recordTrafficPass('traffic-1', 120)
+    const once = tracker.progress
+    expect(once).toBeGreaterThan(0)
+    tracker.recordTrafficPass('traffic-1', 400)
+    expect(tracker.progress).toBe(once)
   })
 })
