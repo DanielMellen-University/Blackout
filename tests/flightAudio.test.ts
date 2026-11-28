@@ -414,3 +414,40 @@ describe('flight audio event cues', () => {
     expect(silent()).toBe(true)
   })
 })
+
+describe('flight audio one-shot node lifecycle', () => {
+  function fakeNode(): Record<string, unknown> {
+    const param = () => ({ setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn(), value: 0 })
+    const listeners: Record<string, () => void> = {}
+    return {
+      frequency: param(), gain: param(), Q: param(), type: '', buffer: null,
+      connect: vi.fn(), disconnect: vi.fn(), start: vi.fn(), stop: vi.fn(),
+      addEventListener: (type: string, listener: () => void) => { listeners[type] = listener },
+      fire: (type: string) => listeners[type]?.(),
+    }
+  }
+
+  it('wires each tone to the effects bus and releases its nodes when it ends', () => {
+    const created: Record<string, unknown>[] = []
+    const make = () => { const node = fakeNode(); created.push(node); return node }
+    const effects = {}
+    const audio = new FlightAudio()
+    Object.assign(audio, {
+      ctx: { state: 'running', currentTime: 1, createOscillator: make, createGain: make },
+      effectsGain: effects, volume: 1, muted: false,
+    })
+    try {
+      audio.playCue('gate')
+      expect(created).toHaveLength(4)
+      const [oscillator, gain] = created as Array<Record<string, ReturnType<typeof vi.fn> & never>>
+      expect((oscillator!.connect as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(gain)
+      expect((gain!.connect as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(effects)
+      expect((oscillator!.start as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(1)
+      const stopAt = (oscillator!.stop as ReturnType<typeof vi.fn>).mock.calls[0]![0] as number
+      expect(stopAt).toBeCloseTo(1 + 0.11 + 0.02)
+      ;(oscillator as { fire: (type: string) => void }).fire('ended')
+      expect((oscillator!.disconnect as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1)
+      expect((gain!.disconnect as ReturnType<typeof vi.fn>)).toHaveBeenCalledTimes(1)
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+})
