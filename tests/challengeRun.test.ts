@@ -2017,3 +2017,28 @@ describe('ChallengeRun', () => {
     expect(values.get('blackout.streak.seed:huge')).toBe(String(MAX_PRECISION_STREAK))
   })
 })
+
+describe('course mastery goal labels', () => {
+  it('reach the next tier exactly at the stated goal and not one short of any part', () => {
+    for (const tier of ['pilot', 'veteran', 'ace'] as const) {
+      const label = courseMasteryNextTierGoalLabel(tier)
+      const number = (unit: string): number => {
+        if (unit === 'SCORE') return Number(/(\d+)K/.exec(label)![1]) * 1000
+        const match = new RegExp(`(\\d+) ${unit}`).exec(label)
+        return match ? Number(match[1]) : 0
+      }
+      const goal = {
+        completionCount: number('RUNS'),
+        bestScore: number('SCORE'),
+        badgeCount: number('BADGES'),
+        contractWins: number('CONTRACTS'),
+      }
+      const next = courseMasteryNextTierLabel(tier).toLowerCase()
+      expect(courseMasteryTierForProgress(goal), label).toBe(next)
+      for (const key of Object.keys(goal) as Array<keyof typeof goal>) {
+        if (goal[key] === 0) continue
+        expect(courseMasteryTierForProgress({ ...goal, [key]: goal[key] - 1 }), `${label} minus ${key}`).toBe(tier)
+      }
+    }
+  })
+})
