@@ -179,3 +179,62 @@ describe('browser shortcut filter', () => {
     }
   })
 })
+
+describe('fullscreen gesture recovery', () => {
+  function stubFullscreen(request: () => Promise<void> | undefined): {
+    doc: { fullscreenElement: object | null; exitFullscreen: ReturnType<typeof vi.fn> }
+    requestFullscreen: ReturnType<typeof vi.fn>
+    lock: ReturnType<typeof vi.fn>
+    unlock: ReturnType<typeof vi.fn>
+  } {
+    const requestFullscreen = vi.fn(request)
+    const doc = {
+      fullscreenElement: null as object | null,
+      documentElement: { requestFullscreen },
+      exitFullscreen: vi.fn(() => Promise.resolve()),
+    }
+    const lock = vi.fn(() => Promise.resolve())
+    const unlock = vi.fn()
+    vi.stubGlobal('document', doc)
+    vi.stubGlobal('navigator', { keyboard: { lock, unlock } })
+    return { doc, requestFullscreen, lock, unlock }
+  }
+
+  it('arms a click retry when the browser refuses the fullscreen gesture', async () => {
+    const page = stubFullscreen(() => Promise.reject(new Error('gesture')))
+    try {
+      enterGameFullscreenFromGesture()
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(page.requestFullscreen).toHaveBeenCalledTimes(1)
+      tryReenterFullscreenFromClick()
+      expect(page.requestFullscreen).toHaveBeenCalledTimes(2)
+      // Without a fresh refusal the click path stays disarmed.
+      page.requestFullscreen.mockImplementation(() => Promise.resolve())
+      enterGameFullscreenFromGesture()
+      await Promise.resolve()
+      tryReenterFullscreenFromClick()
+      expect(page.requestFullscreen).toHaveBeenCalledTimes(3)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('locks keys when already fullscreen and arms re-entry after a toggle out', () => {
+    const page = stubFullscreen(() => Promise.resolve())
+    try {
+      page.doc.fullscreenElement = {}
+      enterGameFullscreenFromGesture()
+      expect(page.requestFullscreen).not.toHaveBeenCalled()
+      expect(page.lock).toHaveBeenCalledTimes(1)
+      toggleGameFullscreen()
+      expect(page.unlock).toHaveBeenCalledTimes(1)
+      expect(page.doc.exitFullscreen).toHaveBeenCalledTimes(1)
+      page.doc.fullscreenElement = null
+      tryReenterFullscreenFromClick()
+      expect(page.requestFullscreen).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+})
