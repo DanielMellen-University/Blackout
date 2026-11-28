@@ -48,4 +48,18 @@ describe('audio volume preferences', () => {
     expect(readAudioChannelVolume(storage, 'environment')).toBeCloseTo(0.65)
     expect(readAudioChannelVolume(storage, 'effects')).toBeCloseTo(0.85)
   })
+
+  it('falls back to a clamped default when storage reads or writes throw', () => {
+    const denied = {
+      getItem: (): string | null => { throw new Error('denied') },
+      setItem: (): void => { throw new Error('quota') },
+    }
+    expect(readAudioVolume(denied, 0.4)).toBe(0.4)
+    expect(readAudioVolume(denied, 3)).toBe(1)
+    expect(readAudioVolume(denied, Number.NaN)).toBe(1)
+    expect(readAudioChannelVolume(denied, 'effects', -2)).toBe(0)
+    expect(readAudioChannelVolume({ getItem: () => '   ' }, 'engine', 0.25)).toBe(0.25)
+    expect(() => writeAudioVolume(denied, 0.5)).not.toThrow()
+    expect(() => writeAudioChannelVolume(denied, 'environment', 0.5)).not.toThrow()
+  })
 })
