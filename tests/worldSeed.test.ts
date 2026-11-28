@@ -124,4 +124,23 @@ describe('world seed sharing', () => {
     expect(worldSeedReplayUrl(href, 5, 'daily-ops', '2026-01-02')).not.toContain('week=')
     expect(worldSeedReplayUrl(href, 5, 'daily-ops', '2026-01-02')).not.toContain('month=')
   })
+
+  it('keeps only real calendar periods in Ops replay links', () => {
+    const base = 'https://example.test/play'
+    const period = (courseId: string, key: string): Record<string, string | null> => {
+      const url = new URL(worldSeedReplayUrl(base, 7, courseId, key)!)
+      return { day: url.searchParams.get('day'), week: url.searchParams.get('week'), month: url.searchParams.get('month') }
+    }
+    expect(period('daily-ops', '2028-02-29').day).toBe('2028-02-29')
+    expect(period('daily-ops', '2026-02-29').day).toBeNull()
+    expect(period('daily-ops', '2026-13-01').day).toBeNull()
+    expect(period('weekly-ops', '2026-W53').week).toBe('2026-W53')
+    expect(period('weekly-ops', '2025-W53').week).toBeNull()
+    expect(period('weekly-ops', '2026-W00').week).toBeNull()
+    expect(period('monthly-ops', '2026-12').month).toBe('2026-12')
+    expect(period('monthly-ops', '2026-13').month).toBeNull()
+    expect(period('monthly-ops', '2026-00').month).toBeNull()
+    // A key for another cadence never leaks onto the link.
+    expect(period('monthly-ops', '2026-01-02')).toEqual({ day: null, week: null, month: null })
+  })
 })
